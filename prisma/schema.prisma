@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Client {
+  id        String   @id @default(nanoid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  name      String   @unique @db.VarChar(255)
+  System    System[]
+}
+
+model System {
+  id        String     @id @default(nanoid())
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  createdBy String
+  title     String     @db.VarChar(255)
+  client    Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId  String
+  Revision  Revision[]
+}
+
+model Revision {
+  id                 String               @id @default(nanoid())
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  createdBy          String
+  title              String               @db.VarChar(255)
+  systemId           String
+  system             System               @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  surveyId           String
+  survey             Survey               @relation(fields: [surveyId], references: [id])
+  Respondent         Respondent[]
+  RespondentResponse RespondentResponse[]
+}
+
+model Survey {
+  id        String            @id @default(nanoid())
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  createdBy String
+  label     String            @db.VarChar(255)
+  Revision  Revision[]
+  questions SurveyQuestions[]
+}
+
+model Question {
+  id                 String               @id @default(nanoid())
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  createdBy          String
+  text               String
+  SurveyQuestions    SurveyQuestions[]
+  RespondentResponse RespondentResponse[]
+  QuestionResponse   QuestionResponse[]
+}
+
+model CurratedResponse {
+  id                 String               @id @default(nanoid())
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  createdBy          String
+  label              String
+  value              String
+  QuestionResponse   QuestionResponse[]
+  RespondentResponse RespondentResponse[]
+}
+
+model QuestionResponse {
+  questionId String
+  question   Question         @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  responseId String
+  response   CurratedResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  assignedAt DateTime         @default(now())
+  assignedBy String
+
+  @@id([questionId, responseId])
+}
+
+model SurveyQuestions {
+  survey     Survey   @relation(fields: [surveyId], references: [id])
+  surveyId   String
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id])
+  assignedAt DateTime @default(now())
+  assignedBy String
+
+  @@id([questionId, surveyId])
+}
+
+model Respondent {
+  id                 String               @id @default(nanoid())
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  createdBy          String
+  email              String
+  revision           Revision             @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  revisionId         String
+  RespondentResponse RespondentResponse[]
+
+  @@unique([email, revisionId])
+}
+
+model RespondentResponse {
+  id                 String            @id @default(nanoid())
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  createdBy          String
+  freeformResponse   String?
+  curratedResponseId String?
+  curratedResponse   CurratedResponse? @relation(fields: [curratedResponseId], references: [id])
+  respondentId       String
+  respondent         Respondent        @relation(fields: [respondentId], references: [id], onDelete: Cascade)
+  revisionId         String
+  revision           Revision          @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  questionId         String
+  question           Question          @relation(fields: [questionId], references: [id])
+
+  @@unique([respondentId, revisionId, questionId])
+}

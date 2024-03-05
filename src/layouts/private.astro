@@ -1,0 +1,27 @@
+---
+import BaseLayout from "./base.astro";
+import PrivateHeader from "@/components/private/Header.svelte";
+
+const { class: className } = Astro.props;
+---
+
+<BaseLayout>
+  <PrivateHeader client:load />
+  <div class="flex-1 flex">
+    <ul class="menu bg-neutral flex-none">
+      <li>
+        <a
+          href="/clients"
+          class="tooltip tooltip-right tooltip-info text-sus-surface-40"
+          data-tip="Clients"
+        >
+          <iconify-icon icon="formkit:people" width="35" height="35"
+          ></iconify-icon>
+        </a>
+      </li>
+    </ul>
+    <div class={className ?? ""}>
+      <slot />
+    </div>
+  </div>
+</BaseLayout>

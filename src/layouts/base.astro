@@ -1,0 +1,28 @@
+---
+import { ViewTransitions } from "astro:transitions";
+---
+
+<html lang="en" class="min-h-full flex flex-col">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Hitachi Solutions: System Usability Survey</title>
+    <ViewTransitions />
+  </head>
+  <body>
+    <style is:global>
+      html {
+        @apply min-h-screen relative tracking-tighter text-sus-surface-10-fg bg-sus-surface-10 font-sans font-normal text-base;
+      }
+      body {
+        @apply !contents;
+      }
+    </style>
+		<slot/>
+    <script>
+      import "iconify-icon";
+    </script>
+  </body>
+</html>

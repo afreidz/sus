@@ -1,0 +1,19 @@
+---
+import BaseLayout from "@/layouts/base.astro";
+---
+
+<BaseLayout>
+  <div class="flex-1 w-full flex justify-center items-center">
+    <button class="btn btn-primary btn-lg w-full max-w-sm" id="login">
+      <iconify-icon icon="mdi:microsoft"></iconify-icon>
+      Login with Microsoft
+    </button>
+  </div>
+  <script>
+    const { signIn } = await import("auth-astro/client");
+
+    const btn = document.getElementById("login");
+    if (btn)
+      btn.onclick = () => signIn("azure-ad", { callbackUrl: "/clients" });
+  </script>
+</BaseLayout>

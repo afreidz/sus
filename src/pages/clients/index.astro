@@ -1,0 +1,21 @@
+---
+import type { APIResponses } from "@/api/types";
+import PrivateLayout from "@/layouts/private.astro";
+import ClientCard from "@/components/private/ClientCard.svelte";
+
+const resp = await fetch(`${Astro.url.origin}/api/clients/all.json`, {
+  headers: Astro.request.headers,
+});
+const clients = await resp.json();
+---
+
+<PrivateLayout>
+  <section class="p-10 flex flex-wrap gap-4 justify-evenly">
+    <ClientCard client:only />
+    {
+      clients.map((client: APIResponses["clientId"]["GET"]) => (
+        <ClientCard client:only {client} />
+      ))
+    }
+  </section>
+</PrivateLayout>
