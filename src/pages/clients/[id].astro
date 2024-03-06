@@ -2,11 +2,24 @@
 import PrivateLayout from "@/layouts/private.astro";
 import ClientMeta from "@/components/private/ClientMeta.svelte";
 import SystemsTable from "@/components/private/SystemsTable.svelte";
+import type { APIResponses } from "../api/types";
 
 const { id } = Astro.params;
+
+const client: APIResponses["clientId"]["GET"] = await (
+  await fetch(`${Astro.url.origin}/api/clients/${id}.json`, {
+    headers: Astro.request.headers,
+  })
+).json();
 ---
 
 <PrivateLayout class="flex-1 flex flex-col items-center">
+  <div class="text-sm breadcrumbs w-full text-left px-8 py-4 mb-4">
+    <ul>
+      <li><a href="/clients">Clients</a></li>
+      <li class="font-semibold">{client.name}</li>
+    </ul>
+  </div>
   <div class="w-full flex gap-0 max-w-screen-xl justify-self-center">
     <main class="flex-1 p-4 p-r2">
       <header class="prose mb-4">

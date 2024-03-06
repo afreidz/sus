@@ -1,8 +1,8 @@
 <script lang="ts">
   import me from "@/stores/me";
   import api from "@/helpers/api";
+  import clients from "@/stores/clients";
   import type { Prisma, APIResponses } from "@/api/types";
-  import clients, { refreshClients } from "@/stores/clients";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
   import NewSystemDialog from "@/components/private/NewSystemDialog.svelte";
 
@@ -36,7 +36,7 @@
     });
 
     newClientNameElement.value = "";
-    await refreshClients();
+    window.location.reload();
   }
 
   async function deleteClient() {
@@ -47,7 +47,7 @@
         substitutions: { CLIENT_ID: client.id },
         method: "DELETE",
       });
-      await refreshClients();
+      window.location.reload();
     }
   }
 
@@ -58,7 +58,6 @@
         endpoint: "systemAll",
         body: newSystemDialog.returnValue,
       });
-      await refreshClients();
       if (client) window.location.href = `/clients/${client.id}`;
     }
     showNewSystemDialog = false;

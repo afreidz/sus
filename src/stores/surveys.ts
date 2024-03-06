@@ -1,9 +1,11 @@
 import api from "@/helpers/api";
-import { writable } from "svelte/store";
 import type { APIResponses } from "@/api/types";
+import { task, onMount, atom } from "nanostores";
 
-const surveys = writable<null | APIResponses["surveyAll"]["GET"]>(null, () => {
-  refreshSurveys();
+const surveys = atom<null | APIResponses["surveyAll"]["GET"]>(null);
+
+onMount(surveys, () => {
+  task(refreshSurveys);
 });
 
 export async function refreshSurveys() {

@@ -4,7 +4,7 @@ import type { Prisma } from "@prisma/client";
 
 export type revisionAll = {
   GET: Prisma.RevisionGetPayload<{
-    include: { system: true; survey: true };
+    include: { system: true; survey: true; Respondent: true };
   }>[];
   POST: Prisma.RevisionGetPayload<{
     include: { system: true; survey: true };
@@ -13,7 +13,7 @@ export type revisionAll = {
 
 export const GET: APIRoute = async () => {
   const revisions = await orm.revision.findMany({
-    include: { system: true, survey: true },
+    include: { system: true, survey: true, Respondent: true },
   });
 
   return new Response(JSON.stringify(revisions), {

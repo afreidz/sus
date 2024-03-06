@@ -106,6 +106,7 @@
             checked={x === 0}
             name={`client_systems_${client.id}`}
           />
+
           <div class="collapse-title flex justify-between">
             <strong class="text-xl font-medium">{system.title}</strong>
             <a
@@ -179,9 +180,10 @@
                             </li>
                           </ul>
                         </div>
-                        <span
+                        <a
+                          href={`/systems/${system.id}#rev_${revision.id}`}
                           class="timeline-box bg-sus-surface-70 border-none text-sus-surface-70-fg"
-                          >{revision.title}</span
+                          >{revision.title}</a
                         >
                       </div>
                       <div class="timeline-middle">

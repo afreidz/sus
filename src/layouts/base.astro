@@ -1,5 +1,5 @@
 ---
-import { ViewTransitions } from "astro:transitions";
+
 ---
 
 <html lang="en" class="min-h-full flex flex-col">
@@ -9,7 +9,6 @@ import { ViewTransitions } from "astro:transitions";
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
     <title>Hitachi Solutions: System Usability Survey</title>
-    <ViewTransitions />
   </head>
   <body>
     <style is:global>
@@ -20,7 +19,7 @@ import { ViewTransitions } from "astro:transitions";
         @apply !contents;
       }
     </style>
-		<slot/>
+    <slot />
     <script>
       import "iconify-icon";
     </script>

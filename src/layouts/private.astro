@@ -1,27 +1,19 @@
 ---
 import BaseLayout from "./base.astro";
-import PrivateHeader from "@/components/private/Header.svelte";
+import Logo from "@/components/common/Logo.svelte";
+import AvatarMenu from "@/components/private/AvatarMenu.svelte";
 
 const { class: className } = Astro.props;
 ---
 
 <BaseLayout>
-  <PrivateHeader client:load />
-  <div class="flex-1 flex">
-    <ul class="menu bg-neutral flex-none">
-      <li>
-        <a
-          href="/clients"
-          class="tooltip tooltip-right tooltip-info text-sus-surface-40"
-          data-tip="Clients"
-        >
-          <iconify-icon icon="formkit:people" width="35" height="35"
-          ></iconify-icon>
-        </a>
-      </li>
-    </ul>
-    <div class={className ?? ""}>
-      <slot />
+  <div class="navbar bg-neutral shadow-sm z-10">
+    <div class="flex-1">
+      <Logo />
     </div>
+    <AvatarMenu client:only />
+  </div>
+  <div class={className ?? ""}>
+    <slot />
   </div>
 </BaseLayout>

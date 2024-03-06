@@ -4,7 +4,7 @@ import type { Prisma } from "@prisma/client";
 
 export type revisionId = {
   GET: Prisma.RevisionGetPayload<{
-    include: { system: true; survey: true };
+    include: { system: true; survey: true; Respondent: true };
   }>;
   PUT: Prisma.RevisionGetPayload<{
     include: { system: true; survey: true };
@@ -15,7 +15,7 @@ export type revisionId = {
 export const GET: APIRoute = async ({ params }) => {
   const revision = await orm.revision.findFirst({
     where: { id: params.id },
-    include: { system: true, survey: true },
+    include: { system: true, survey: true, Respondent: true },
   });
 
   return new Response(JSON.stringify(revision), {

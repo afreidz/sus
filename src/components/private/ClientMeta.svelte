@@ -1,7 +1,7 @@
 <script lang="ts">
   import api from "@/helpers/api";
-  import type { Prisma, APIResponses } from "@/api/types";
-  import clients, { refreshClients } from "@/stores/clients";
+  import clients from "@/stores/clients";
+  import type { APIResponses } from "@/api/types";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
   import NewSystemDialog from "@/components/private/NewSystemDialog.svelte";
 
@@ -42,7 +42,7 @@
         endpoint: "systemAll",
         body: newSystemDialog.returnValue,
       });
-      await refreshClients();
+      window.location.reload();
     }
     showNewSystemDialog = false;
   }

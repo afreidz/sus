@@ -1,0 +1,39 @@
+---
+import type { APIResponses } from "@/api/types";
+import PrivateLayout from "@/layouts/private.astro";
+import Invite from "@/components/private/Invite.svelte";
+import SystemRevisionNav from "@/components/private/SystemRevisionNav.svelte";
+
+const { id } = Astro.params;
+
+const system: APIResponses["systemId"]["GET"] = await (
+  await fetch(`${Astro.url.origin}/api/systems/${id}.json`, {
+    headers: Astro.request.headers,
+  })
+).json();
+---
+
+<PrivateLayout class="flex-1 flex flex-col items-center">
+  <div class="text-sm breadcrumbs w-full text-left px-8 py-4 mb-4">
+    <ul>
+      <li><a href="/clients">Clients</a></li>
+      <li><a href={`/clients/${system.client.id}`}>{system.client.name}</a></li>
+      <li class="font-semibold">{system.title}</li>
+    </ul>
+  </div>
+  <div class="p-4">
+    <SystemRevisionNav {system} client:load>
+      {
+        system.Revision.map((revision, i) => (
+          <div
+            role="tabpanel"
+            id={`rev_${revision.id}`}
+            class="target:flex flex-col hidden"
+          >
+            <Invite revision={revision.id} client:only />
+          </div>
+        ))
+      }
+    </SystemRevisionNav>
+  </div>
+</PrivateLayout>

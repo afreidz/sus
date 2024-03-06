@@ -12,6 +12,7 @@ export const endpoints = {
   revisionId: "/api/revisions/REVISION_ID.json",
   surveyAll: "/api/surveys/all.json",
   surveyId: "/api/survey/SURVEY_ID.json",
+  respondentAll: "/api/respondents/all.json",
 };
 
 export type Substitution = Record<string, string | undefined>;
