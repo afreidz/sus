@@ -1,13 +1,13 @@
 import orm from "./schema";
 import type { APIRoute } from "astro";
-import type { Prisma } from "@prisma/client";
+import type { ORM } from "@/helpers/orm";
 
 export type systemId = {
-  GET: Prisma.SystemGetPayload<{
-    include: { client: true; Revision: true };
+  GET: ORM.SystemGetPayload<{
+    include: { client: true; revisions: true };
   }>;
-  PUT: Prisma.SystemGetPayload<{
-    include: { client: true; Revision: true };
+  PUT: ORM.SystemGetPayload<{
+    include: { client: true; revisions: true };
   }>;
   DELETE: { success: boolean };
 };
@@ -15,7 +15,7 @@ export type systemId = {
 export const GET: APIRoute = async ({ params }) => {
   const system = await orm.system.findFirst({
     where: { id: params.id },
-    include: { client: true, Revision: true },
+    include: { client: true, revisions: true },
   });
 
   return new Response(JSON.stringify(system), {

@@ -1,12 +1,8 @@
 import api from "@/helpers/api";
-import type { APIResponses } from "@/api/types";
-import { atom, onMount, task } from "nanostores";
+import { atom } from "nanostores";
+import type { APIResponses } from "@/helpers/api";
 
 const me = atom<null | APIResponses["me"]["GET"]>(null);
-
-onMount(me, () => {
-  task(refreshMe);
-});
 
 export async function refreshMe() {
   const account = await api({ endpoint: "me" });

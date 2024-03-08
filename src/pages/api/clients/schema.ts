@@ -1,5 +1,4 @@
-import { z } from "zod";
-import { PrismaClient, Prisma } from "@prisma/client";
+import Client, { z, type ORM } from "@/helpers/orm";
 
 export const ClientCreateSchema = z.object({
   name: z
@@ -9,9 +8,9 @@ export const ClientCreateSchema = z.object({
     .regex(/^[a-zA-Z0-9\s\.,\-_'"]*$/),
   createdBy: z.string(),
   updatedAt: z.date().optional(),
-}) satisfies z.Schema<Prisma.ClientUncheckedCreateInput>;
+}) satisfies z.Schema<ORM.ClientUncheckedCreateInput>;
 
-export default new PrismaClient().$extends({
+export default new Client().$extends({
   query: {
     client: {
       create({ args, query }) {

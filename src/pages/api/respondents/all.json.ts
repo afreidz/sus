@@ -1,9 +1,9 @@
 import orm from "./schema";
 import type { APIRoute } from "astro";
-import type { Prisma } from "@prisma/client";
+import type { ORM } from "@/helpers/orm";
 
-export type respondentAll = {
-  POST: Prisma.RespondentGetPayload<{}>;
+export type respondents = {
+  POST: ORM.RespondentGetPayload<{}>;
 };
 
 export const POST: APIRoute = async ({ request }) => {

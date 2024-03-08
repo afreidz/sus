@@ -1,15 +1,11 @@
 import api from "@/helpers/api";
-import type { APIResponses } from "@/api/types";
-import { atom, onMount, task } from "nanostores";
+import { atom } from "nanostores";
+import type { APIResponses } from "@/helpers/api";
 
-const systems = atom<null | APIResponses["systemAll"]["GET"]>(null);
-
-onMount(systems, () => {
-  task(refreshSystems);
-});
+const systems = atom<null | APIResponses["systems"]["GET"]>(null);
 
 export async function refreshSystems() {
-  systems.set(await api({ endpoint: "systemAll", method: "GET" }));
+  systems.set(await api({ endpoint: "systems", method: "GET" }));
 }
 
 export default systems;

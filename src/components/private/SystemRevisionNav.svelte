@@ -1,38 +1,36 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { APIResponses } from "@/api/types";
+  import type { APIResponses } from "@/helpers/api";
+  import { activeRevisionsBySystem as actives } from "@/stores/actives";
 
   export let system: APIResponses["systemId"]["GET"];
 
-  let active: (typeof system)["Revision"][number];
-  let tabs: HTMLAnchorElement[] = [];
+  $: if ($actives[system.id])
+    history.replaceState(null, "", `#${$actives[system.id]}`);
 
   onMount(() => {
-    if (tabs[0] && !window.location.hash) tabs[0].click();
-    if (window.location.hash) {
-      const tabidx = system.Revision.findIndex((rev) =>
-        window.location.hash.includes(rev.id)
-      );
-      if (tabs[tabidx]) tabs[tabidx].click();
+    if (system.revisions.length && !window.location.hash) {
+      actives.setKey(system.id, system.revisions[0].id);
+    } else if (window.location.hash) {
+      actives.setKey(system.id, window.location.hash.replace("#", ""));
     }
   });
 </script>
 
 <div role="tablist" class="w-full">
   <ul class="timeline">
-    {#each system.Revision as revision, i}
+    {#each system.revisions as revision, i}
       <li>
         {#if i !== 0}<hr />{/if}
         <a
-          bind:this={tabs[i]}
-          href={`#rev_${revision.id}`}
+          href={`#${revision.id}`}
           class="timeline-start timeline-box"
-          on:click={() => (active = revision)}
-          class:text-neutral={active === revision}
-          class:bg-neutral-900={active === revision}
-          class:text-neutral-300={active !== revision}
-          class:border-neutral-300={active !== revision}
-          class:border-neutral-900={active === revision}
+          class:text-neutral={$actives[system.id] === revision.id}
+          class:bg-neutral-900={$actives[system.id] === revision.id}
+          class:text-neutral-300={$actives[system.id] !== revision.id}
+          class:border-neutral-300={$actives[system.id] !== revision.id}
+          class:border-neutral-900={$actives[system.id] === revision.id}
+          on:click|preventDefault={() => actives.setKey(system.id, revision.id)}
         >
           {revision.title}
         </a>
@@ -50,10 +48,9 @@
             />
           </svg>
         </div>
-        {#if i !== system.Revision.length - 1}
+        {#if i !== system.revisions.length - 1}
           <hr />{/if}
       </li>
     {/each}
   </ul>
-  <slot />
 </div>

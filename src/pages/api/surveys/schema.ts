@@ -1,13 +1,12 @@
-import { z } from "zod";
-import { PrismaClient, Prisma } from "@prisma/client";
+import Client, { z, type ORM } from "@/helpers/orm";
 
 export const SurveyCreateSchema = z.object({
   createdBy: z.string(),
   updatedAt: z.date().optional(),
   label: z.string().min(3).max(100),
-}) satisfies z.Schema<Prisma.SurveyUncheckedCreateInput>;
+}) satisfies z.Schema<ORM.SurveyUncheckedCreateInput>;
 
-export default new PrismaClient().$extends({
+export default new Client().$extends({
   query: {
     survey: {
       create({ args, query }) {

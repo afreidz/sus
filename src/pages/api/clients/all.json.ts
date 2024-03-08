@@ -1,15 +1,15 @@
 import orm from "./schema";
 import type { APIRoute } from "astro";
-import type { Prisma } from "@prisma/client";
+import type { ORM } from "@/helpers/orm";
 
-export type clientAll = {
-  GET: Prisma.ClientGetPayload<{ include: { System: true } }>[];
-  POST: Prisma.ClientGetPayload<{ include: { System: true } }>;
+export type clients = {
+  GET: ORM.ClientGetPayload<{ include: { systems: true } }>[];
+  POST: ORM.ClientGetPayload<{ include: { systems: true } }>;
 };
 
 export const GET: APIRoute = async () => {
   const clients = await orm.client.findMany({
-    include: { System: true },
+    include: { systems: true },
   });
 
   return new Response(JSON.stringify(clients), {

@@ -1,43 +1,64 @@
 <script lang="ts">
   import api from "@/helpers/api";
-  import type { APIResponses } from "@/api/types";
-  import clients, { refreshClients } from "@/stores/clients";
+  import { onMount } from "svelte";
+  import type { APIResponses } from "@/helpers/api";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
   import NewSystemDialog from "@/components/private/NewSystemDialog.svelte";
   import NewRevisionDialog from "@/components/private/NewRevisionDialog.svelte";
 
   type SingleClient = APIResponses["clientId"]["GET"];
   type SingleSystem = APIResponses["systemId"]["GET"];
-  type SingleRevision = SingleSystem["Revision"][number];
+  type SingleRevision = SingleSystem["revisions"][number];
 
-  export let clientId: string | undefined;
+  export let client: SingleClient;
 
+  let active: SingleSystem["id"];
   let showNewSystemDialog = false;
-  let client: SingleClient | undefined;
-  let systems: Promise<SingleSystem>[];
   let newSystemDialog: HTMLDialogElement;
   let newRevisionDialog: HTMLDialogElement;
+  let systems: Promise<SingleSystem>[] = [];
   let deleteRevisionDialog: HTMLDialogElement;
   let showNewRevisionDialogSystem: SingleSystem | null = null;
   let revisionToDelete: SingleRevision | undefined = undefined;
 
-  $: if (clientId && $clients) {
-    client = $clients.find((c) => c.id === clientId);
-    if (!client)
-      refreshClients().then(() => {
-        client = $clients?.find((c) => c.id === clientId);
+  onMount(() => {
+    if (client.systems.length) {
+      systems = client.systems.map(async (system) => {
+        return await api({
+          method: "GET",
+          endpoint: "systemId",
+          substitutions: { systemId: system.id },
+        });
       });
+    }
+  });
+
+  onMount(() => {
+    if (window.location.hash) {
+      active = window.location.hash.replace("#", "");
+    } else if (client.systems.length) {
+      active = client.systems[0].id;
+    }
+  });
+
+  async function refreshClient() {
+    client = await api({
+      method: "GET",
+      endpoint: "clientId",
+      substitutions: { clientId: client.id },
+    });
+    if (client.systems.length) {
+      systems = client.systems.map(async (system) => {
+        return await api({
+          method: "GET",
+          endpoint: "systemId",
+          substitutions: { systemId: system.id },
+        });
+      });
+    }
   }
 
-  $: if (client?.System.length) {
-    systems = client.System.map(async (system) => {
-      return await api({
-        method: "GET",
-        endpoint: "systemId",
-        substitutions: { SYSTEM_ID: system.id },
-      });
-    });
-  }
+  $: if (active) history.replaceState(null, "", `#${active}`);
 
   async function createNewRevision() {
     showNewRevisionDialogSystem = null;
@@ -45,11 +66,11 @@
 
     await api({
       method: "POST",
-      endpoint: "revisionAll",
+      endpoint: "revisions",
       body: newRevisionDialog.returnValue,
     });
     newRevisionDialog.returnValue = "";
-    await refreshClients();
+    await refreshClient();
   }
 
   function showNewRevisionDialog(s: unknown) {
@@ -63,23 +84,23 @@
     }
 
     await api({
-      endpoint: "revisionId",
       method: "DELETE",
-      substitutions: { REVISION_ID: revisionToDelete.id },
+      endpoint: "revisionId",
+      substitutions: { revisionId: revisionToDelete.id },
     });
 
     revisionToDelete = undefined;
-    await refreshClients();
+    await refreshClient();
   }
 
   async function createNewSystem() {
     if (newSystemDialog.returnValue) {
       await api({
         method: "POST",
-        endpoint: "systemAll",
+        endpoint: "systems",
         body: newSystemDialog.returnValue,
       });
-      await refreshClients();
+      await refreshClient();
     }
     showNewSystemDialog = false;
   }
@@ -87,10 +108,10 @@
 
 {#if client}
   <div
-    class:items-center={!client.System.length}
+    class:items-center={!client.systems.length}
     class="flex-1 flex flex-col gap-4"
   >
-    {#if client.System?.length === 0}
+    {#if client.systems?.length === 0}
       <strong class="w-full py-10 text-center uppercase opacity-50"
         >No client systems</strong
       >
@@ -99,11 +120,14 @@
         class="btn btn-outline">New System</button
       >
     {:else}
-      {#each client.System as system, x}
+      {#each client.systems as system, x}
         <div class="collapse bg-neutral">
           <input
             type="radio"
-            checked={x === 0}
+            on:change={(e) => {
+              if (e.currentTarget.checked) active = system.id;
+            }}
+            checked={active?.includes(system.id)}
             name={`client_systems_${client.id}`}
           />
 
@@ -131,14 +155,14 @@
               <span class="loading loading-dots loading-md">loading system</span
               >
             {:then system}
-              {#if !system.Revision.length}
+              {#if !system?.revisions.length}
                 <strong
                   class="w-full py-10 text-center uppercase text-neutral/50"
                   >No revisions for system yet</strong
                 >
               {:else}
                 <ul class="timeline timeline-vertical p-4">
-                  {#each system.Revision as revision, i}
+                  {#each system.revisions as revision, i}
                     <li>
                       {#if i !== 0}<hr />{/if}
                       <div
@@ -181,7 +205,7 @@
                           </ul>
                         </div>
                         <a
-                          href={`/systems/${system.id}#rev_${revision.id}`}
+                          href={`/systems/${system.id}#${revision.id}`}
                           class="timeline-box bg-sus-surface-70 border-none text-sus-surface-70-fg"
                           >{revision.title}</a
                         >
@@ -199,7 +223,7 @@
                           /></svg
                         >
                       </div>
-                      {#if i !== system.Revision.length - 1}
+                      {#if i !== system.revisions.length - 1}
                         <hr />
                       {/if}
                     </li>

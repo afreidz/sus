@@ -1,17 +1,17 @@
 import orm from "./schema";
 import type { APIRoute } from "astro";
-import type { Prisma } from "@prisma/client";
+import type { ORM } from "@/helpers/orm";
 
 export type clientId = {
-  GET: Prisma.ClientGetPayload<{ include: { System: true } }>;
-  PUT: Prisma.ClientGetPayload<{ include: { System: true } }>;
+  GET: ORM.ClientGetPayload<{ include: { systems: true } }>;
+  PUT: ORM.ClientGetPayload<{ include: { systems: true } }>;
   DELETE: { success: boolean };
 };
 
 export const GET: APIRoute = async ({ params }) => {
   const client = await orm.client.findFirst({
     where: { id: params.id },
-    include: { System: true },
+    include: { systems: true },
   });
 
   return new Response(JSON.stringify(client), {
@@ -25,7 +25,7 @@ export const GET: APIRoute = async ({ params }) => {
 export const PUT: APIRoute = async ({ params, request }) => {
   const client = await orm.client.update({
     where: { id: params.id },
-    data: (await request.json()) as Prisma.ClientCreateInput,
+    data: (await request.json()) as ORM.ClientCreateInput,
   });
 
   return new Response(JSON.stringify(client), {

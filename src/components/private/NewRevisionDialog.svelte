@@ -1,6 +1,7 @@
 <script lang="ts">
-  import surveys from "@/stores/surveys";
-  import type { APIResponses } from "@/api/types";
+  import { onMount } from "svelte";
+  import type { APIResponses } from "@/helpers/api";
+  import surveys, { refreshSurveys } from "@/stores/surveys";
 
   type SingleSystem = APIResponses["systemId"]["GET"];
 
@@ -10,6 +11,10 @@
 
   let newRevisionTitle: string = "";
   let newRevisionSurvey: string = "";
+
+  onMount(() => {
+    refreshSurveys();
+  });
 
   $: if (open && elm) {
     elm.showModal();
@@ -29,7 +34,6 @@
       elm.close(
         e &&
           JSON.stringify({
-            surveyId: newRevisionSurvey,
             title: newRevisionTitle,
             systemId: system?.id,
           })

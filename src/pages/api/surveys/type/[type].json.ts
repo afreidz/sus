@@ -1,17 +1,14 @@
-import orm from "./schema";
+import orm from "../schema";
 import type { APIRoute } from "astro";
 import type { ORM } from "@/helpers/orm";
 
-export type surveyId = {
-  GET: ORM.SurveyGetPayload<{
-    include: { questions: true; scoreType: true };
-  }>;
+export type surveyType = {
+  GET: ORM.SurveyGetPayload<{}>[];
 };
 
 export const GET: APIRoute = async ({ params }) => {
-  const survey = await orm.survey.findFirst({
-    where: { id: params.id },
-    include: { questions: true, scoreType: true },
+  const survey = await orm.survey.findMany({
+    where: { id: params.id, scoreType: { id: params.type } },
   });
 
   return new Response(JSON.stringify(survey), {

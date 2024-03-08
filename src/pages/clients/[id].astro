@@ -1,16 +1,17 @@
 ---
+import api from "@/helpers/api";
 import PrivateLayout from "@/layouts/private.astro";
 import ClientMeta from "@/components/private/ClientMeta.svelte";
 import SystemsTable from "@/components/private/SystemsTable.svelte";
-import type { APIResponses } from "../api/types";
 
-const { id } = Astro.params;
-
-const client: APIResponses["clientId"]["GET"] = await (
-  await fetch(`${Astro.url.origin}/api/clients/${id}.json`, {
-    headers: Astro.request.headers,
-  })
-).json();
+const id = Astro.params.id as string;
+const client = await api({
+  method: "GET",
+  endpoint: "clientId",
+  base: Astro.url.origin,
+  headers: Astro.request.headers,
+  substitutions: { clientId: id },
+});
 ---
 
 <PrivateLayout class="flex-1 flex flex-col items-center">
@@ -25,10 +26,10 @@ const client: APIResponses["clientId"]["GET"] = await (
       <header class="prose mb-4">
         <h3>Systems</h3>
       </header>
-      <SystemsTable client:only clientId={id} />
+      <SystemsTable client:visible {client} />
     </main>
     <aside class="flex-none p-4 pl-2">
-      <ClientMeta client:only clientId={id} />
+      <ClientMeta client:visible {client} />
     </aside>
   </div>
 </PrivateLayout>

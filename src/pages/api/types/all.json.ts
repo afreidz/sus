@@ -2,16 +2,14 @@ import orm from "./schema";
 import type { APIRoute } from "astro";
 import type { ORM } from "@/helpers/orm";
 
-export type surveys = {
-  GET: ORM.SurveyGetPayload<{ include: { questions: true } }>[];
+export type types = {
+  GET: ORM.ScoreTypeGetPayload<{}>[];
 };
 
 export const GET: APIRoute = async () => {
-  const surveys = await orm.survey.findMany({
-    include: { questions: true },
-  });
+  const types = await orm.scoreType.findMany();
 
-  return new Response(JSON.stringify(surveys), {
+  return new Response(JSON.stringify(types), {
     status: 200,
     headers: {
       "Content-Type": "application/json",

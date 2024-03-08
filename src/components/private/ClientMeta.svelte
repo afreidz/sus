@@ -1,14 +1,11 @@
 <script lang="ts">
-  import api from "@/helpers/api";
-  import clients from "@/stores/clients";
-  import type { APIResponses } from "@/api/types";
+  import api, { type APIResponses } from "@/helpers/api";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
   import NewSystemDialog from "@/components/private/NewSystemDialog.svelte";
 
   type SingleClient = APIResponses["clientId"]["GET"];
 
   export let loading = false;
-  export let clientId: string | undefined = undefined;
   export let client: SingleClient | undefined = undefined;
 
   let confirmDeleteClient = false;
@@ -16,10 +13,6 @@
   let confirmElement: HTMLDialogElement;
   let newSystemDialog: HTMLDialogElement;
   let newSystemNameElement: HTMLInputElement;
-
-  $: if (!client && clientId && $clients) {
-    client = $clients.find((c) => c.id === clientId);
-  }
 
   $: if (newSystemNameElement) newSystemNameElement.focus();
 
@@ -29,7 +22,7 @@
       await api({
         method: "DELETE",
         endpoint: "clientId",
-        substitutions: { CLIENT_ID: client.id },
+        substitutions: { clientId: client.id },
       });
       window.location.href = "/clients";
     }
@@ -39,7 +32,7 @@
     if (newSystemDialog.returnValue) {
       await api({
         method: "POST",
-        endpoint: "systemAll",
+        endpoint: "systems",
         body: newSystemDialog.returnValue,
       });
       window.location.reload();
@@ -78,7 +71,7 @@
         <p class="flex justify-between m-0 pb-4 !mb-4">
           <strong class="flex-1">Systems:</strong>
           <span class="text-sm text-sus-surface-0-fg/50"
-            >{client.System.length}</span
+            >{client.systems.length}</span
           >
         </p>
       </div>

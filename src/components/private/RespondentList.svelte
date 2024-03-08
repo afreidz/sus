@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { APIResponses } from "@/api/types";
+  import type { APIResponses } from "@/helpers/api";
 
-  export let respondents: APIResponses["revisionId"]["GET"]["Respondent"] = [];
+  export let respondents: APIResponses["revisionId"]["GET"]["respondents"] = [];
 </script>
 
 <h4 class="label">

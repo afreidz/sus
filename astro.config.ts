@@ -7,10 +7,13 @@ import vercel from "@astrojs/vercel/serverless";
 // https://astro.build/config
 export default defineConfig({
   server: {
-    port: 3333,
+    port: 20000,
   },
   redirects: {
     "/": "/clients",
+  },
+  vite: {
+    envPrefix: "PUBLIC_",
   },
   output: "server",
   adapter: vercel(),

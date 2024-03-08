@@ -1,18 +1,23 @@
 <script lang="ts">
-  import me from "@/stores/me";
   import { signOut } from "auth-astro/client";
+
+  let fname: string;
+  let lname: string;
+  let imageURL: string;
 
   async function handleSignOut() {
     await signOut();
     window.location.reload();
   }
+
+  export { fname, lname, imageURL as image };
 </script>
 
-{#if $me?.user?.image}
+{#if fname && lname && imageURL}
   <div class="flex gap-1 items-center">
     <div class="avatar flex-none w-10 h-10">
       <div class="w-full aspect-square rounded-full">
-        <img src={$me.user.image} alt={`Picture of ${$me.user.name}`} />
+        <img src={imageURL} alt={`Picture of ${fname} ${lname}`} />
       </div>
     </div>
     <div
@@ -21,7 +26,7 @@
       class="dropdown dropdown-bottom dropdown-end flex-1"
     >
       <div class="btn btn-ghost flex text-left">
-        <span class="w-24">{$me?.user?.name}</span>
+        <span class="w-24">{fname}<br />{lname}</span>
         <iconify-icon class="opacity-50 text-lg" icon="dashicons:arrow-down"
         ></iconify-icon>
       </div>

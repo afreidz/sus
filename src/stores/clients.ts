@@ -1,15 +1,11 @@
 import api from "@/helpers/api";
-import type { APIResponses } from "@/api/types";
-import { atom, onMount, task } from "nanostores";
+import { atom } from "nanostores";
+import type { APIResponses } from "@/helpers/api";
 
-const clients = atom<null | APIResponses["clientAll"]["GET"]>(null);
-
-onMount(clients, () => {
-  task(refreshClients);
-});
+const clients = atom<null | APIResponses["clients"]["GET"]>(null);
 
 export async function refreshClients() {
-  clients.set(await api({ endpoint: "clientAll", method: "GET" }));
+  clients.set(await api({ endpoint: "clients", method: "GET" }));
 }
 
 export default clients;

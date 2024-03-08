@@ -1,43 +1,54 @@
 <script lang="ts">
   import z from "zod";
-  import api from "@/helpers/api";
-  import type { APIResponses } from "@/api/types";
+  import { onMount } from "svelte";
+  import copy from "clipboard-copy";
+  import api, { type APIResponses } from "@/helpers/api";
   import RespondentList from "@/components/private/RespondentList.svelte";
 
+  let inviteLink = "";
   let newInviteList = "";
   let revision: APIResponses["revisionId"]["GET"];
   let system: APIResponses["systemId"]["GET"] | undefined;
-  let revisionId: APIResponses["systemId"]["GET"]["Revision"][number]["id"];
+  let revisionId: APIResponses["systemId"]["GET"]["revisions"][number]["id"];
 
-  $: if (revisionId) refreshRevision();
+  onMount(refreshRevision);
+
   $: if (revision) refreshSystem();
+  $: if (revision)
+    inviteLink = `${window.location.origin}/survey/${revision.id}`;
 
   async function refreshSystem() {
     system = await api({
-      endpoint: "systemId",
       method: "GET",
-      substitutions: { SYSTEM_ID: revision.systemId },
+      endpoint: "systemId",
+      substitutions: { systemId: revision.systemId },
     });
   }
 
   async function refreshRevision() {
     revision = await api({
-      endpoint: "revisionId",
       method: "GET",
-      substitutions: { REVISION_ID: revisionId },
+      endpoint: "revisionId",
+      substitutions: { revisionId: revisionId },
     });
   }
 
   async function invite() {
     const isEmail = z.string().email();
-    const list = newInviteList.split(",");
+    const list = newInviteList.split(",").map((l) => l.trim());
 
-    if (!list.every((s) => isEmail.safeParse(s.trim()).success)) return;
+    const validEmails = list.filter((email) => {
+      return isEmail.safeParse(email).success;
+    });
+
+    const invalidEmails = list.filter((email) => {
+      return !isEmail.safeParse(email).success;
+    });
 
     await Promise.all(
-      list.map((email) => {
+      validEmails.map((email) => {
         return api({
-          endpoint: "respondentAll",
+          endpoint: "respondents",
           method: "POST",
           body: JSON.stringify({ email, revisionId }),
         });
@@ -84,9 +95,9 @@
       <button class="btn btn-primary">Invite</button>
     </form>
     <div class="pb-4 border-b border-neutral-100 mb-4">
-      <RespondentList respondents={revision.Respondent} />
+      <RespondentList respondents={revision.respondents} />
     </div>
-    <form on:submit|preventDefault={invite} class="flex gap-2 items-end mb-4">
+    <div class="flex gap-2 items-end mb-4">
       <label class="form-control w-full">
         <div class="label">
           <span class="label-text">Invite link</span>
@@ -94,11 +105,13 @@
         <input
           disabled
           type="text"
-          value={`${window.location.origin}/survey/${revision.id}`}
+          bind:value={inviteLink}
           class="input input-bordered !bg-neutral-100 w-full"
         />
       </label>
-      <button class="btn btn-outline">Copy</button>
-    </form>
+      <button on:click={() => copy(inviteLink)} class="btn btn-outline"
+        >Copy</button
+      >
+    </div>
   {/if}
 </div>

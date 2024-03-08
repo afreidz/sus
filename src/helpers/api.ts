@@ -1,63 +1,107 @@
 import { get } from "svelte/store";
 import me, { refreshMe } from "@/stores/me";
-import type { APIResponses } from "@/api/types";
+import type { me as Me } from "@/api/me.json";
+import type { types } from "@/api/types/all.json";
+import type { surveys } from "@/api/surveys/all.json";
+import type { clients } from "@/api/clients/all.json";
+import type { systems } from "@/api/systems/all.json";
+import type { clientId } from "@/api/clients/[id].json";
+import type { surveyId } from "@/api/surveys/[id].json";
+import type { systemId } from "@/api/systems/[id].json";
+import type { revisions } from "@/api/revisions/all.json";
+import type { revisionId } from "@/api/revisions/[id].json";
+import type { respondents } from "@/api/respondents/all.json";
+import type { surveyType } from "@/api/surveys/type/[type].json";
 
-export const endpoints = {
-  me: "/api/me.json",
-  clientAll: "/api/clients/all.json",
-  clientId: "/api/clients/CLIENT_ID.json",
-  systemAll: "/api/systems/all.json",
-  systemId: "/api/systems/SYSTEM_ID.json",
-  revisionAll: "/api/revisions/all.json",
-  revisionId: "/api/revisions/REVISION_ID.json",
-  surveyAll: "/api/surveys/all.json",
-  surveyId: "/api/survey/SURVEY_ID.json",
-  respondentAll: "/api/respondents/all.json",
+export type APIResponses = {
+  me: Me;
+  types: types;
+  surveys: surveys;
+  systems: systems;
+  clients: clients;
+  surveyId: surveyId;
+  clientId: clientId;
+  systemId: systemId;
+  revisions: revisions;
+  surveyType: surveyType;
+  revisionId: revisionId;
+  respondents: respondents;
 };
-
-export type Substitution = Record<string, string | undefined>;
-export type SearchParams = Record<string, string | string[] | undefined>;
 
 type Endpoints = keyof typeof endpoints;
 
-export type APIProps<E, M> = {
+type EndpointsWithCustomSubstitutions = Extract<
+  Endpoints,
+  `${string}_${string}`
+>;
+
+type EndpointsWithSubstitutions = Extract<
+  Endpoints,
+  `${string}Id` | `${string}Type`
+>;
+
+type Substitutions<E> = E extends undefined | EndpointsWithCustomSubstitutions
+  ? Record<string, string | undefined>
+  : E extends EndpointsWithSubstitutions
+    ? { [k in Extract<EndpointsWithSubstitutions, E>]: string } & Record<
+        string,
+        string | undefined
+      >
+    : never;
+
+type SearchParams = Record<string, string | string[] | undefined>;
+
+type APIProps<E, M> = {
   method?: M;
   endpoint: E;
   body?: string;
   base?: string | URL;
   searchParams?: SearchParams;
-  substitutions?: Substitution;
+  substitutions?: Substitutions<E>;
+  headers?: RequestInit["headers"];
   signal?: AbortController["signal"];
 } & RequestInit;
+
+export const endpoints = {
+  me: "/api/me.json",
+  types: "/api/types/all.json",
+  clients: "/api/clients/all.json",
+  systems: "/api/systems/all.json",
+  surveys: "/api/surveys/all.json",
+  revisions: "/api/revisions/all.json",
+  clientId: "/api/clients/{clientId}.json",
+  systemId: "/api/systems/{systemId}.json",
+  surveyId: "/api/surveys/{surveyId}.json",
+  respondents: "/api/respondents/all.json",
+  revisionId: "/api/revisions/{revisionId}.json",
+  surveyType: "/api/surveys/type/{surveyType}.json",
+} as const;
 
 export default async function api<
   E extends Endpoints,
   M extends keyof APIResponses[E],
 >({
   body,
+  base,
   signal,
   method,
+  headers: h,
   endpoint: e,
   searchParams,
   substitutions,
-  base = window.location.href,
   ...fetchProps
 }: APIProps<E, M>): Promise<APIResponses[E][M]> {
   let endpoint = `${endpoints[e]}`;
 
-  const headers = new Headers({
-    "Content-Type": "application/json",
-    ...fetchProps?.headers,
-  });
-
-  if (headers.get("Content-Type") === "") headers.delete("Content-Type");
+  const headers = new Headers(h) ?? new Headers({});
+  headers.set("Content-Type", "application/json");
 
   Object.entries(substitutions || {}).forEach((sub) => {
     if (typeof sub[1] === "string")
-      endpoint = endpoint.replaceAll(sub[0], sub[1]);
+      endpoint = endpoint.replaceAll(`{${sub[0]}}`, sub[1]);
   });
 
-  const url = new URL(endpoint, base);
+  const url = new URL(endpoint, base || import.meta.env.PUBLIC_API_ORIGIN);
 
   Object.entries(searchParams || {}).forEach(([key, value]) => {
     if (key && Array.isArray(value)) {

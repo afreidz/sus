@@ -1,13 +1,13 @@
 import orm from "./schema";
 import type { APIRoute } from "astro";
-import type { Prisma } from "@prisma/client";
+import type { ORM } from "@/helpers/orm";
 
 export type revisionId = {
-  GET: Prisma.RevisionGetPayload<{
-    include: { system: true; survey: true; Respondent: true };
+  GET: ORM.RevisionGetPayload<{
+    include: { system: true; surveys: true; respondents: true };
   }>;
-  PUT: Prisma.RevisionGetPayload<{
-    include: { system: true; survey: true };
+  PUT: ORM.RevisionGetPayload<{
+    include: { system: true; surveys: true; respondents: true };
   }>;
   DELETE: { success: boolean };
 };
@@ -15,7 +15,7 @@ export type revisionId = {
 export const GET: APIRoute = async ({ params }) => {
   const revision = await orm.revision.findFirst({
     where: { id: params.id },
-    include: { system: true, survey: true, Respondent: true },
+    include: { system: true, surveys: true, respondents: true },
   });
 
   return new Response(JSON.stringify(revision), {

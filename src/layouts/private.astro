@@ -1,7 +1,13 @@
 ---
 import BaseLayout from "./base.astro";
+import { getSession } from "auth-astro/server";
 import Logo from "@/components/common/Logo.svelte";
 import AvatarMenu from "@/components/private/AvatarMenu.svelte";
+
+const session = await getSession(Astro.request);
+const fname = session?.user?.name?.split(" ")[0] ?? "";
+const lname = session?.user?.name?.split(" ")[1] ?? "";
+const image = session?.user?.image ?? "";
 
 const { class: className } = Astro.props;
 ---
@@ -11,7 +17,7 @@ const { class: className } = Astro.props;
     <div class="flex-1">
       <Logo />
     </div>
-    <AvatarMenu client:only />
+    <AvatarMenu client:visible {fname} {lname} {image} />
   </div>
   <div class={className ?? ""}>
     <slot />

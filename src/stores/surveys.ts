@@ -1,15 +1,21 @@
 import api from "@/helpers/api";
-import type { APIResponses } from "@/api/types";
-import { task, onMount, atom } from "nanostores";
+import { atom } from "nanostores";
+import type { APIResponses } from "@/helpers/api";
 
-const surveys = atom<null | APIResponses["surveyAll"]["GET"]>(null);
-
-onMount(surveys, () => {
-  task(refreshSurveys);
-});
+const surveys = atom<null | APIResponses["surveyType"]["GET"]>(null);
 
 export async function refreshSurveys() {
-  surveys.set(await api({ endpoint: "surveyAll", method: "GET" }));
+  const types = await api({ endpoint: "types", method: "GET" });
+  const surveyType = types.find((t) => t.type === "sus")?.id;
+
+  if (!surveyType) return surveys.set([]);
+  surveys.set(
+    await api({
+      endpoint: "surveyType",
+      method: "GET",
+      substitutions: { surveyType },
+    })
+  );
 }
 
 export default surveys;

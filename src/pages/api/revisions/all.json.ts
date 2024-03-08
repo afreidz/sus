@@ -1,19 +1,19 @@
 import orm from "./schema";
 import type { APIRoute } from "astro";
-import type { Prisma } from "@prisma/client";
+import type { ORM } from "@/helpers/orm";
 
-export type revisionAll = {
-  GET: Prisma.RevisionGetPayload<{
-    include: { system: true; survey: true; Respondent: true };
+export type revisions = {
+  GET: ORM.RevisionGetPayload<{
+    include: { system: true; surveys: true; respondents: true };
   }>[];
-  POST: Prisma.RevisionGetPayload<{
-    include: { system: true; survey: true };
+  POST: ORM.RevisionGetPayload<{
+    include: { system: true; surveys: true };
   }>;
 };
 
 export const GET: APIRoute = async () => {
   const revisions = await orm.revision.findMany({
-    include: { system: true, survey: true, Respondent: true },
+    include: { system: true, surveys: true, respondents: true },
   });
 
   return new Response(JSON.stringify(revisions), {

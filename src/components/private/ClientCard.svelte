@@ -1,15 +1,13 @@
 <script lang="ts">
-  import me from "@/stores/me";
-  import api from "@/helpers/api";
-  import clients from "@/stores/clients";
-  import type { Prisma, APIResponses } from "@/api/types";
+  import type { ORM } from "@/helpers/orm";
+  import api, { type APIResponses } from "@/helpers/api";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
   import NewSystemDialog from "@/components/private/NewSystemDialog.svelte";
 
   type SingleClient = APIResponses["clientId"]["GET"];
 
+  export let name = "";
   export let loading = false;
-  export let clientId: string | undefined = undefined;
   export let client: SingleClient | undefined = undefined;
 
   let confirmDeleteClient = false;
@@ -18,19 +16,15 @@
   let newSystemDialog: HTMLDialogElement;
   let newClientNameElement: HTMLInputElement;
 
-  $: if (!client && clientId && $clients) {
-    client = $clients.find((c) => c.id === clientId);
-  }
-
   $: if (newClientNameElement) newClientNameElement.focus();
 
   async function createNewClient() {
-    const newClient: Omit<Prisma.ClientCreateInput, "createdBy"> = {
+    const newClient: Omit<ORM.ClientCreateInput, "createdBy"> = {
       name: newClientNameElement.value,
     };
 
     await api({
-      endpoint: "clientAll",
+      endpoint: "clients",
       method: "POST",
       body: JSON.stringify(newClient),
     });
@@ -43,9 +37,9 @@
     confirmDeleteClient = false;
     if (client && confirmElement.returnValue === client.name) {
       await api({
-        endpoint: "clientId",
-        substitutions: { CLIENT_ID: client.id },
         method: "DELETE",
+        endpoint: "clientId",
+        substitutions: { clientId: client.id },
       });
       window.location.reload();
     }
@@ -55,7 +49,7 @@
     if (newSystemDialog.returnValue) {
       await api({
         method: "POST",
-        endpoint: "systemAll",
+        endpoint: "systems",
         body: newSystemDialog.returnValue,
       });
       if (client) window.location.href = `/clients/${client.id}`;
@@ -81,7 +75,7 @@
       <div class="card-body justify-center">
         <div class="flex-1">
           <h3 class="font-semibold m-0 text-lg">
-            Hello {$me?.user?.name}!
+            Hello{` ${name}` ?? ""}!
           </h3>
           <label for="new_client_name" class="text-sus-surface-30 text-sm">
             Wecome to SUS. Would you like to create a new client?
@@ -105,8 +99,8 @@
       href={`/clients/${client.id}`}
     >
       <span class="link link-primary">{client.name}</span>
-      {#if client.System?.length}
-        <span class="text-sm">{client.System.length} System(s)</span>
+      {#if client.systems?.length}
+        <span class="text-sm">{client.systems.length} System(s)</span>
       {/if}
     </a>
     <div class="card-actions justify-end">
