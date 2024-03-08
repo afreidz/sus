@@ -7,7 +7,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (
     url.pathname.startsWith("/auth/login") ||
     url.pathname.startsWith("/api/auth") ||
-    url.pathname.startsWith("/survey")
+    url.pathname.startsWith("/surveys/sus") ||
+    url.pathname.startsWith("/api/public")
   )
     return next();
 

@@ -15,7 +15,7 @@
 
   $: if (revision) refreshSystem();
   $: if (revision)
-    inviteLink = `${window.location.origin}/survey/${revision.id}`;
+    inviteLink = `${window.location.origin}/surveys/sus/${revision.id}`;
 
   async function refreshSystem() {
     system = await api({
@@ -102,12 +102,17 @@
         <div class="label">
           <span class="label-text">Invite link</span>
         </div>
-        <input
-          disabled
-          type="text"
-          bind:value={inviteLink}
-          class="input input-bordered !bg-neutral-100 w-full"
-        />
+        <div class="flex">
+          <a class="btn btn-outline me-2" href={inviteLink} target="_blank">
+            <iconify-icon class="text-xl" icon="carbon:view"></iconify-icon>
+          </a>
+          <input
+            disabled
+            type="text"
+            bind:value={inviteLink}
+            class="input input-bordered !bg-neutral-100 w-full"
+          />
+        </div>
       </label>
       <button on:click={() => copy(inviteLink)} class="btn btn-outline"
         >Copy</button

@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "./base.astro";
 import { getSession } from "auth-astro/server";
-import Logo from "@/components/common/Logo.svelte";
+import Logo from "@/components/private/Logo.svelte";
 import AvatarMenu from "@/components/private/AvatarMenu.svelte";
 
 const session = await getSession(Astro.request);

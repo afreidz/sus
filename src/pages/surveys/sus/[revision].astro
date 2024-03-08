@@ -1,0 +1,44 @@
+---
+import api from "@/helpers/api";
+import PublicLayout from "@/layouts/public.astro";
+import Survey from "@/components/public/Survey.svelte";
+import Sidebar from "@/components/public/Sidebar.svelte";
+
+const { revision: rid } = Astro.params;
+
+const typeId = (
+  await api({
+    endpoint: "typesType",
+    base: Astro.url.origin,
+    headers: Astro.request.headers,
+    substitutions: { typesType: "sus" },
+  })
+)?.id;
+
+const revision =
+  typeId === ""
+    ? null
+    : await api({
+        endpoint: "revisionSurveyType",
+        method: "GET",
+        base: Astro.url.origin,
+        headers: Astro.request.headers,
+        substitutions: {
+          typeId,
+          revisionId: rid ?? "",
+        },
+      });
+---
+
+{
+  revision && (
+    <PublicLayout class="w-full flex-none flex">
+      <Sidebar
+        slot="sidebar"
+        system={`${revision?.system.title}: ${revision?.title}`}
+        client:load
+      />
+      <Survey client:load {revision} />
+    </PublicLayout>
+  )
+}

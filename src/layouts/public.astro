@@ -1,0 +1,18 @@
+---
+import BaseLayout from "./base.astro";
+
+const { class: className } = Astro.props;
+---
+
+<BaseLayout>
+  <main class="flex-1 flex overflow-auto">
+    <aside
+      class="flex-none flex flex-col p-6 bg-neutral shadow-sm w-full max-w-sm fixed left-0 top-0 bottom-0"
+    >
+      <slot name="sidebar" />
+    </aside>
+    <div class={`pl-96 ${className ?? ""}`}>
+      <slot />
+    </div>
+  </main>
+</BaseLayout>

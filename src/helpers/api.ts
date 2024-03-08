@@ -1,21 +1,24 @@
 import { get } from "svelte/store";
 import me, { refreshMe } from "@/stores/me";
 import type { me as Me } from "@/api/me.json";
-import type { types } from "@/api/types/all.json";
 import type { surveys } from "@/api/surveys/all.json";
 import type { clients } from "@/api/clients/all.json";
 import type { systems } from "@/api/systems/all.json";
 import type { clientId } from "@/api/clients/[id].json";
 import type { surveyId } from "@/api/surveys/[id].json";
 import type { systemId } from "@/api/systems/[id].json";
+import type { types } from "@/api/public/types/all.json";
 import type { revisions } from "@/api/revisions/all.json";
+import type { type } from "@/api/public/types/[type].json";
 import type { revisionId } from "@/api/revisions/[id].json";
 import type { respondents } from "@/api/respondents/all.json";
 import type { surveyType } from "@/api/surveys/type/[type].json";
+import type { revisionSurveyType } from "@/api/public/surveys/[revision]/[type]/first.json";
 
 export type APIResponses = {
   me: Me;
   types: types;
+  typesType: type;
   surveys: surveys;
   systems: systems;
   clients: clients;
@@ -26,30 +29,37 @@ export type APIResponses = {
   surveyType: surveyType;
   revisionId: revisionId;
   respondents: respondents;
+  revisionSurveyType: revisionSurveyType;
 };
 
 type Endpoints = keyof typeof endpoints;
 
-type EndpointsWithCustomSubstitutions = Extract<
-  Endpoints,
-  `${string}_${string}`
->;
+type EndpointsWithCustomSubstitutions = "revisionSurveyType";
 
 type EndpointsWithSubstitutions = Extract<
   Endpoints,
   `${string}Id` | `${string}Type`
 >;
 
-type Substitutions<E> = E extends undefined | EndpointsWithCustomSubstitutions
+type Substitutions<E> = E extends undefined
   ? Record<string, string | undefined>
-  : E extends EndpointsWithSubstitutions
-    ? { [k in Extract<EndpointsWithSubstitutions, E>]: string } & Record<
-        string,
-        string | undefined
-      >
-    : never;
+  : E extends EndpointsWithCustomSubstitutions
+    ? CustomSubstitutions[E]
+    : E extends EndpointsWithSubstitutions
+      ? { [k in Extract<EndpointsWithSubstitutions, E>]: string } & Record<
+          string,
+          string | undefined
+        >
+      : never;
 
 type SearchParams = Record<string, string | string[] | undefined>;
+
+type CustomSubstitutions = {
+  revisionSurveyType: {
+    revisionId: string;
+    typeId: string;
+  };
+};
 
 type APIProps<E, M> = {
   method?: M;
@@ -64,17 +74,19 @@ type APIProps<E, M> = {
 
 export const endpoints = {
   me: "/api/me.json",
-  types: "/api/types/all.json",
   clients: "/api/clients/all.json",
   systems: "/api/systems/all.json",
   surveys: "/api/surveys/all.json",
+  types: "/api/public/types/all.json",
   revisions: "/api/revisions/all.json",
   clientId: "/api/clients/{clientId}.json",
   systemId: "/api/systems/{systemId}.json",
   surveyId: "/api/surveys/{surveyId}.json",
   respondents: "/api/respondents/all.json",
   revisionId: "/api/revisions/{revisionId}.json",
+  typesType: "/api/public/types/{typesType}.json",
   surveyType: "/api/surveys/type/{surveyType}.json",
+  revisionSurveyType: "/api/public/surveys/{revisionId}/{typeId}/first.json",
 } as const;
 
 export default async function api<
