@@ -106,6 +106,7 @@ model Question {
   createdBy                 String
   text                      String
   mediaLocation             String?
+  positive                  Boolean              @default(true)
   surveys                   SurveyQuestions[]
   responses                 RespondentResponse[]
   curratedQuestionResponses QuestionResponse[]
@@ -118,6 +119,7 @@ model CurratedResponse {
   createdBy String
   label     String
   value     String
+  susValue  Int?
   questions QuestionResponse[]
   responses RespondentResponse[]
 }

@@ -113,7 +113,8 @@ const warm_fg = {
 const primary_bg = {
   0: "#ffffff",
   20: "#d0effb",
-  40: "#67ACB6",
+  40: "#95C4CB",
+  45: "#67ACB6",
   60: "#0A506A",
   80: "#04232f",
 };
@@ -127,7 +128,7 @@ const primary_fg = {
 
 type TailwindColorPalette = Record<
   number | string,
-  { fg: string, bg: string, DEFAULT: string }
+  { fg: string; bg: string; DEFAULT: string }
 >;
 type RawColorPalette = Record<number | string, string>;
 
