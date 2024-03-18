@@ -5,8 +5,9 @@
   import api, { type APIResponses } from "@/helpers/api";
   import RespondentList from "@/components/private/RespondentList.svelte";
 
-  let inviteLink = "";
+  let surveyId: string;
   let newInviteList = "";
+  let surveyTestLink = "";
   let revision: APIResponses["revisionId"]["GET"];
   let system: APIResponses["systemId"]["GET"] | undefined;
   let revisionId: APIResponses["systemId"]["GET"]["revisions"][number]["id"];
@@ -15,7 +16,7 @@
 
   $: if (revision) refreshSystem();
   $: if (revision)
-    inviteLink = `${window.location.origin}/surveys/sus/${revision.id}`;
+    surveyTestLink = `${window.location.origin}/surveys/sus/${revision.id}`;
 
   async function refreshSystem() {
     system = await api({
@@ -50,7 +51,7 @@
         return api({
           endpoint: "respondents",
           method: "POST",
-          body: JSON.stringify({ email, revisionId }),
+          body: JSON.stringify({ email, revisionId, surveyId }),
         });
       })
     );
@@ -59,7 +60,7 @@
     await refreshRevision();
   }
 
-  export { revisionId as revision };
+  export { revisionId as revision, surveyId as survey };
 </script>
 
 <div
@@ -100,21 +101,21 @@
     <div class="flex gap-2 items-end mb-4">
       <label class="form-control w-full">
         <div class="label">
-          <span class="label-text">Invite link</span>
+          <span class="label-text">Test survey link</span>
         </div>
         <div class="flex">
-          <a class="btn btn-outline me-2" href={inviteLink} target="_blank">
+          <a class="btn btn-outline me-2" href={surveyTestLink} target="_blank">
             <iconify-icon class="text-xl" icon="carbon:view"></iconify-icon>
           </a>
           <input
             disabled
             type="text"
-            bind:value={inviteLink}
+            bind:value={surveyTestLink}
             class="input input-bordered !bg-neutral-100 w-full"
           />
         </div>
       </label>
-      <button on:click={() => copy(inviteLink)} class="btn btn-outline"
+      <button on:click={() => copy(surveyTestLink)} class="btn btn-outline"
         >Copy</button
       >
     </div>

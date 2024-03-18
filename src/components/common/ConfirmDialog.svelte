@@ -1,3 +1,9 @@
+<script context="module" lang="ts">
+  const defaultConfirmValue = "confirm";
+
+  export { defaultConfirmValue };
+</script>
+
 <script lang="ts">
   export let open: boolean = false;
   export let elm: HTMLDialogElement;
@@ -17,13 +23,11 @@
     class="modal-box bg-neutral"
     on:submit|preventDefault={() =>
       elm.close(
-        confirmText
-          ? confirmTextValue === confirmText
-            ? confirmText
-            : ""
-          : confirmTextValue === "confirm"
-            ? "confirm"
-            : ""
+        confirmText && confirmTextValue === confirmText
+          ? confirmText
+          : confirmText && confirmTextValue !== confirmText
+            ? ""
+            : defaultConfirmValue
       )}
   >
     <h3 class="font-bold text-lg">{title}</h3>

@@ -14,12 +14,15 @@
 
   let active: SingleSystem["id"];
   let showNewSystemDialog = false;
+  let sections: HTMLInputElement[] = [];
   let newSystemDialog: HTMLDialogElement;
   let newRevisionDialog: HTMLDialogElement;
+  let deleteSystemDialog: HTMLDialogElement;
   let systems: Promise<SingleSystem>[] = [];
   let deleteRevisionDialog: HTMLDialogElement;
   let showNewRevisionDialogSystem: SingleSystem | null = null;
   let revisionToDelete: SingleRevision | undefined = undefined;
+  let systemToDelete: SingleClient["systems"][number] | undefined = undefined;
 
   onMount(() => {
     if (client.systems.length) {
@@ -77,6 +80,22 @@
     showNewRevisionDialogSystem = s as SingleSystem;
   }
 
+  async function deleteSystem() {
+    if (deleteSystemDialog.returnValue !== systemToDelete?.title) {
+      systemToDelete = undefined;
+      return;
+    }
+
+    await api({
+      endpoint: "systemId",
+      method: "DELETE",
+      substitutions: { systemId: systemToDelete.id },
+    });
+
+    systemToDelete = undefined;
+    await refreshClient();
+  }
+
   async function deleteRevision() {
     if (deleteRevisionDialog.returnValue !== revisionToDelete?.title) {
       revisionToDelete = undefined;
@@ -127,26 +146,38 @@
             on:change={(e) => {
               if (e.currentTarget.checked) active = system.id;
             }}
+            bind:this={sections[x]}
             checked={active?.includes(system.id)}
-            name={`client_systems_${client.id}`}
+            name={`client_systems_${system.id}`}
           />
 
-          <div class="collapse-title flex justify-between">
+          <div class="collapse-title flex items-center justify-between pr-4">
             <strong class="text-xl font-medium">{system.title}</strong>
-            <a
-              href={`/systems/${system.id}`}
-              class="flex items-center gap-2 group opacity-30 hover:opacity-80 transition-opacity duration-300 z-10 relative"
-            >
-              <span
-                class="font-medium group-hover:opacity-100 opacity-0 transition-opacity duration-300"
-                >View Details</span
+            <div class="dropdown dropdown-end rounded-box">
+              <!-- svelte-ignore a11y-click-events-have-key-events -->
+              <div
+                tabindex="0"
+                role="button"
+                on:focus={() => sections[x]?.click()}
+                on:click={() => sections[x]?.click()}
+                class="btn btn-square btn-ghost btn-sm m-1 relative z-10 text-xl"
               >
-              <iconify-icon
-                width="30"
-                height="30"
-                icon="ic:outline-arrow-circle-right"
-              ></iconify-icon>
-            </a>
+                <iconify-icon icon="iconamoon:menu-kebab-vertical-fill"
+                ></iconify-icon>
+              </div>
+              <ul
+                class="dropdown-content menu w-56 bg-neutral rounded-box absolute z-10 shadow text-left"
+              >
+                <li>
+                  <a href={`/systems/${system.id}`}> View Details </a>
+                </li>
+                <li class="text-error">
+                  <button on:click={() => (systemToDelete = system)}>
+                    Delete!
+                  </button>
+                </li>
+              </ul>
+            </div>
           </div>
           <div
             class="collapse-content bg-sus-surface-90 text-sus-surface-90-fg flex flex-col"
@@ -249,20 +280,28 @@
     open={showNewSystemDialog}
     on:close={createNewSystem}
   />
-{/if}
-<NewRevisionDialog
-  bind:elm={newRevisionDialog}
-  on:close={createNewRevision}
-  open={!!showNewRevisionDialogSystem}
-  system={showNewRevisionDialogSystem}
-/>
-{#if revisionToDelete}
-  <ConfirmDialog
-    open
-    on:close={deleteRevision}
-    bind:elm={deleteRevisionDialog}
-    bind:confirmText={revisionToDelete["title"]}
-  >
-    Deleting the revision will also delete any respondents and responses.
-  </ConfirmDialog>
+  <NewRevisionDialog
+    bind:elm={newRevisionDialog}
+    on:close={createNewRevision}
+    open={!!showNewRevisionDialogSystem}
+    system={showNewRevisionDialogSystem}
+  />
+  {#if systemToDelete}
+    <ConfirmDialog
+      open
+      on:close={deleteSystem}
+      bind:elm={deleteSystemDialog}
+      bind:confirmText={systemToDelete.title}
+    ></ConfirmDialog>
+  {/if}
+  {#if revisionToDelete}
+    <ConfirmDialog
+      open
+      on:close={deleteRevision}
+      bind:elm={deleteRevisionDialog}
+      bind:confirmText={revisionToDelete.title}
+    >
+      Deleting the revision will also delete any respondents and responses.
+    </ConfirmDialog>
+  {/if}
 {/if}

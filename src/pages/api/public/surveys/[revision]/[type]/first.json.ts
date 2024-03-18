@@ -1,4 +1,4 @@
-import orm from "../../../../surveys/schema";
+import orm from "./schema";
 import type { APIRoute } from "astro";
 import type { ORM } from "@/helpers/orm";
 

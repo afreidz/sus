@@ -61,6 +61,7 @@ model Survey {
   revisions   RevisionSurvey[]
   scoreTypeId String?
   scoreType   ScoreType?        @relation(fields: [scoreTypeId], references: [id])
+  Respondent  Respondent[]
 }
 
 model ScoreType {
@@ -125,9 +126,12 @@ model Respondent {
   email      String
   revision   Revision             @relation(fields: [revisionId], references: [id], onDelete: Cascade)
   revisionId String
+  survey     Survey               @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  surveyId   String
+  complete   Boolean              @default(false)
   responses  RespondentResponse[]
 
-  @@unique([email, revisionId])
+  @@unique([email, revisionId, surveyId])
 }
 
 model RespondentResponse {

@@ -1,5 +1,4 @@
-import { get } from "svelte/store";
-import me, { refreshMe } from "@/stores/me";
+import { refreshMe } from "@/stores/me";
 import type { me as Me } from "@/api/me.json";
 import type { surveys } from "@/api/surveys/all.json";
 import type { clients } from "@/api/clients/all.json";
@@ -12,8 +11,12 @@ import type { revisions } from "@/api/revisions/all.json";
 import type { type } from "@/api/public/types/[type].json";
 import type { revisionId } from "@/api/revisions/[id].json";
 import type { respondents } from "@/api/respondents/all.json";
+import type { response } from "@/api/public/responses/all.json";
+import type { respondentId } from "@/api/respondents/[id].json";
 import type { surveyType } from "@/api/surveys/type/[type].json";
+import type { publicRespondentId } from "@/api/public/respondents/[id].json";
 import type { revisionSurveyType } from "@/api/public/surveys/[revision]/[type]/first.json";
+import type { respondentResponses } from "@/api/public/responses/revision/[revisionId]/respondent/[respondentId].json";
 
 export type APIResponses = {
   me: Me;
@@ -25,16 +28,22 @@ export type APIResponses = {
   surveyId: surveyId;
   clientId: clientId;
   systemId: systemId;
+  responses: response;
   revisions: revisions;
   surveyType: surveyType;
   revisionId: revisionId;
   respondents: respondents;
+  respondentId: respondentId;
+  publicRespondentId: publicRespondentId;
   revisionSurveyType: revisionSurveyType;
+  respondentResponseRevision: respondentResponses;
 };
 
 type Endpoints = keyof typeof endpoints;
 
-type EndpointsWithCustomSubstitutions = "revisionSurveyType";
+type EndpointsWithCustomSubstitutions =
+  | "revisionSurveyType"
+  | "respondentResponseRevision";
 
 type EndpointsWithSubstitutions = Extract<
   Endpoints,
@@ -59,6 +68,10 @@ type CustomSubstitutions = {
     revisionId: string;
     typeId: string;
   };
+  respondentResponseRevision: {
+    revisionId: string;
+    respondentId: string;
+  };
 };
 
 type APIProps<E, M> = {
@@ -79,14 +92,19 @@ export const endpoints = {
   surveys: "/api/surveys/all.json",
   types: "/api/public/types/all.json",
   revisions: "/api/revisions/all.json",
+  respondents: "/api/respondents/all.json",
   clientId: "/api/clients/{clientId}.json",
   systemId: "/api/systems/{systemId}.json",
   surveyId: "/api/surveys/{surveyId}.json",
-  respondents: "/api/respondents/all.json",
+  responses: "/api/public/responses/all.json",
   revisionId: "/api/revisions/{revisionId}.json",
   typesType: "/api/public/types/{typesType}.json",
   surveyType: "/api/surveys/type/{surveyType}.json",
+  respondentId: "/api/respondents/{respondentId}.json",
+  publicRespondentId: "/api/public/respondents/{publicRespondentId}.json",
   revisionSurveyType: "/api/public/surveys/{revisionId}/{typeId}/first.json",
+  respondentResponseRevision:
+    "/api/public/responses/revision/{revisionId}/respondent/{respondentId}.json",
 } as const;
 
 export default async function api<
@@ -124,12 +142,12 @@ export default async function api<
   });
 
   if (method === "POST" && body) {
-    await refreshMe();
-    if (!get(me)?.user?.email)
-      throw new Error("unable to determine who is creating this record");
-    const bodyData = JSON.parse(body);
-    bodyData.createdBy = get(me)?.user?.email;
-    body = JSON.stringify(bodyData);
+    const account = await refreshMe().catch(() => null);
+    if (account?.user?.email) {
+      const bodyData = JSON.parse(body);
+      bodyData.createdBy = account.user.email;
+      body = JSON.stringify(bodyData);
+    }
   }
 
   const resp = await fetch(url, {

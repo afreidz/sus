@@ -3,7 +3,9 @@
   import type { APIResponses } from "@/helpers/api";
   import { activeRevisionsBySystem as actives } from "@/stores/actives";
 
-  export let system: APIResponses["systemId"]["GET"];
+  let vertical = false;
+  let classList: string;
+  let system: APIResponses["systemId"]["GET"];
 
   $: if ($actives[system.id])
     history.replaceState(null, "", `#${$actives[system.id]}`);
@@ -15,10 +17,12 @@
       actives.setKey(system.id, window.location.hash.replace("#", ""));
     }
   });
+
+  export { system, vertical, classList as class };
 </script>
 
-<div role="tablist" class="w-full">
-  <ul class="timeline">
+<div role="tablist" class={classList ?? ""}>
+  <ul class="timeline" class:timeline-vertical={vertical}>
     {#each system.revisions as revision, i}
       <li>
         {#if i !== 0}<hr />{/if}

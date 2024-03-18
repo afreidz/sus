@@ -1,9 +1,11 @@
 import Client, { z, type ORM } from "@/helpers/orm";
 
 export const RespondentCreateSchema = z.object({
-  revisionId: z.string(),
+  surveyId: z.string(),
   createdBy: z.string(),
+  revisionId: z.string(),
   email: z.string().email(),
+  complete: z.boolean().optional(),
 }) satisfies z.Schema<ORM.RespondentUncheckedCreateInput>;
 
 export default new Client().$extends({
