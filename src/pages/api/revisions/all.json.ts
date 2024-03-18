@@ -8,7 +8,11 @@ export type revisions = {
       system: true;
       surveys: {
         include: {
-          survey: { include: { questions: { include: { question: true } } } };
+          survey: {
+            include: {
+              questions: { include: { question: true } };
+            };
+          };
         };
       };
       respondents: { include: { responses: true } };
@@ -25,7 +29,11 @@ export const GET: APIRoute = async () => {
       system: true,
       surveys: {
         include: {
-          survey: { include: { questions: { include: { question: true } } } },
+          survey: {
+            include: {
+              questions: { include: { question: true } },
+            },
+          },
         },
       },
       respondents: { include: { responses: true } },

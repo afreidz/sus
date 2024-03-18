@@ -8,7 +8,12 @@ export type revisionId = {
       system: true;
       surveys: {
         include: {
-          survey: { include: { questions: { include: { question: true } } } };
+          survey: {
+            include: {
+              questionOrdering: true;
+              questions: { include: { question: true } };
+            };
+          };
         };
       };
       respondents: {
@@ -33,13 +38,29 @@ export const GET: APIRoute = async ({ params }) => {
       system: true,
       surveys: {
         include: {
-          survey: { include: { questions: { include: { question: true } } } },
+          survey: {
+            include: {
+              questionOrdering: true,
+              questions: { include: { question: true } },
+            },
+          },
         },
       },
       respondents: {
         include: { responses: { include: { curratedResponse: true } } },
       },
     },
+  });
+
+  revision?.surveys.forEach((revisionSurvey) => {
+    const survey = revisionSurvey.survey;
+    if (survey && survey.questionOrdering) {
+      survey.questions = survey.questionOrdering.order
+        .map((id) => {
+          return survey.questions.find((q) => q.questionId === id);
+        })
+        .filter(Boolean) as typeof survey.questions;
+    }
   });
 
   return new Response(JSON.stringify(revision), {

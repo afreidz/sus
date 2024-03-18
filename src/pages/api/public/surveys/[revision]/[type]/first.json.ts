@@ -15,11 +15,15 @@ export type revisionSurveyType = {
         include: {
           survey: {
             include: {
+              responseOrdering: true;
+              questionOrdering: true;
               questions: {
                 include: {
                   question: {
                     include: {
-                      curratedQuestionResponse: { include: { response: true } };
+                      curratedQuestionResponses: {
+                        include: { response: true };
+                      };
                     };
                   };
                 };
@@ -48,11 +52,15 @@ export const GET: APIRoute = async ({ params }) => {
         include: {
           survey: {
             include: {
+              responseOrdering: true,
+              questionOrdering: true,
               questions: {
                 include: {
                   question: {
                     include: {
-                      curratedQuestionResponse: { include: { response: true } },
+                      curratedQuestionResponses: {
+                        include: { response: true },
+                      },
                     },
                   },
                 },
@@ -62,6 +70,31 @@ export const GET: APIRoute = async ({ params }) => {
         },
       },
     },
+  });
+
+  revision?.surveys.forEach((revisionSurvey) => {
+    const survey = revisionSurvey.survey;
+    console.log(survey.questionOrdering?.order);
+    if (survey && survey.questionOrdering) {
+      survey.questions = survey.questionOrdering.order
+        .map((id) => {
+          return survey.questions.find((q) => q.questionId === id);
+        })
+        .filter(Boolean) as typeof survey.questions;
+    }
+    if (survey.responseOrdering) {
+      survey.questions.forEach((sq) => {
+        if (sq.question.curratedQuestionResponses) {
+          sq.question.curratedQuestionResponses = survey.responseOrdering?.order
+            .map((id) => {
+              return sq.question.curratedQuestionResponses.find(
+                (cr) => cr.responseId === id
+              );
+            })
+            .filter(Boolean) as typeof sq.question.curratedQuestionResponses;
+        }
+      });
+    }
   });
 
   return new Response(JSON.stringify(revision), {

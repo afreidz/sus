@@ -47,7 +47,7 @@
     const form = target as HTMLFormElement;
     const value = (form.elements.namedItem(q.id) as RadioNodeList).value;
 
-    const response = q.curratedQuestionResponse.find(
+    const response = q.curratedQuestionResponses.find(
       (cr) => cr.response.value === value
     )?.response;
 
@@ -139,7 +139,7 @@
             {question.text}
           </h2>
           <ul class="join join-vertical xl:join-horizontal">
-            {#each question.curratedQuestionResponse as curratedResponse}
+            {#each question.curratedQuestionResponses as curratedResponse}
               {@const response = curratedResponse.response}
               <li
                 class="join-item btn btn-outline btn-lg bg-neutral border-neutral-300 has-[:checked]:border-sus-primary-60 has-[:checked]:ring-1 ring-sus-primary-60 has-[:checked]:z-10"

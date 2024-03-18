@@ -11,8 +11,8 @@
   onMount(async () => {
     await refreshTypes();
     revision = await api({
-      endpoint: "revisionId",
       method: "GET",
+      endpoint: "revisionId",
       substitutions: { revisionId },
     });
   });

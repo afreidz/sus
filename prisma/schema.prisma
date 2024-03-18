@@ -52,16 +52,42 @@ model RevisionSurvey {
 }
 
 model Survey {
-  id          String            @id @default(nanoid())
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  createdBy   String
-  label       String            @db.VarChar(255)
-  questions   SurveyQuestions[]
-  revisions   RevisionSurvey[]
-  scoreTypeId String?
-  scoreType   ScoreType?        @relation(fields: [scoreTypeId], references: [id])
-  Respondent  Respondent[]
+  id               String                 @id @default(nanoid())
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  createdBy        String
+  label            String                 @db.VarChar(255)
+  questions        SurveyQuestions[]
+  revisions        RevisionSurvey[]
+  scoreTypeId      String?
+  scoreType        ScoreType?             @relation(fields: [scoreTypeId], references: [id])
+  questionOrdering SurveyQuestionOrder?
+  responseOrdering CurratedResponseOrder?
+  respondents      Respondent[]
+}
+
+model SurveyQuestionOrder {
+  id        String   @id @default(nanoid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  order     String[]
+  survey    Survey   @relation(fields: [surveyId], references: [id])
+  surveyId  String
+
+  @@unique([surveyId])
+}
+
+model CurratedResponseOrder {
+  id        String   @id @default(nanoid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  order     String[]
+  survey    Survey   @relation(fields: [surveyId], references: [id])
+  surveyId  String
+
+  @@unique([surveyId])
 }
 
 model ScoreType {
@@ -70,19 +96,19 @@ model ScoreType {
   updatedAt DateTime @updatedAt
   createdBy String
   type      String
-  survey    Survey[]
+  surveys   Survey[]
 }
 
 model Question {
-  id                       String               @id @default(nanoid())
-  createdAt                DateTime             @default(now())
-  updatedAt                DateTime             @updatedAt
-  createdBy                String
-  text                     String
-  mediaLocation            String?
-  surveys                  SurveyQuestions[]
-  responses                RespondentResponse[]
-  curratedQuestionResponse QuestionResponse[]
+  id                        String               @id @default(nanoid())
+  createdAt                 DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
+  createdBy                 String
+  text                      String
+  mediaLocation             String?
+  surveys                   SurveyQuestions[]
+  responses                 RespondentResponse[]
+  curratedQuestionResponses QuestionResponse[]
 }
 
 model CurratedResponse {

@@ -6,7 +6,13 @@ export type systemId = {
   GET: ORM.SystemGetPayload<{
     include: {
       client: true;
-      revisions: { include: { surveys: { include: { survey: true } } } };
+      revisions: {
+        include: {
+          surveys: {
+            include: { survey: true };
+          };
+        };
+      };
     };
   }>;
   PUT: ORM.SystemGetPayload<{
@@ -20,7 +26,13 @@ export const GET: APIRoute = async ({ params }) => {
     where: { id: params.id },
     include: {
       client: true,
-      revisions: { include: { surveys: { include: { survey: true } } } },
+      revisions: {
+        include: {
+          surveys: {
+            include: { survey: true },
+          },
+        },
+      },
     },
   });
 
