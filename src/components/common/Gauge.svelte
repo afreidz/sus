@@ -61,7 +61,7 @@
   };
 </script>
 
-<div class={`relative ${className ?? ""}`} bind:this={gauge}>
+<div class={`relative @container ${className ?? ""}`} bind:this={gauge}>
   {#if !fullscreen}
     <button
       on:click={() => (fullscreen = true)}
@@ -72,7 +72,7 @@
   {/if}
   <ul class="">
     {#each keys as key, i}
-      <li class="flex gap-2 items-center text-[1.1cqh]">
+      <li class="flex gap-2 items-center text-[clamp(11px,_2.5cqi,_18px)]">
         <i class="w-4 h-4 rounded {fills[i]}"></i>
         {key}
       </li>
@@ -123,14 +123,15 @@
       style={`top: ${(thickness / vbh) * scores.length * 100 + (gap / vbh) * (scores.length + 1) * 100}%; margin-top: ${keys.length * 10}px;`}
       class="flex flex-col items-center justify-center absolute bottom-2 left-1/2 -translate-x-1/2"
     >
-      <span class="font-light text-[1.25cqh]">Differential</span>
+      <span class="font-light text-[clamp(11px,_3cqi,_18px)]">Differential</span
+      >
       {#if differential < 0}
         <strong
           class="text-sus-negative-40 leading-none font-black flex items-center -ml-5"
         >
           <iconify-icon icon="mdi:arrow-down-bold" class="text-xl"
           ></iconify-icon>
-          <span class="text-[5cqh]"
+          <span class="text-[clamp(11px,_10cqi,_80px)]"
             >{roundAbsoluteToTwoDecimalPlaces(differential)}</span
           >
         </strong>
@@ -139,13 +140,15 @@
           class="text-sus-positive-40 leading-none font-black flex items-center -ml-5"
         >
           <iconify-icon icon="mdi:arrow-up-bold" class="text-xl"></iconify-icon>
-          <span class="text-[5cqh]"
+          <span class="text-[clamp(11px,_10cqi,_80px)]"
             >{roundAbsoluteToTwoDecimalPlaces(differential)}</span
           >
         </strong>
       {/if}
       {#if differentialSubtitle}
-        <span class="text-[1.25cqh] font-light">{differentialSubtitle}</span>
+        <span class="text-[clamp(11px,_3cqi,_18px)] font-light"
+          >{differentialSubtitle}</span
+        >
       {/if}
     </main>
   {/if}
@@ -153,12 +156,12 @@
     <ul class="flex">
       {#each scores as scoreset}
         <li
-          class="text-[1.1cqh] font-light text-center"
+          class="text-[clamp(11px,_2.5cqi,_18px)] font-light text-center"
           style={`width: ${100 / (vbw / (gap + thickness))}%;`}
         >
           {scoreset[1] !== undefined
-            ? scoreset[1].toFixed(2)
-            : scoreset[0].toFixed(2)}
+            ? roundAbsoluteToTwoDecimalPlaces(scoreset[1])
+            : roundAbsoluteToTwoDecimalPlaces(scoreset[0])}
         </li>
       {/each}
     </ul>

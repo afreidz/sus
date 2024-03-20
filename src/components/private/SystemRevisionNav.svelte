@@ -7,6 +7,7 @@
   import NewRevisionDialog from "@/components/private/NewRevisionDialog.svelte";
 
   let stacked = true;
+  let showMeta = false;
   let vertical = false;
   let classList: string = "";
   let highlightActive = true;
@@ -59,16 +60,17 @@
   }
 
   export {
-    stacked,
-    highlightActive,
     system,
+    stacked,
     vertical,
     linkType,
+    showMeta,
+    highlightActive,
     classList as class,
   };
 </script>
 
-<div role="tablist" class={classList ?? ""}>
+<div role="tablist" class="flex flex-col {classList ?? ''}">
   <ul class="timeline" class:timeline-vertical={vertical}>
     {#if system?.revisions.length}
       {#each system.revisions as revision, i}
@@ -126,13 +128,79 @@
       {/each}
     {/if}
   </ul>
-  <div class="flex justify-center m-4 py-4 border-t border-dotted">
-    <button
-      on:click={() => (showNewRevisionDialog = true)}
-      class="btn btn-sm btn-outline border-current text-current"
-      >New Revision</button
-    >
-  </div>
+  {#if !showMeta}
+    <div class="flex justify-center m-4 py-4 border-t border-dotted">
+      <button
+        on:click={() => (showNewRevisionDialog = true)}
+        class="btn btn-sm btn-outline border-current text-current"
+        >New Revision</button
+      >
+    </div>
+  {/if}
+  {#if showMeta && $actives[system.id]}
+    {@const revision = system.revisions.find(
+      (r) => r.id === $actives[system.id]
+    )}
+    {#if revision}
+      <div class="card bg-neutral shadow-sm sticky top-4 mr-4 mt-8">
+        <div class="card-body">
+          <header class="prose">
+            <h2
+              class="border-b mb-2 pb-2 border-sus-surface-30 text-sus-primary-60"
+            >
+              {system.client.name}
+            </h2>
+          </header>
+          <div class="flex flex-col gap-1">
+            <p class="flex justify-between m-0">
+              <strong class="flex-1">Revision:</strong>
+              <span class="text-sm text-sus-surface-0-fg/50"
+                >{revision.title}</span
+              >
+            </p>
+            <p class="flex justify-between m-0">
+              <strong class="flex-1">Created By:</strong>
+              <span class="text-sm text-sus-surface-0-fg/50"
+                >{system.client.createdBy.split("@")[0]}</span
+              >
+            </p>
+            <p class="flex justify-between m-0">
+              <strong class="flex-1">Created On:</strong>
+              <span class="text-sm text-sus-surface-0-fg/50"
+                >{new Date(revision.createdAt).toLocaleDateString(
+                  "en-US"
+                )}</span
+              >
+            </p>
+            <p class="flex justify-between m-0">
+              <strong class="flex-1">Respondents:</strong>
+              <span class="text-sm text-sus-surface-0-fg/50"
+                >{revision.respondents.length}</span
+              >
+            </p>
+            <p class="flex justify-between m-0 pb-4">
+              <strong class="flex-1">Responses:</strong>
+              <span class="text-sm text-sus-surface-0-fg/50"
+                >{revision.respondents.filter((r) => r.complete).length}</span
+              >
+            </p>
+          </div>
+          <button
+            on:click={() => (showNewRevisionDialog = true)}
+            class="btn btn-secondary text-neutral">New Revision</button
+          >
+          <div class="divider">
+            <span>Danger Zone</span>
+          </div>
+          <button
+            on:click={() => (revisionToDelete = revision)}
+            class="btn btn-error btn-outline hover:!text-neutral"
+            >Delete Revision</button
+          >
+        </div>
+      </div>
+    {/if}
+  {/if}
 </div>
 <NewRevisionDialog
   {system}
