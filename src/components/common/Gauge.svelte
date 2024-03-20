@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { roundAbsoluteToTwoDecimalPlaces } from "@/helpers/numbers";
+
   let gap = 100;
   let vbw = 10000;
   let vbh = vbw / 2;
@@ -128,14 +130,18 @@
         >
           <iconify-icon icon="mdi:arrow-down-bold" class="text-xl"
           ></iconify-icon>
-          <span class="text-[5cqh]">{Math.abs(differential).toFixed(2)}</span>
+          <span class="text-[5cqh]"
+            >{roundAbsoluteToTwoDecimalPlaces(differential)}</span
+          >
         </strong>
       {:else}
         <strong
           class="text-sus-positive-40 leading-none font-black flex items-center -ml-5"
         >
           <iconify-icon icon="mdi:arrow-up-bold" class="text-xl"></iconify-icon>
-          <span class="text-[5cqh]">{Math.abs(differential).toFixed(2)}</span>
+          <span class="text-[5cqh]"
+            >{roundAbsoluteToTwoDecimalPlaces(differential)}</span
+          >
         </strong>
       {/if}
       {#if differentialSubtitle}

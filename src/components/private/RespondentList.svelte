@@ -57,7 +57,7 @@
   export { respondents };
 </script>
 
-<h4 class="label">
+<h4 class="label sticky top-0 bg-neutral left-0 right-0 z-10">
   <span class="label-text">Respondents</span>
 </h4>
 <ul class="w-full h-full">

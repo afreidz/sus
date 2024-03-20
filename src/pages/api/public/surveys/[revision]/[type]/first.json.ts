@@ -74,7 +74,6 @@ export const GET: APIRoute = async ({ params }) => {
 
   revision?.surveys.forEach((revisionSurvey) => {
     const survey = revisionSurvey.survey;
-    console.log(survey.questionOrdering?.order);
     if (survey && survey.questionOrdering) {
       survey.questions = survey.questionOrdering.order
         .map((id) => {
