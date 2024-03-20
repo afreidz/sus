@@ -128,7 +128,7 @@
         >
           <iconify-icon icon="mdi:arrow-down-bold" class="text-xl"
           ></iconify-icon>
-          <span class="text-[5cqh]">{Math.abs(differential)}</span>
+          <span class="text-[5cqh]">{Math.abs(differential).toFixed(2)}</span>
         </strong>
       {:else}
         <strong
