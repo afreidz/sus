@@ -116,7 +116,7 @@
       {/if}
     {/each}
   </svg>
-  {#if differential}
+  {#if differential !== undefined}
     <main
       style={`top: ${(thickness / vbh) * scores.length * 100 + (gap / vbh) * (scores.length + 1) * 100}%; margin-top: ${keys.length * 10}px;`}
       class="flex flex-col items-center justify-center absolute bottom-2 left-1/2 -translate-x-1/2"
@@ -135,7 +135,7 @@
           class="text-sus-positive-40 leading-none font-black flex items-center -ml-5"
         >
           <iconify-icon icon="mdi:arrow-up-bold" class="text-xl"></iconify-icon>
-          <span class="text-[5cqh]">{Math.abs(differential)}</span>
+          <span class="text-[5cqh]">{Math.abs(differential).toFixed(2)}</span>
         </strong>
       {/if}
       {#if differentialSubtitle}
