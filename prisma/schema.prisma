@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Client {
@@ -41,6 +42,7 @@ model Revision {
 }
 
 model RevisionSurvey {
+  id         String   @id @default(nanoid())
   surveyId   String
   survey     Survey   @relation(fields: [surveyId], references: [id], onDelete: Cascade)
   revisionId String
@@ -48,7 +50,7 @@ model RevisionSurvey {
   assignedAt DateTime @default(now())
   assignedBy String
 
-  @@id([surveyId, revisionId])
+  @@unique([surveyId, revisionId])
 }
 
 model Survey {
@@ -125,6 +127,7 @@ model CurratedResponse {
 }
 
 model QuestionResponse {
+  id         String           @id @default(nanoid())
   questionId String
   question   Question         @relation(fields: [questionId], references: [id], onDelete: Cascade)
   responseId String
@@ -132,10 +135,11 @@ model QuestionResponse {
   assignedAt DateTime         @default(now())
   assignedBy String
 
-  @@id([questionId, responseId])
+  @@unique([questionId, responseId])
 }
 
 model SurveyQuestions {
+  id         String   @id @default(nanoid())
   survey     Survey   @relation(fields: [surveyId], references: [id])
   surveyId   String
   questionId String
@@ -143,7 +147,7 @@ model SurveyQuestions {
   assignedAt DateTime @default(now())
   assignedBy String
 
-  @@id([questionId, surveyId])
+  @@unique([questionId, surveyId])
 }
 
 model Respondent {

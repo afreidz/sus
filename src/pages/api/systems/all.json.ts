@@ -13,7 +13,7 @@ export type systems = {
 
 export const GET: APIRoute = async () => {
   const systems = await orm.system.findMany({
-    include: { client: true, revisions: true },
+    include: { client: true, revisions: { orderBy: { createdAt: "asc" } } },
   });
 
   return new Response(JSON.stringify(systems), {

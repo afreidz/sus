@@ -25,6 +25,7 @@ export type revisions = {
 
 export const GET: APIRoute = async () => {
   const revisions = await orm.revision.findMany({
+    orderBy: { createdAt: "asc" },
     include: {
       system: true,
       surveys: {

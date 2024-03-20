@@ -8,7 +8,8 @@
 import type { APIResponses } from "@/helpers/api";
 
 type SurveyRespondents =
-  APIResponses["systemId"]["GET"]["revisions"][number]["respondents"];
+  | APIResponses["systemId"]["GET"]["revisions"][number]["respondents"]
+  | APIResponses["revisionId"]["GET"]["respondents"];
 
 export function calculateAverageScoreForRevision(
   respondents: SurveyRespondents

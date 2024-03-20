@@ -1,13 +1,24 @@
 <script lang="ts">
+  import api from "@/helpers/api";
   import { onMount } from "svelte";
   import type { APIResponses } from "@/helpers/api";
+  import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
   import { activeRevisionsBySystem as actives } from "@/stores/actives";
+  import NewRevisionDialog from "@/components/private/NewRevisionDialog.svelte";
 
+  let stacked = true;
   let vertical = false;
-  let classList: string;
+  let classList: string = "";
+  let highlightActive = true;
+  let showNewRevisionDialog = false;
+  let linkType: "anchor" | "url" = "url";
+  let newRevisionDialog: HTMLDialogElement;
   let system: APIResponses["systemId"]["GET"];
+  let deleteRevisionDialog: HTMLDialogElement;
+  let revisionToDelete: (typeof system)["revisions"][number] | undefined =
+    undefined;
 
-  $: if ($actives[system.id])
+  $: if (system && $actives[system.id])
     history.replaceState(null, "", `#${$actives[system.id]}`);
 
   onMount(() => {
@@ -18,43 +29,124 @@
     }
   });
 
-  export { system, vertical, classList as class };
+  async function createNewRevision() {
+    showNewRevisionDialog = false;
+    if (!newRevisionDialog.returnValue) return;
+
+    await api({
+      method: "POST",
+      endpoint: "revisions",
+      body: newRevisionDialog.returnValue,
+    });
+    newRevisionDialog.returnValue = "";
+    window.location.reload();
+  }
+
+  async function deleteRevision() {
+    if (deleteRevisionDialog.returnValue !== revisionToDelete?.title) {
+      revisionToDelete = undefined;
+      return;
+    }
+
+    await api({
+      method: "DELETE",
+      endpoint: "revisionId",
+      substitutions: { revisionId: revisionToDelete.id },
+    });
+
+    revisionToDelete = undefined;
+    window.location.reload();
+  }
+
+  export {
+    stacked,
+    highlightActive,
+    system,
+    vertical,
+    linkType,
+    classList as class,
+  };
 </script>
 
 <div role="tablist" class={classList ?? ""}>
   <ul class="timeline" class:timeline-vertical={vertical}>
-    {#each system.revisions as revision, i}
-      <li>
-        {#if i !== 0}<hr />{/if}
-        <a
-          href={`#${revision.id}`}
-          class="timeline-start timeline-box"
-          class:text-neutral={$actives[system.id] === revision.id}
-          class:bg-neutral-900={$actives[system.id] === revision.id}
-          class:text-neutral-300={$actives[system.id] !== revision.id}
-          class:border-neutral-300={$actives[system.id] !== revision.id}
-          class:border-neutral-900={$actives[system.id] === revision.id}
-          on:click|preventDefault={() => actives.setKey(system.id, revision.id)}
-        >
-          {revision.title}
-        </a>
-        <div class="timeline-middle">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            class="w-5 h-5"
+    {#if system?.revisions.length}
+      {#each system.revisions as revision, i}
+        <li class="group">
+          {#if i !== 0}<hr />{/if}
+          <a
+            class:!timeline-end={!stacked && i % 2}
+            class:opacity-30={highlightActive &&
+              $actives[system.id] !== revision.id}
+            class="timeline-start timeline-box border-current text-current bg-transparent"
+            href={linkType === "anchor"
+              ? `#${revision.id}`
+              : `/systems/${revision.systemId}#${revision.id}`}
+            on:click
+            on:click|preventDefault={() =>
+              actives.setKey(system.id, revision.id)}>{revision.title}</a
           >
-            <path
-              fill-rule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-              clip-rule="evenodd"
-            />
-          </svg>
-        </div>
-        {#if i !== system.revisions.length - 1}
-          <hr />{/if}
-      </li>
-    {/each}
+          <iconify-icon class="timeline-middle" icon="material-symbols:circle"
+          ></iconify-icon>
+          <div
+            class:dropdown-end={!stacked && i % 2}
+            class:!timeline-start={!stacked && i % 2}
+            class="timeline-end dropdown rounded-box"
+          >
+            <div
+              tabindex="0"
+              role="button"
+              class="btn btn-square btn-ghost btn-sm m-1"
+            >
+              <iconify-icon
+                width="30"
+                height="30"
+                icon="pepicons-pencil:dots-y"
+                class="opacity-0 group-hover:opacity-50 transition-opacity duration-300"
+              ></iconify-icon>
+            </div>
+            <ul
+              class="dropdown-content menu w-56 bg-neutral rounded-box shadow-sm absolute z-10 text-left text-sus-surface-0-fg"
+            >
+              <li class="text-error">
+                <button
+                  on:click={() => {
+                    revisionToDelete = revision;
+                  }}
+                >
+                  Delete!
+                </button>
+              </li>
+            </ul>
+          </div>
+          {#if i !== system.revisions.length - 1}
+            <hr />
+          {/if}
+        </li>
+      {/each}
+    {/if}
   </ul>
+  <div class="flex justify-center m-4 py-4 border-t border-dotted">
+    <button
+      on:click={() => (showNewRevisionDialog = true)}
+      class="btn btn-sm btn-outline border-current text-current"
+      >New Revision</button
+    >
+  </div>
 </div>
+<NewRevisionDialog
+  {system}
+  bind:elm={newRevisionDialog}
+  on:close={createNewRevision}
+  open={showNewRevisionDialog}
+/>
+{#if revisionToDelete}
+  <ConfirmDialog
+    open
+    on:close={deleteRevision}
+    bind:elm={deleteRevisionDialog}
+    bind:confirmText={revisionToDelete.title}
+  >
+    Deleting the revision will also delete any respondents and responses.
+  </ConfirmDialog>
+{/if}

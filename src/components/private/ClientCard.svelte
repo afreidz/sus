@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+  import me, { refreshMe } from "@/stores/me";
   import type { ORM } from "@/helpers/orm";
   import api, { type APIResponses } from "@/helpers/api";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
@@ -16,7 +18,10 @@
   let newSystemDialog: HTMLDialogElement;
   let newClientNameElement: HTMLInputElement;
 
+  onMount(refreshMe);
+
   $: if (newClientNameElement) newClientNameElement.focus();
+  $: if ($me?.user?.name) name = $me.user.name;
 
   async function createNewClient() {
     const newClient: Omit<ORM.ClientCreateInput, "createdBy"> = {

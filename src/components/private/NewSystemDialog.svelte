@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { APIResponses } from "@/api/types";
+  import type { APIResponses } from "@/helpers/api";
 
   type SingleClient = APIResponses["clientId"]["GET"];
 

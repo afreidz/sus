@@ -34,6 +34,7 @@ export const GET: APIRoute = async ({ params }) => {
     include: {
       client: true,
       revisions: {
+        orderBy: { createdAt: "asc" },
         include: {
           respondents: {
             include: {

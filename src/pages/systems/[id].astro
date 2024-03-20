@@ -15,15 +15,28 @@ const system = await api({
 ---
 
 <PrivateLayout class="flex-1 flex flex-col items-center">
-  <div class="text-sm breadcrumbs w-full text-left px-8 py-4 mb-4">
-    <ul>
-      <li><a href="/clients">Clients</a></li>
-      <li><a href={`/clients/${system.client.id}`}>{system.client.name}</a></li>
-      <li class="font-semibold">{system.title}</li>
-    </ul>
+  <div class="flex w-full justify-between items-center px-8 py-4">
+    <div class="text-sm breadcrumbs w-full text-left">
+      <ul>
+        <li><a href="/clients">Clients</a></li>
+        <li>
+          <a href={`/clients/${system.client.id}`}>{system.client.name}</a>
+        </li>
+        <li class="font-semibold">{system.title}</li>
+      </ul>
+    </div>
+    <a class="btn btn-sm btn-outline" href={`/systems/summary/${system.id}`}
+      >Client Readout</a
+    >
   </div>
   <div class="p-4 flex w-full">
-    <SystemRevisionNav {system} client:load vertical class="flex-none" />
+    <SystemRevisionNav
+      {system}
+      vertical
+      client:load
+      class="flex-none"
+      linkType="anchor"
+    />
     {
       system.revisions.map((revision) => (
         <SystemRevisionContent {revision} client:load />

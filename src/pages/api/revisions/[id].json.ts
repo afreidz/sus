@@ -17,7 +17,9 @@ export type revisionId = {
         };
       };
       respondents: {
-        include: { responses: { include: { curratedResponse: true } } };
+        include: {
+          responses: { include: { curratedResponse: true; question: true } };
+        };
       };
     };
   }>;
@@ -47,7 +49,9 @@ export const GET: APIRoute = async ({ params }) => {
         },
       },
       respondents: {
-        include: { responses: { include: { curratedResponse: true } } },
+        include: {
+          responses: { include: { curratedResponse: true, question: true } },
+        },
       },
     },
   });

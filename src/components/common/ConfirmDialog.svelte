@@ -17,7 +17,7 @@
   }
 </script>
 
-<dialog class="modal" bind:this={elm} on:close>
+<dialog class="modal text-neutral-950" bind:this={elm} on:close>
   <form
     method="dialog"
     class="modal-box bg-neutral"

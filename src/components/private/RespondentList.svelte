@@ -60,7 +60,7 @@
 <h4 class="label">
   <span class="label-text">Respondents</span>
 </h4>
-<ul class="w-full max-w-lg">
+<ul class="w-full h-full">
   {#each respondents as respondent}
     <li class="bg-neutral-50 rounded-lg mb-1 p-3 flex items-center gap-2">
       <span class="flex-1">{respondent.email}</span>

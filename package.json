@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
+    "postinstall": "npm run generate -w prisma",
     "build": "astro check && astro build",
     "generate": "npm run generate -w prisma",
     "migrate": "npm run migrate -w prisma",

@@ -3,7 +3,13 @@ import type { APIRoute } from "astro";
 import type { ORM } from "@/helpers/orm";
 
 export type respondentId = {
-  GET: ORM.RespondentGetPayload<{ include: { responses: true } }>;
+  GET: ORM.RespondentGetPayload<{
+    include: {
+      responses: {
+        include: { curratedResponse: true; question: true };
+      };
+    };
+  }>;
   PUT: ORM.RespondentGetPayload<{}>;
   DELETE: { success: boolean };
 };
@@ -11,7 +17,9 @@ export type respondentId = {
 export const GET: APIRoute = async ({ params }) => {
   const respondent = await orm.respondent.findFirst({
     where: { id: params.id },
-    include: { responses: true },
+    include: {
+      responses: { include: { curratedResponse: true, question: true } },
+    },
   });
 
   return new Response(JSON.stringify(respondent), {

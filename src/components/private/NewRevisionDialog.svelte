@@ -36,7 +36,7 @@
   }
 </script>
 
-<dialog class="modal" bind:this={elm} on:close>
+<dialog class="modal text-neutral-950" bind:this={elm} on:close>
   <form
     method="dialog"
     class="modal-box bg-neutral"
@@ -76,7 +76,6 @@
             bind:value={newRevisionSurveys[0]}
             class="select w-full max-w-xs"
           >
-            <option disabled selected>Choose one...</option>
             {#each susSurveys as survey}
               <option value={survey.id}>{survey.label}</option>
             {/each}
@@ -95,7 +94,6 @@
             bind:value={newRevisionSurveys[1]}
             class="select w-full max-w-xs"
           >
-            <option disabled selected>Choose one...</option>
             {#each taskSurveys as survey}
               <option value={survey.id}>{survey.label}</option>
             {/each}

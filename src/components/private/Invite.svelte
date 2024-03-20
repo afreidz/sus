@@ -1,13 +1,12 @@
 <script lang="ts">
   import z from "zod";
   import { onMount } from "svelte";
-  import copy from "clipboard-copy";
   import api, { type APIResponses } from "@/helpers/api";
+  import CardHeader from "@/components/common/CardHeader.svelte";
   import RespondentList from "@/components/private/RespondentList.svelte";
 
   let surveyId: string;
   let newInviteList = "";
-  let surveyTestLink = "";
   let revision: APIResponses["revisionId"]["GET"];
   let system: APIResponses["systemId"]["GET"] | undefined;
   let revisionId: APIResponses["systemId"]["GET"]["revisions"][number]["id"];
@@ -15,8 +14,6 @@
   onMount(refreshRevision);
 
   $: if (revision) refreshSystem();
-  $: if (revision)
-    surveyTestLink = `${window.location.origin}/surveys/sus/${revision.id}`;
 
   async function refreshSystem() {
     system = await api({
@@ -65,22 +62,19 @@
 
 <div
   class:skeleton={!system || !revision}
-  class="card bg-neutral rounded-lg shadow-sm p-4 w-full max-w-lg"
+  class="card bg-neutral rounded-lg shadow-sm p-4 w-full"
 >
   {#if system && revision}
-    <header class="flex gap-2 pb-4 border-b border-neutral-100">
-      <iconify-icon class="text-2xl mt-1" icon="mdi:invite"></iconify-icon>
-      <div class="prose">
-        <h3 class="mb-1">Invite a new respondent</h3>
-        <p class="text-sm text-neutral-400">
-          Fill in an email address to invite someone to take the SUS Survey for <span
-            class="font-semibold text-neutral-950"
-            >"{system.title}:
-            {revision.title}."</span
-          > Use comma-separated list for multiple.
-        </p>
-      </div>
-    </header>
+    <CardHeader icon="mdi:invite" class="mb-4">
+      <span>Invite a new respondent</span>
+      <span slot="sub">
+        Fill in an email address to invite someone to take the SUS Survey for <span
+          class="font-semibold text-neutral-950"
+          >"{system.title}:
+          {revision.title}."</span
+        > Use comma-separated list for multiple.
+      </span>
+    </CardHeader>
     <form on:submit|preventDefault={invite} class="flex gap-2 items-end mb-4">
       <label class="form-control w-full">
         <div class="label">
@@ -95,29 +89,8 @@
       </label>
       <button class="btn btn-primary">Invite</button>
     </form>
-    <div class="pb-4 border-b border-neutral-100 mb-4">
+    <div class="mb-4 max-h-96 overflow-auto">
       <RespondentList respondents={revision.respondents} />
-    </div>
-    <div class="flex gap-2 items-end mb-4">
-      <label class="form-control w-full">
-        <div class="label">
-          <span class="label-text">Test survey link</span>
-        </div>
-        <div class="flex">
-          <a class="btn btn-outline me-2" href={surveyTestLink} target="_blank">
-            <iconify-icon class="text-xl" icon="carbon:view"></iconify-icon>
-          </a>
-          <input
-            disabled
-            type="text"
-            bind:value={surveyTestLink}
-            class="input input-bordered !bg-neutral-100 w-full"
-          />
-        </div>
-      </label>
-      <button on:click={() => copy(surveyTestLink)} class="btn btn-outline"
-        >Copy</button
-      >
     </div>
   {/if}
 </div>
