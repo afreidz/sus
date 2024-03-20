@@ -22,9 +22,9 @@
     history.replaceState(null, "", `#${$actives[system.id]}`);
 
   onMount(() => {
-    if (system.revisions.length && !window.location.hash) {
+    if (system?.revisions.length && !window.location.hash) {
       actives.setKey(system.id, system.revisions[0].id);
-    } else if (window.location.hash) {
+    } else if (system && window.location.hash) {
       actives.setKey(system.id, window.location.hash.replace("#", ""));
     }
   });
