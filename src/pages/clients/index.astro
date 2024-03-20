@@ -12,6 +12,45 @@ const clients = await api({
 ---
 
 <PrivateLayout>
+  <header class="flex p-8 justify-center items-center text-center">
+    <div class="stats shadow bg-primary text-primary-content">
+      <div class="stat">
+        <div class="stat-title text-primary-content/50">Clients</div>
+        <div class="stat-value">
+          {clients.length}
+        </div>
+      </div>
+      <div class="stat">
+        <div class="stat-title text-primary-content/50">Systems</div>
+        <div class="stat-value text-secondary">
+          {
+            clients.reduce((count, client) => {
+              return (count += client.systems.length);
+            }, 0)
+          }
+        </div>
+      </div>
+      <div class="stat">
+        <div class="stat-title text-primary-content/50">Responses</div>
+        <div class="stat-value">
+          {
+            clients.reduce((count, client) => {
+              return (count += client.systems.reduce((scount, system) => {
+                return (scount += system.revisions.reduce(
+                  (rcount, revision) => {
+                    return (rcount += revision.respondents.filter(
+                      (r) => r.complete
+                    ).length);
+                  },
+                  0
+                ));
+              }, 0));
+            }, 0)
+          }
+        </div>
+      </div>
+    </div>
+  </header>
   <section class="p-10 flex flex-wrap gap-4 justify-evenly">
     <ClientCard client:visible />
     {clients.map((client) => <ClientCard client:visible {client} />)}

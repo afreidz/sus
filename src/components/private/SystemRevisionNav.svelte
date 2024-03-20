@@ -142,7 +142,7 @@
       (r) => r.id === $actives[system.id]
     )}
     {#if revision}
-      <div class="card bg-neutral shadow-sm sticky top-4 mr-4 mt-8">
+      <div class="card bg-neutral shadow-sm sticky top-20 mr-4 mt-8">
         <div class="card-body">
           <header class="prose">
             <h2

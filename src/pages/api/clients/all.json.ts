@@ -3,13 +3,19 @@ import type { APIRoute } from "astro";
 import type { ORM } from "@/helpers/orm";
 
 export type clients = {
-  GET: ORM.ClientGetPayload<{ include: { systems: true } }>[];
+  GET: ORM.ClientGetPayload<{
+    include: {
+      systems: { include: { revisions: { include: { respondents: true } } } };
+    };
+  }>[];
   POST: ORM.ClientGetPayload<{ include: { systems: true } }>;
 };
 
 export const GET: APIRoute = async () => {
   const clients = await orm.client.findMany({
-    include: { systems: true },
+    include: {
+      systems: { include: { revisions: { include: { respondents: true } } } },
+    },
   });
 
   return new Response(JSON.stringify(clients), {
