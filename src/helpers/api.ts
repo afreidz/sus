@@ -15,6 +15,7 @@ import type { response } from "@/api/public/responses/all.json";
 import type { respondentId } from "@/api/respondents/[id].json";
 import type { surveyType } from "@/api/surveys/type/[type].json";
 import type { publicRespondentId } from "@/api/public/respondents/[id].json";
+import type { nonCurrentSUSRespondents } from "@/pages/api/respondents/noncurrent/all.json";
 import type { revisionSurveyType } from "@/api/public/surveys/[revision]/[type]/first.json";
 import type { respondentResponses } from "@/api/public/responses/revision/[revisionId]/respondent/[respondentId].json";
 
@@ -37,6 +38,7 @@ export type APIResponses = {
   publicRespondentId: publicRespondentId;
   revisionSurveyType: revisionSurveyType;
   respondentResponseRevision: respondentResponses;
+  nonCurrentSUSRespondents: nonCurrentSUSRespondents;
 };
 
 type Endpoints = keyof typeof endpoints;
@@ -101,6 +103,7 @@ export const endpoints = {
   typesType: "/api/public/types/{typesType}.json",
   surveyType: "/api/surveys/type/{surveyType}.json",
   respondentId: "/api/respondents/{respondentId}.json",
+  nonCurrentSUSRespondents: "/api/respondents/noncurrent/all.json",
   publicRespondentId: "/api/public/respondents/{publicRespondentId}.json",
   revisionSurveyType: "/api/public/surveys/{revisionId}/{typeId}/first.json",
   respondentResponseRevision:

@@ -7,8 +7,10 @@
   let radius = 4500;
   let className = "";
   let thickness = 800;
+  let hideLabels = false;
   let fullscreen = false;
   let gauge: HTMLDivElement;
+  let hideFullscreen = false;
   let fullscreenContent: HTMLDivElement;
   let fullscreenDialog: HTMLDialogElement;
   let differential: number | undefined = undefined;
@@ -55,14 +57,16 @@
     radius,
     scores,
     thickness,
+    hideLabels,
     differential,
+    hideFullscreen,
     className as class,
     differentialSubtitle,
   };
 </script>
 
 <div class={`relative @container ${className ?? ""}`} bind:this={gauge}>
-  {#if !fullscreen}
+  {#if !fullscreen && !hideFullscreen}
     <button
       on:click={() => (fullscreen = true)}
       class="btn btn-sm btn-outline absolute top-1 right-1 border-current text-current"
@@ -70,14 +74,16 @@
       <iconify-icon icon="mdi:arrow-expand-all"></iconify-icon>
     </button>
   {/if}
-  <ul class="">
-    {#each keys as key, i}
-      <li class="flex gap-2 items-center text-[clamp(11px,_2.5cqi,_18px)]">
-        <i class="w-4 h-4 rounded {fills[i]}"></i>
-        {key}
-      </li>
-    {/each}
-  </ul>
+  {#if !hideLabels}
+    <ul class="">
+      {#each keys as key, i}
+        <li class="flex gap-2 items-center text-[clamp(11px,_2.5cqi,_18px)]">
+          <i class="w-4 h-4 rounded {fills[i]}"></i>
+          {key}
+        </li>
+      {/each}
+    </ul>
+  {/if}
   <svg class="w-full !rotate-180" viewBox="0 0 {vbw} {vbh}">
     {#each scores as scoreset, i}
       {#if scoreset}
@@ -121,26 +127,36 @@
   {#if differential !== undefined}
     <main
       style={`top: ${(thickness / vbh) * scores.length * 100 + (gap / vbh) * (scores.length + 1) * 100}%; margin-top: ${keys.length * 10}px;`}
-      class="flex flex-col items-center justify-center absolute bottom-2 left-1/2 -translate-x-1/2"
+      class="flex flex-col items-center justify-center absolute bottom-2 left-0 right-0"
     >
-      <span class="font-light text-[clamp(11px,_3cqi,_18px)]">Differential</span
-      >
-      {#if differential < 0}
-        <strong
-          class="text-sus-negative-40 leading-none font-black flex items-center -ml-5"
+      {#if !hideLabels}
+        <span class="font-light text-[clamp(11px,_3cqi,_18px)]"
+          >Differential</span
         >
-          <iconify-icon icon="mdi:arrow-down-bold" class="text-xl"
-          ></iconify-icon>
-          <span class="text-[clamp(11px,_10cqi,_80px)]"
+      {/if}
+      {#if differential < 0}
+        <strong class="text-sus-negative-40 leading-none font-black">
+          {#if !hideLabels}
+            <iconify-icon icon="mdi:arrow-down-bold" class="text-xl"
+            ></iconify-icon>
+          {/if}
+          <span
+            class="flex-1"
+            class:text-[clamp(11px,_19cqi,_80px)]={hideLabels}
+            class:text-[clamp(11px,_10cqi,_80px)]={!hideLabels}
             >{roundAbsoluteToTwoDecimalPlaces(differential)}</span
           >
         </strong>
       {:else}
-        <strong
-          class="text-sus-positive-40 leading-none font-black flex items-center -ml-5"
-        >
-          <iconify-icon icon="mdi:arrow-up-bold" class="text-xl"></iconify-icon>
-          <span class="text-[clamp(11px,_10cqi,_80px)]"
+        <strong class="text-sus-positive-40 leading-none font-black">
+          {#if !hideLabels}
+            <iconify-icon icon="mdi:arrow-up-bold" class="text-xl"
+            ></iconify-icon>
+          {/if}
+          <span
+            class="flex-1"
+            class:text-[clamp(11px,_19cqi,_80px)]={hideLabels}
+            class:text-[clamp(11px,_10cqi,_80px)]={!hideLabels}
             >{roundAbsoluteToTwoDecimalPlaces(differential)}</span
           >
         </strong>
@@ -152,20 +168,22 @@
       {/if}
     </main>
   {/if}
-  <footer>
-    <ul class="flex">
-      {#each scores as scoreset}
-        <li
-          class="text-[clamp(11px,_2.5cqi,_18px)] font-light text-center"
-          style={`width: ${100 / (vbw / (gap + thickness))}%;`}
-        >
-          {scoreset[1] !== undefined
-            ? roundAbsoluteToTwoDecimalPlaces(scoreset[1])
-            : roundAbsoluteToTwoDecimalPlaces(scoreset[0])}
-        </li>
-      {/each}
-    </ul>
-  </footer>
+  {#if !hideLabels}
+    <footer>
+      <ul class="flex">
+        {#each scores as scoreset}
+          <li
+            class="text-[clamp(11px,_2.5cqi,_18px)] font-light text-center"
+            style={`width: ${100 / (vbw / (gap + thickness))}%;`}
+          >
+            {scoreset[1] !== undefined
+              ? roundAbsoluteToTwoDecimalPlaces(scoreset[1])
+              : roundAbsoluteToTwoDecimalPlaces(scoreset[0])}
+          </li>
+        {/each}
+      </ul>
+    </footer>
+  {/if}
 </div>
 {#if fullscreen}
   <dialog

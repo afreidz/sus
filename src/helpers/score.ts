@@ -11,9 +11,7 @@ type SurveyRespondents =
   | APIResponses["systemId"]["GET"]["revisions"][number]["respondents"]
   | APIResponses["revisionId"]["GET"]["respondents"];
 
-export function calculateAverageScoreForRevision(
-  respondents: SurveyRespondents
-) {
+export function calculateAverageScore(respondents: SurveyRespondents) {
   const scores = calculateScoreFromRespondents(respondents);
   return scores.reduce((a, b) => a + b, 0) / scores.length || 0;
 }

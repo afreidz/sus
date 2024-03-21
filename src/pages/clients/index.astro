@@ -1,6 +1,8 @@
 ---
 import api from "@/helpers/api";
 import PrivateLayout from "@/layouts/private.astro";
+import Gauge from "@/components/common/Gauge.svelte";
+import { calculateAverageScore } from "@/helpers/score";
 import ClientCard from "@/components/private/ClientCard.svelte";
 
 const clients = await api({
@@ -9,6 +11,27 @@ const clients = await api({
   base: Astro.url.origin,
   headers: Astro.request.headers,
 });
+
+const nonCurrentSUSRespondents = await api({
+  method: "GET",
+  base: Astro.url.origin,
+  headers: Astro.request.headers,
+  endpoint: "nonCurrentSUSRespondents",
+});
+
+const average = calculateAverageScore(nonCurrentSUSRespondents);
+
+const SystemCount = clients.reduce((count, client) => {
+  return (count += client.systems.length);
+}, 0);
+
+const ResponseCount = clients.reduce((count, client) => {
+  return (count += client.systems.reduce((scount, system) => {
+    return (scount += system.revisions.reduce((rcount, revision) => {
+      return (rcount += revision.respondents.filter((r) => r.complete).length);
+    }, 0));
+  }, 0));
+}, 0);
 ---
 
 <PrivateLayout>
@@ -16,37 +39,30 @@ const clients = await api({
     <div class="stats shadow bg-primary text-primary-content">
       <div class="stat">
         <div class="stat-title text-primary-content/50">Clients</div>
-        <div class="stat-value">
+        <div class="stat-value text-secondary">
           {clients.length}
         </div>
       </div>
       <div class="stat">
         <div class="stat-title text-primary-content/50">Systems</div>
-        <div class="stat-value text-secondary">
-          {
-            clients.reduce((count, client) => {
-              return (count += client.systems.length);
-            }, 0)
-          }
-        </div>
+        <div class="stat-value text-secondary">{SystemCount}</div>
       </div>
       <div class="stat">
         <div class="stat-title text-primary-content/50">Responses</div>
-        <div class="stat-value">
-          {
-            clients.reduce((count, client) => {
-              return (count += client.systems.reduce((scount, system) => {
-                return (scount += system.revisions.reduce(
-                  (rcount, revision) => {
-                    return (rcount += revision.respondents.filter(
-                      (r) => r.complete
-                    ).length);
-                  },
-                  0
-                ));
-              }, 0));
-            }, 0)
-          }
+        <div class="stat-value text-secondary">{ResponseCount}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-title text-primary-content/50">Practice Average</div>
+        <div class="stat-value flex justify-center p-3">
+          <Gauge
+            hideLabels
+            client:load
+            class="w-20"
+            hideFullscreen
+            thickness={1000}
+            differential={average}
+            scores={[[50, average]]}
+          />
         </div>
       </div>
     </div>

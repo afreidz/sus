@@ -6,7 +6,7 @@
   import Invite from "@/components/private/Invite.svelte";
   import { activeRevisionsBySystem } from "@/stores/actives";
   import CardHeader from "@/components/common/CardHeader.svelte";
-  import { calculateAverageScoreForRevision } from "@/helpers/score";
+  import { calculateAverageScore } from "@/helpers/score";
   import ResponseList from "@/components/private/ResponseList.svelte";
   import SurveyQuestionTable from "@/components/private/SurveyQuestionTable.svelte";
 
@@ -31,7 +31,7 @@
   class="flex gap-8 flex-1 flex-wrap max-w-6xl"
 >
   {#if susSurvey}
-    {@const average = calculateAverageScoreForRevision(
+    {@const average = calculateAverageScore(
       revision.respondents.filter(
         (r) => r.complete && r.surveyId === susSurvey?.surveyId
       )
