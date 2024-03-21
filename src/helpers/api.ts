@@ -138,7 +138,7 @@ export default async function api<
 
   const url = new URL(
     endpoint,
-    base || import.meta.env.PUBLIC_API_ORIGIN || window?.location.origin
+    base || import.meta.env.PUBLIC_API_ORIGIN || globalThis.location.origin
   );
 
   Object.entries(searchParams || {}).forEach(([key, value]) => {
