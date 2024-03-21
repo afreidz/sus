@@ -136,10 +136,7 @@ export default async function api<
       endpoint = endpoint.replaceAll(`{${sub[0]}}`, sub[1]);
   });
 
-  const url = new URL(
-    endpoint,
-    base || import.meta.env.PUBLIC_API_ORIGIN || globalThis.location.origin
-  );
+  const url = new URL(endpoint, base || import.meta.env.PUBLIC_API_ORIGIN);
 
   Object.entries(searchParams || {}).forEach(([key, value]) => {
     if (key && Array.isArray(value)) {
