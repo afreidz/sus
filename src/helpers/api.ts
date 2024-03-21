@@ -17,6 +17,7 @@ import type { surveyType } from "@/api/surveys/type/[type].json";
 import type { publicRespondentId } from "@/api/public/respondents/[id].json";
 import type { nonCurrentSUSRespondents } from "@/pages/api/respondents/noncurrent/all.json";
 import type { revisionSurveyType } from "@/api/public/surveys/[revision]/[type]/first.json";
+import type { curratedResponsesByType } from "@/pages/api/curratedResponses/[scoreType]/all.json";
 import type { respondentResponses } from "@/api/public/responses/revision/[revisionId]/respondent/[respondentId].json";
 
 export type APIResponses = {
@@ -38,15 +39,12 @@ export type APIResponses = {
   publicRespondentId: publicRespondentId;
   revisionSurveyType: revisionSurveyType;
   respondentResponseRevision: respondentResponses;
+  curratedResponsesByType: curratedResponsesByType;
   nonCurrentSUSRespondents: nonCurrentSUSRespondents;
 };
 
 type Endpoints = keyof typeof endpoints;
-
-type EndpointsWithCustomSubstitutions =
-  | "revisionSurveyType"
-  | "respondentResponseRevision";
-
+type EndpointsWithCustomSubstitutions = keyof CustomSubstitutions;
 type EndpointsWithSubstitutions = Extract<
   Endpoints,
   `${string}Id` | `${string}Type`
@@ -73,6 +71,9 @@ type CustomSubstitutions = {
   respondentResponseRevision: {
     revisionId: string;
     respondentId: string;
+  };
+  curratedResponsesByType: {
+    scoreType: string;
   };
 };
 
@@ -104,6 +105,7 @@ export const endpoints = {
   surveyType: "/api/surveys/type/{surveyType}.json",
   respondentId: "/api/respondents/{respondentId}.json",
   nonCurrentSUSRespondents: "/api/respondents/noncurrent/all.json",
+  curratedResponsesByType: "/api/curratedResponses/{scoreType}/all.json",
   publicRespondentId: "/api/public/respondents/{publicRespondentId}.json",
   revisionSurveyType: "/api/public/surveys/{revisionId}/{typeId}/first.json",
   respondentResponseRevision:

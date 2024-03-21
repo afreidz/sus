@@ -1,8 +1,9 @@
 ---
 import api from "@/helpers/api";
+import { refreshTypes } from "@/stores/types";
 import PrivateLayout from "@/layouts/private.astro";
 import Gauge from "@/components/common/Gauge.svelte";
-import { calculateAverageScore } from "@/helpers/score";
+import { calculateAverageSUSScore } from "@/helpers/score";
 import ClientCard from "@/components/private/ClientCard.svelte";
 
 const clients = await api({
@@ -19,7 +20,8 @@ const nonCurrentSUSRespondents = await api({
   endpoint: "nonCurrentSUSRespondents",
 });
 
-const average = calculateAverageScore(nonCurrentSUSRespondents);
+await refreshTypes();
+const average = calculateAverageSUSScore(nonCurrentSUSRespondents);
 
 const SystemCount = clients.reduce((count, client) => {
   return (count += client.systems.length);

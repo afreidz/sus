@@ -5,31 +5,42 @@
 // sum and multiply the final score by 2.5 to get a score out of 100
 // average all the responses to get a final raw score
 
+import { susType } from "@/stores/types";
 import type { APIResponses } from "@/helpers/api";
 
 type SurveyRespondents =
   | APIResponses["systemId"]["GET"]["revisions"][number]["respondents"]
   | APIResponses["revisionId"]["GET"]["respondents"];
 
-export function calculateAverageScore(respondents: SurveyRespondents) {
-  const scores = calculateScoreFromRespondents(respondents);
+export function calculateAverageSUSScore(respondents: SurveyRespondents) {
+  const scores = calculateSUSScoreFromRespondents(respondents);
   return scores.reduce((a, b) => a + b, 0) / scores.length || 0;
 }
 
-export function calculateScoreFromRespondents(respondents: SurveyRespondents) {
-  const scores = respondents.map(calculateScoreFromRespondent);
+export function calculateSUSScoreFromRespondents(
+  respondents: SurveyRespondents
+) {
+  const scores = respondents.map(calculateSUSScoreFromRespondent);
   return scores;
 }
 
-export function calculateScoreFromRespondent(
+export function calculateSUSScoreFromRespondent(
   respondent: SurveyRespondents[number]
 ) {
-  const score = respondent.responses.reduce((score, response) => {
-    if (!response.curratedResponse?.susValue) return score;
-    return (score += response.question.positive
-      ? response.curratedResponse.susValue - 1
-      : 5 - response.curratedResponse.susValue);
-  }, 0);
+  const sus = susType.get();
+
+  if (!sus) throw new Error("No SUS type found");
+
+  const score = respondent.responses
+    .filter(
+      (r) => r.curratedResponse && r.curratedResponse.scoreTypeId === sus.id
+    )
+    .reduce((score, response) => {
+      if (!response.curratedResponse?.numericalValue) return score;
+      return (score += response.question.positive
+        ? response.curratedResponse.numericalValue - 1
+        : 5 - response.curratedResponse.numericalValue);
+    }, 0);
 
   return score * 2.5;
 }

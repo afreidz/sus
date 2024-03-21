@@ -189,6 +189,9 @@
             on:click={() => (showNewRevisionDialog = true)}
             class="btn btn-secondary text-neutral">New Revision</button
           >
+          <a href={`/checklist/create/${revision.id}`} class="btn btn-outline"
+            >Create user test checklist</a
+          >
           <div class="divider">
             <span>Danger Zone</span>
           </div>

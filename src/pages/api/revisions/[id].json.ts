@@ -5,7 +5,7 @@ import type { ORM } from "@/helpers/orm";
 export type revisionId = {
   GET: ORM.RevisionGetPayload<{
     include: {
-      system: true;
+      system: { include: { client: true } };
       surveys: {
         include: {
           survey: {
@@ -37,7 +37,7 @@ export const GET: APIRoute = async ({ params }) => {
   const revision = await orm.revision.findFirst({
     where: { id: params.id },
     include: {
-      system: true,
+      system: { include: { client: true } },
       surveys: {
         include: {
           survey: {

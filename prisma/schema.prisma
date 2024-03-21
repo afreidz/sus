@@ -92,12 +92,13 @@ model CurratedResponseOrder {
 }
 
 model ScoreType {
-  id        String   @id @default(nanoid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  createdBy String
-  type      String
-  surveys   Survey[]
+  id               String             @id @default(nanoid())
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  createdBy        String
+  type             String
+  surveys          Survey[]
+  CurratedResponse CurratedResponse[]
 }
 
 model Question {
@@ -114,15 +115,17 @@ model Question {
 }
 
 model CurratedResponse {
-  id        String               @id @default(nanoid())
-  createdAt DateTime             @default(now())
-  updatedAt DateTime             @updatedAt
-  createdBy String
-  label     String
-  value     String
-  susValue  Int?
-  questions QuestionResponse[]
-  responses RespondentResponse[]
+  id             String               @id @default(nanoid())
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  createdBy      String
+  label          String
+  value          String
+  numericalValue Int?
+  questions      QuestionResponse[]
+  responses      RespondentResponse[]
+  scoreTypeId    String?
+  scoreType      ScoreType?           @relation(fields: [scoreTypeId], references: [id], onDelete: Cascade)
 }
 
 model QuestionResponse {

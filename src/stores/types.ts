@@ -11,9 +11,8 @@ export async function refreshTypes() {
   const types = await api({ endpoint: "types", method: "GET" });
 
   types.forEach((type) => typesMap.setKey(type.id, type));
-
   susType.set(types.find((t) => t.type === "sus") ?? null);
-  taskType.set(types.find((t) => t.type === "task") ?? null);
+  taskType.set(types.find((t) => t.type === "tasks") ?? null);
 }
 
 export default typesMap;

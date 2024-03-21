@@ -5,7 +5,7 @@
   import Gauge from "@/components/common/Gauge.svelte";
   import { susType, refreshTypes } from "@/stores/types";
   import CardHeader from "@/components/common/CardHeader.svelte";
-  import { calculateScoreFromRespondent } from "@/helpers/score";
+  import { calculateSUSScoreFromRespondent } from "@/helpers/score";
 
   let revisionId: string;
   let revision: APIResponses["revisionId"]["GET"];
@@ -31,7 +31,7 @@
       <span>Respondent Responses</span>
     </CardHeader>
     {#each revision.respondents.filter((r) => r.complete) as respondent, i}
-      {@const score = calculateScoreFromRespondent(respondent)}
+      {@const score = calculateSUSScoreFromRespondent(respondent)}
       <div class="collapse collapse-arrow bg-neutral-50 mb-1">
         <input type="checkbox" checked={i === 0} />
         <div class="collapse-title text-xl font-medium">
