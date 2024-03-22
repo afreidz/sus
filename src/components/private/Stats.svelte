@@ -32,6 +32,8 @@
     }, 0);
   }
 
+  $: console.log($susType, respondents, clients);
+
   $: if ($susType?.id && respondents.length) {
     average = calculateAverageSUSScore(respondents);
   }
