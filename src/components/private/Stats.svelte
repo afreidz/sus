@@ -4,6 +4,7 @@
   import Gauge from "@/components/common/Gauge.svelte";
   import { susType, refreshTypes } from "@/stores/types";
   import { calculateAverageSUSScore } from "@/helpers/score";
+  import CardHeader from "../common/CardHeader.svelte";
 
   let average = 0;
   let systemCount = 0;
@@ -12,7 +13,13 @@
   let clients: APIResponses["clients"]["GET"];
   let respondents: APIResponses["nonCurrentSUSRespondents"]["GET"];
 
-  onMount(refreshTypes);
+  onMount(() =>
+    refreshTypes().then(() => {
+      if (susType.get()?.id) {
+        average = calculateAverageSUSScore(respondents);
+      }
+    })
+  );
 
   $: if (clients.length) {
     clientCount = clients.length;
@@ -30,10 +37,6 @@
         }, 0));
       }, 0));
     }, 0);
-  }
-
-  $: if ($susType?.id && respondents.length) {
-    average = calculateAverageSUSScore(respondents);
   }
 
   export { respondents, clients };
