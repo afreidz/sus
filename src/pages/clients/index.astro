@@ -21,7 +21,7 @@ const respondents = await api({
 
 <PrivateLayout>
   <header class="flex p-8 justify-center items-center text-center">
-    <Stats {clients} {respondents} client:load />
+    <Stats {clients} {respondents} client:only />
   </header>
   <section class="p-10 flex flex-wrap gap-4 justify-evenly">
     <ClientCard client:visible />
