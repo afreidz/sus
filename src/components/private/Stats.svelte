@@ -18,6 +18,7 @@
       console.log(susType.get());
       if (susType.get()?.id) {
         average = calculateAverageSUSScore(respondents);
+        console.log(respondents, average);
       }
     })
   );
