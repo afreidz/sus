@@ -108,6 +108,8 @@ model Question {
   createdBy                 String
   text                      String
   mediaLocation             String?
+  media                     Bytes?
+  mediaMIME                 String?
   positive                  Boolean              @default(true)
   surveys                   SurveyQuestions[]
   responses                 RespondentResponse[]

@@ -28,10 +28,8 @@ const revision = await api({
       <li>
         <a href={`/systems/${revision.system.id}#${id}`}>{revision.title}</a>
       </li>
-      <li class="font-semibold">Create User Test Checklist</li>
+      <li class="font-semibold">Create User Test Task List</li>
     </ul>
   </div>
-  <div class="w-full flex gap-0 max-w-screen-xl justify-self-center">
-    <TasklistCreate client:only />
-  </div>
+  <TasklistCreate {revision} client:only />
 </PrivateLayout>

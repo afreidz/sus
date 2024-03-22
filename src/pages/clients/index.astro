@@ -1,9 +1,7 @@
 ---
 import api from "@/helpers/api";
-import { refreshTypes } from "@/stores/types";
 import PrivateLayout from "@/layouts/private.astro";
-import Gauge from "@/components/common/Gauge.svelte";
-import { calculateAverageSUSScore } from "@/helpers/score";
+import Stats from "@/components/private/Stats.svelte";
 import ClientCard from "@/components/private/ClientCard.svelte";
 
 const clients = await api({
@@ -13,61 +11,17 @@ const clients = await api({
   headers: Astro.request.headers,
 });
 
-const nonCurrentSUSRespondents = await api({
+const respondents = await api({
   method: "GET",
   base: Astro.url.origin,
   headers: Astro.request.headers,
   endpoint: "nonCurrentSUSRespondents",
 });
-
-await refreshTypes();
-const average = calculateAverageSUSScore(nonCurrentSUSRespondents);
-
-const SystemCount = clients.reduce((count, client) => {
-  return (count += client.systems.length);
-}, 0);
-
-const ResponseCount = clients.reduce((count, client) => {
-  return (count += client.systems.reduce((scount, system) => {
-    return (scount += system.revisions.reduce((rcount, revision) => {
-      return (rcount += revision.respondents.filter((r) => r.complete).length);
-    }, 0));
-  }, 0));
-}, 0);
 ---
 
 <PrivateLayout>
   <header class="flex p-8 justify-center items-center text-center">
-    <div class="stats shadow bg-primary text-primary-content">
-      <div class="stat">
-        <div class="stat-title text-primary-content/50">Clients</div>
-        <div class="stat-value text-secondary">
-          {clients.length}
-        </div>
-      </div>
-      <div class="stat">
-        <div class="stat-title text-primary-content/50">Systems</div>
-        <div class="stat-value text-secondary">{SystemCount}</div>
-      </div>
-      <div class="stat">
-        <div class="stat-title text-primary-content/50">Responses</div>
-        <div class="stat-value text-secondary">{ResponseCount}</div>
-      </div>
-      <div class="stat">
-        <div class="stat-title text-primary-content/50">Practice Average</div>
-        <div class="stat-value flex justify-center p-3">
-          <Gauge
-            hideLabels
-            client:load
-            class="w-20"
-            hideFullscreen
-            thickness={1000}
-            differential={average}
-            scores={[[50, average]]}
-          />
-        </div>
-      </div>
-    </div>
+    <Stats {clients} {respondents} client:load />
   </header>
   <section class="p-10 flex flex-wrap gap-4 justify-evenly">
     <ClientCard client:visible />

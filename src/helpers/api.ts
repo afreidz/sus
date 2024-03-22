@@ -11,6 +11,7 @@ import type { revisions } from "@/api/revisions/all.json";
 import type { type } from "@/api/public/types/[type].json";
 import type { revisionId } from "@/api/revisions/[id].json";
 import type { respondents } from "@/api/respondents/all.json";
+import type { questions } from "@/pages/api/questions/all.json";
 import type { response } from "@/api/public/responses/all.json";
 import type { respondentId } from "@/api/respondents/[id].json";
 import type { surveyType } from "@/api/surveys/type/[type].json";
@@ -31,6 +32,7 @@ export type APIResponses = {
   clientId: clientId;
   systemId: systemId;
   responses: response;
+  questions: questions;
   revisions: revisions;
   surveyType: surveyType;
   revisionId: revisionId;
@@ -95,6 +97,7 @@ export const endpoints = {
   surveys: "/api/surveys/all.json",
   types: "/api/public/types/all.json",
   revisions: "/api/revisions/all.json",
+  questions: "/api/questions/all.json",
   respondents: "/api/respondents/all.json",
   clientId: "/api/clients/{clientId}.json",
   systemId: "/api/systems/{systemId}.json",
