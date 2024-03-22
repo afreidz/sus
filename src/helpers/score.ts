@@ -36,6 +36,7 @@ export function calculateSUSScoreFromRespondent(
       (r) => r.curratedResponse && r.curratedResponse.scoreTypeId === sus.id
     )
     .reduce((score, response) => {
+      console.log(response);
       if (!response.curratedResponse?.numericalValue) return score;
       return (score += response.question.positive
         ? response.curratedResponse.numericalValue - 1
