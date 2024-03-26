@@ -7,6 +7,7 @@
   import copy from "clipboard-copy";
   import type { APIResponses } from "@/helpers/api";
 
+  let hasTasklist = false;
   let deleteRespondentDialog: HTMLDialogElement;
   let respondents: APIResponses["revisionId"]["GET"]["respondents"] = [];
   let respondentToDelete: (typeof respondents)[number] | undefined = undefined;
@@ -54,7 +55,7 @@
     ).respondents;
   }
 
-  export { respondents };
+  export { respondents, hasTasklist };
 </script>
 
 <h4 class="label sticky top-0 bg-neutral left-0 right-0 z-10">
@@ -84,25 +85,34 @@
           class="dropdown-content menu w-56 bg-neutral rounded-box absolute z-10 shadow text-left"
         >
           <li>
+            <a
+              target="_blank"
+              href={`/surveys/sus/${respondent.revisionId}/${respondent.id}`}
+              >Go to SUS survey</a
+            >
+          </li>
+          {#if hasTasklist}
+            <li>
+              <a
+                target="_blank"
+                href={`/surveys/task/${respondent.revisionId}/${respondent.id}`}
+                >Go to Tasklist</a
+              >
+            </li>
+          {/if}
+          <li>
             <button
               on:click={() =>
                 copy(
-                  `${window.location.origin}/surveys/sus/${respondent.revisionId}/respondent/${respondent.id}`
+                  `${window.location.origin}/surveys/sus/${respondent.revisionId}/${respondent.id}`
                 )}
             >
-              Copy link
+              Copy SUS link
             </button>
           </li>
           <li>
             <button on:click={() => resetStatus(respondent)}
               >Set to incomplete</button
-            >
-          </li>
-          <li>
-            <a
-              target="_blank"
-              href={`/surveys/sus/${respondent.revisionId}/respondent/${respondent.id}`}
-              >Go to survey</a
             >
           </li>
           <li class="text-error">

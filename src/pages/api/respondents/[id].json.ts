@@ -18,7 +18,9 @@ export const GET: APIRoute = async ({ params }) => {
   const respondent = await orm.respondent.findFirst({
     where: { id: params.id },
     include: {
-      responses: { include: { curratedResponse: true, question: true } },
+      responses: {
+        include: { curratedResponse: true, question: true },
+      },
     },
   });
 

@@ -16,10 +16,11 @@ import type { response } from "@/api/public/responses/all.json";
 import type { respondentId } from "@/api/respondents/[id].json";
 import type { surveyType } from "@/api/surveys/type/[type].json";
 import type { publicRespondentId } from "@/api/public/respondents/[id].json";
+import type { respondentBySurveyId } from "@/pages/api/respondents/[surveyId]/[id].json";
 import type { nonCurrentSUSRespondents } from "@/pages/api/respondents/noncurrent/all.json";
 import type { revisionSurveyType } from "@/api/public/surveys/[revision]/[type]/first.json";
 import type { curratedResponsesByType } from "@/pages/api/curratedResponses/[scoreType]/all.json";
-import type { respondentResponses } from "@/api/public/responses/revision/[revisionId]/respondent/[respondentId].json";
+import type { respondentResponses } from "@/pages/api/public/responses/revision/[revisionId]/[respondentId].json";
 
 export type APIResponses = {
   me: Me;
@@ -40,6 +41,7 @@ export type APIResponses = {
   respondentId: respondentId;
   publicRespondentId: publicRespondentId;
   revisionSurveyType: revisionSurveyType;
+  respondentBySurveyId: respondentBySurveyId;
   respondentResponseRevision: respondentResponses;
   curratedResponsesByType: curratedResponsesByType;
   nonCurrentSUSRespondents: nonCurrentSUSRespondents;
@@ -66,6 +68,10 @@ type Substitutions<E> = E extends undefined
 type SearchParams = Record<string, string | string[] | undefined>;
 
 type CustomSubstitutions = {
+  respondentBySurveyId: {
+    surveyId?: string;
+    respondentId: string;
+  };
   revisionSurveyType: {
     revisionId: string;
     typeId: string;
@@ -109,10 +115,11 @@ export const endpoints = {
   respondentId: "/api/respondents/{respondentId}.json",
   nonCurrentSUSRespondents: "/api/respondents/noncurrent/all.json",
   curratedResponsesByType: "/api/curratedResponses/{scoreType}/all.json",
+  respondentBySurveyId: "/api/respondents/{surveyId}/{respondentId}.json",
   publicRespondentId: "/api/public/respondents/{publicRespondentId}.json",
   revisionSurveyType: "/api/public/surveys/{revisionId}/{typeId}/first.json",
   respondentResponseRevision:
-    "/api/public/responses/revision/{revisionId}/respondent/{respondentId}.json",
+    "/api/public/responses/revision/{revisionId}/{respondentId}.json",
 } as const;
 
 export default async function api<

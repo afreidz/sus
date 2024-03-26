@@ -4,7 +4,6 @@
   import Gauge from "@/components/common/Gauge.svelte";
   import { susType, refreshTypes } from "@/stores/types";
   import { calculateAverageSUSScore } from "@/helpers/score";
-  import CardHeader from "../common/CardHeader.svelte";
 
   let average = 0;
   let systemCount = 0;
@@ -15,10 +14,8 @@
 
   onMount(() =>
     refreshTypes().then(() => {
-      console.log(susType.get());
       if (susType.get()?.id) {
         average = calculateAverageSUSScore(respondents);
-        console.log(respondents, average);
       }
     })
   );

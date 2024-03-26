@@ -6,16 +6,8 @@ export type revisions = {
   GET: ORM.RevisionGetPayload<{
     include: {
       system: true;
-      surveys: {
-        include: {
-          survey: {
-            include: {
-              questions: { include: { question: true } };
-            };
-          };
-        };
-      };
       respondents: { include: { responses: true } };
+      surveys: { include: { questions: true } };
     };
   }>[];
   POST: ORM.RevisionGetPayload<{
@@ -28,16 +20,10 @@ export const GET: APIRoute = async () => {
     orderBy: { createdAt: "asc" },
     include: {
       system: true,
-      surveys: {
-        include: {
-          survey: {
-            include: {
-              questions: { include: { question: true } },
-            },
-          },
-        },
-      },
       respondents: { include: { responses: true } },
+      surveys: {
+        include: { questions: true },
+      },
     },
   });
 
@@ -52,6 +38,10 @@ export const GET: APIRoute = async () => {
 export const POST: APIRoute = async ({ request }) => {
   const data = await request.json();
 
+  const surveys = await orm.survey.findMany({
+    where: { id: { in: data.surveys } },
+  });
+
   const revision = await orm.revision.create({
     data: {
       title: data.title,
@@ -60,14 +50,19 @@ export const POST: APIRoute = async ({ request }) => {
     },
   });
 
-  if (data.surveys.length) {
-    await orm.revisionSurvey.createMany({
-      data: data.surveys.map((id: string) => ({
-        surveyId: id,
-        revisionId: revision.id,
-        assignedBy: data.createdBy,
-      })),
-    });
+  if (surveys && revision.id) {
+    await Promise.all(
+      surveys.map((survey) => {
+        return orm.survey.update({
+          where: { id: survey.id },
+          data: {
+            revisions: {
+              connect: { id: revision.id },
+            },
+          },
+        });
+      })
+    );
   }
 
   return new Response(JSON.stringify(revision), {

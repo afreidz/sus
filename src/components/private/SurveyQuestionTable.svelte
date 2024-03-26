@@ -75,12 +75,11 @@
     </thead>
     {#if revision && $susType}
       {@const susSurvey = revision.surveys.find(
-        (survey) => survey.survey.scoreTypeId === $susType?.id
-      )?.survey}
+        (survey) => survey.scoreTypeId === $susType?.id
+      )}
       <tbody>
         {#if susSurvey?.questions}
-          {#each susSurvey.questions as surveyQuestion}
-            {@const question = surveyQuestion.question}
+          {#each susSurvey.questions as question}
             <tr class="text-base font-light">
               <th></th>
               <td class="italic opacity-50">"{question.text}"</td>

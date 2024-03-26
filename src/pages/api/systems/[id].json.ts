@@ -8,15 +8,13 @@ export type systemId = {
       client: true;
       revisions: {
         include: {
+          surveys: { include: { questions: true } };
           respondents: {
             include: {
               responses: {
                 include: { curratedResponse: true; question: true };
               };
             };
-          };
-          surveys: {
-            include: { survey: true };
           };
         };
       };
@@ -36,15 +34,13 @@ export const GET: APIRoute = async ({ params }) => {
       revisions: {
         orderBy: { createdAt: "asc" },
         include: {
+          surveys: { include: { questions: true } },
           respondents: {
             include: {
               responses: {
                 include: { curratedResponse: true, question: true },
               },
             },
-          },
-          surveys: {
-            include: { survey: true },
           },
         },
       },

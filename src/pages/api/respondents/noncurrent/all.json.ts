@@ -5,12 +5,11 @@ import type { ORM } from "@/helpers/orm";
 export type nonCurrentSUSRespondents = {
   GET: ORM.RespondentGetPayload<{
     include: {
-      survey: true;
       revision: true;
-      responses: {
+      responses: true;
+      survey: {
         include: {
-          question: { include: { curratedQuestionResponses: true } };
-          curratedResponse: true;
+          questions: { include: { curratedResponses: true } };
         };
       };
     };
@@ -30,12 +29,13 @@ export const GET: APIRoute = async () => {
       },
     },
     include: {
-      survey: true,
       revision: true,
-      responses: {
+      responses: true,
+      survey: {
         include: {
-          question: { include: { curratedQuestionResponses: true } },
-          curratedResponse: true,
+          questions: {
+            include: { curratedResponses: true },
+          },
         },
       },
     },

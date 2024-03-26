@@ -12,8 +12,7 @@
   export let respondent: APIResponses["respondentId"]["GET"] | undefined =
     undefined;
 
-  type Question =
-    (typeof revision)["surveys"][number]["survey"]["questions"][number]["question"];
+  type Question = (typeof revision)["surveys"][number]["questions"][number];
 
   $: if (respondent?.complete) completed = true;
 
@@ -47,9 +46,9 @@
     const form = target as HTMLFormElement;
     const value = (form.elements.namedItem(q.id) as RadioNodeList).value;
 
-    const response = q.curratedQuestionResponses.find(
-      (cr) => cr.response.value === value
-    )?.response;
+    const response = q.curratedResponses.find(
+      (response) => response.value === value
+    );
 
     await api({
       endpoint: "responses",
@@ -63,7 +62,7 @@
       }),
     });
 
-    if (i === revision.surveys[0].survey.questions.length) {
+    if (i === revision.surveys[0].questions.length) {
       completeSurvey();
     } else {
       focusIndex(i);
@@ -101,8 +100,8 @@
         Thank you for your responses! They have been submitted and recorded.
       </h2>
     </section>
-  {:else if revision.surveys[0].survey.questions.length}
-    {@const surveyQuestions = revision.surveys[0].survey.questions}
+  {:else if revision.surveys[0].questions.length}
+    {@const surveyQuestions = revision.surveys[0].questions}
     <form on:submit|preventDefault={() => focusIndex(0)} class={containerClass}>
       <label class="flex-1 flex flex-col gap-10 justify-center items-center">
         <h2 class={questionTextClass}>
@@ -123,8 +122,7 @@
         >
       </div>
     </form>
-    {#each surveyQuestions as surveyQuestion, i}
-      {@const question = surveyQuestion.question}
+    {#each surveyQuestions as question, i}
       {@const existingResponse = responses.find(
         (r) => r.questionId === question.id
       )}
@@ -139,8 +137,7 @@
             {question.text}
           </h2>
           <ul class="join join-vertical xl:join-horizontal">
-            {#each question.curratedQuestionResponses as curratedResponse}
-              {@const response = curratedResponse.response}
+            {#each question.curratedResponses as response}
               <li
                 class="join-item btn btn-outline btn-lg bg-neutral border-neutral-300 has-[:checked]:border-sus-primary-60 has-[:checked]:ring-1 ring-sus-primary-60 has-[:checked]:z-10"
               >

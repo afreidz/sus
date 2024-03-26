@@ -2,6 +2,7 @@
   import z from "zod";
   import { onMount } from "svelte";
   import api, { type APIResponses } from "@/helpers/api";
+  import { refreshTypes, taskType } from "@/stores/types";
   import CardHeader from "@/components/common/CardHeader.svelte";
   import RespondentList from "@/components/private/RespondentList.svelte";
 
@@ -14,6 +15,7 @@
   onMount(refreshRevision);
 
   $: if (revision) refreshSystem();
+  $: if (!$taskType) refreshTypes();
 
   async function refreshSystem() {
     system = await api({
@@ -64,7 +66,10 @@
   class:skeleton={!system || !revision}
   class="card bg-neutral rounded-lg shadow-sm p-4 w-full"
 >
-  {#if system && revision}
+  {#if system && revision && surveyId}
+    {@const hasTasklist = !!revision.surveys.find(
+      (s) => s.scoreTypeId === $taskType?.id
+    )}
     <CardHeader icon="mdi:invite" class="mb-4">
       <span>Invite a new respondent</span>
       <span slot="sub">
@@ -89,8 +94,8 @@
       </label>
       <button class="btn btn-primary">Invite</button>
     </form>
-    <div class="mb-4 max-h-96 overflow-auto">
-      <RespondentList respondents={revision.respondents} />
+    <div class="mb-4 h-96 overflow-auto">
+      <RespondentList {hasTasklist} respondents={revision.respondents} />
     </div>
   {/if}
 </div>

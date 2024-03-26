@@ -8,26 +8,14 @@ export type revisionSurveyType = {
       system: true;
       surveys: {
         where: {
-          survey: {
-            scoreTypeId: string;
-          };
+          scoreTypeId: string;
         };
         include: {
-          survey: {
+          responseOrdering: true;
+          questionOrdering: true;
+          questions: {
             include: {
-              responseOrdering: true;
-              questionOrdering: true;
-              questions: {
-                include: {
-                  question: {
-                    include: {
-                      curratedQuestionResponses: {
-                        include: { response: true };
-                      };
-                    };
-                  };
-                };
-              };
+              curratedResponses: true;
             };
           };
         };
@@ -45,52 +33,33 @@ export const GET: APIRoute = async ({ params }) => {
       system: true,
       surveys: {
         where: {
-          survey: {
-            scoreTypeId: params.type,
-          },
+          scoreTypeId: params.type,
         },
         include: {
-          survey: {
-            include: {
-              responseOrdering: true,
-              questionOrdering: true,
-              questions: {
-                include: {
-                  question: {
-                    include: {
-                      curratedQuestionResponses: {
-                        include: { response: true },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
+          responseOrdering: true,
+          questionOrdering: true,
+          questions: { include: { curratedResponses: true } },
         },
       },
     },
   });
 
-  revision?.surveys.forEach((revisionSurvey) => {
-    const survey = revisionSurvey.survey;
+  revision?.surveys.forEach((survey) => {
     if (survey && survey.questionOrdering) {
       survey.questions = survey.questionOrdering.order
         .map((id) => {
-          return survey.questions.find((q) => q.questionId === id);
+          return survey.questions.find((q) => q.id === id);
         })
         .filter(Boolean) as typeof survey.questions;
     }
     if (survey.responseOrdering) {
-      survey.questions.forEach((sq) => {
-        if (sq.question.curratedQuestionResponses) {
-          sq.question.curratedQuestionResponses = survey.responseOrdering?.order
+      survey.questions.forEach((question) => {
+        if (question.curratedResponses) {
+          question.curratedResponses = survey.responseOrdering?.order
             .map((id) => {
-              return sq.question.curratedQuestionResponses.find(
-                (cr) => cr.responseId === id
-              );
+              return question.curratedResponses.find((cr) => cr.id === id);
             })
-            .filter(Boolean) as typeof sq.question.curratedQuestionResponses;
+            .filter(Boolean) as typeof question.curratedResponses;
         }
       });
     }

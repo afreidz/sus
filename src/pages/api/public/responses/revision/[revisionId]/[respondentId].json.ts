@@ -1,15 +1,15 @@
-import orm from "../../../schema";
+import orm from "../../schema";
 import type { APIRoute } from "astro";
 import type { ORM } from "@/helpers/orm";
 
 export type respondentResponses = {
-  GET: ORM.RespondentResponseGetPayload<{
+  GET: ORM.ResponseGetPayload<{
     include: { curratedResponse: true };
   }>[];
 };
 
 export const GET: APIRoute = async ({ params }) => {
-  const responses = await orm.respondentResponse.findMany({
+  const responses = await orm.response.findMany({
     where: {
       revisionId: params.revisionId,
       respondentId: params.respondentId,

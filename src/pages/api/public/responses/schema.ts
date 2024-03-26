@@ -7,11 +7,11 @@ export const RespondentResponseSchema = z.object({
   respondentId: z.string(),
   freeformResponse: z.string().optional(),
   curratedResponseId: z.string().optional(),
-}) satisfies z.Schema<ORM.RespondentResponseUncheckedCreateInput>;
+}) satisfies z.Schema<ORM.ResponseUncheckedCreateInput>;
 
 export default new Client().$extends({
   query: {
-    respondentResponse: {
+    response: {
       create({ args, query }) {
         args.data = RespondentResponseSchema.parse(args.data);
         return query(args);

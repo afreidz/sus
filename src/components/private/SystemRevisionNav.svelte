@@ -2,6 +2,7 @@
   import api from "@/helpers/api";
   import { onMount } from "svelte";
   import type { APIResponses } from "@/helpers/api";
+  import { refreshTypes, taskType } from "@/stores/types";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
   import { activeRevisionsBySystem as actives } from "@/stores/actives";
   import NewRevisionDialog from "@/components/private/NewRevisionDialog.svelte";
@@ -16,8 +17,12 @@
   let newRevisionDialog: HTMLDialogElement;
   let system: APIResponses["systemId"]["GET"];
   let deleteRevisionDialog: HTMLDialogElement;
+  let deleteTasklistDialog: HTMLDialogElement;
   let revisionToDelete: (typeof system)["revisions"][number] | undefined =
     undefined;
+  let tasklistToDelete:
+    | (typeof system)["revisions"][number]["surveys"][number]
+    | undefined = undefined;
 
   $: if (system && $actives[system.id])
     history.replaceState(null, "", `#${$actives[system.id]}`);
@@ -29,6 +34,8 @@
       actives.setKey(system.id, window.location.hash.replace("#", ""));
     }
   });
+
+  $: if (!$taskType) refreshTypes();
 
   async function createNewRevision() {
     showNewRevisionDialog = false;
@@ -56,6 +63,25 @@
     });
 
     revisionToDelete = undefined;
+    window.location.reload();
+  }
+
+  async function deleteTasklist() {
+    if (
+      deleteTasklistDialog.returnValue !== "Delete Tasklist" ||
+      !tasklistToDelete
+    ) {
+      tasklistToDelete = undefined;
+      return;
+    }
+
+    await api({
+      method: "DELETE",
+      endpoint: "surveyId",
+      substitutions: { surveyId: tasklistToDelete.id },
+    });
+
+    tasklistToDelete = undefined;
     window.location.reload();
   }
 
@@ -142,6 +168,9 @@
       (r) => r.id === $actives[system.id]
     )}
     {#if revision}
+      {@const tasklist = revision.surveys.find(
+        (s) => s.scoreTypeId === $taskType?.id
+      )}
       <div class="card bg-neutral shadow-sm sticky top-20 mr-4 mt-8">
         <div class="card-body">
           <header class="prose">
@@ -189,8 +218,8 @@
             on:click={() => (showNewRevisionDialog = true)}
             class="btn btn-secondary text-neutral">New Revision</button
           >
-          <a href={`/checklist/create/${revision.id}`} class="btn btn-outline"
-            >Create user test checklist</a
+          <a href={`/tasklist/${revision.id}`} class="btn btn-outline"
+            >{tasklist ? "Edit" : "Create"} user test checklist</a
           >
           <div class="divider">
             <span>Danger Zone</span>
@@ -200,6 +229,13 @@
             class="btn btn-error btn-outline hover:!text-neutral"
             >Delete Revision</button
           >
+          {#if tasklist}
+            <button
+              on:click={() => (tasklistToDelete = tasklist)}
+              class="btn btn-error btn-outline hover:!text-neutral"
+              >Delete Tasklist</button
+            >
+          {/if}
         </div>
       </div>
     {/if}
@@ -219,5 +255,16 @@
     bind:confirmText={revisionToDelete.title}
   >
     Deleting the revision will also delete any respondents and responses.
+  </ConfirmDialog>
+{/if}
+{#if tasklistToDelete}
+  <ConfirmDialog
+    open
+    on:close={deleteTasklist}
+    confirmText="Delete Tasklist"
+    bind:elm={deleteTasklistDialog}
+  >
+    Deleting the tasklist will also delete any responses recorded on this
+    tasklist.
   </ConfirmDialog>
 {/if}

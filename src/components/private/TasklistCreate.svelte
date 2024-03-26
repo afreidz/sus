@@ -1,23 +1,42 @@
 <script lang="ts">
   import api from "@/helpers/api";
   import { onMount } from "svelte";
+  import me, { refreshMe } from "@/stores/me";
+  import { groupByDataUri } from "@/helpers/image";
   import type { APIResponses } from "@/helpers/api";
-  import { dataURItoInt8Array } from "@/helpers/image";
   import { taskType, refreshTypes } from "@/stores/types";
   import CardHeader from "@/components/common/CardHeader.svelte";
+  import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
 
   type Section = {
     media?: string;
     mime?: string;
-    tasks: string[];
+    tasks: {
+      id?: string;
+      text: string;
+    }[];
   };
 
+  let existing = false;
+  let showConfirmDelete = false;
+  let deleteDialog: HTMLDialogElement;
+  let removedQuestions: string[] = [];
   let placeholder = "Do something...";
-  let sections: Section[] = [{ tasks: [""] }];
+  let revision: APIResponses["revisionId"]["GET"];
+  let sections: Section[] = [{ tasks: [{ text: "" }] }];
+  let survey: (typeof revision)["surveys"][number] | undefined;
   let responses: APIResponses["curratedResponsesByType"]["GET"] = [];
-  let revision: APIResponses["revisionId"]["GET"] | undefined = undefined;
 
-  onMount(refreshTypes);
+  onMount(refreshMe);
+
+  onMount(async () => {
+    if (!taskType.get()) await refreshTypes();
+    survey = revision.surveys.find((s) => s.scoreTypeId === $taskType?.id);
+    if (survey && survey.questions) {
+      existing = true;
+      sections = groupByDataUri(survey.questions);
+    }
+  });
 
   $: if ($taskType?.id) {
     api({
@@ -51,50 +70,90 @@
 
   function addSection() {
     const updated = [...sections];
-    updated.push({ tasks: [""] });
+    updated.push({ tasks: [{ text: "" }] });
     sections = updated;
   }
 
   function addTask(s: Section) {
-    s.tasks.push("");
+    s.tasks.push({ text: "" });
     sections = [...sections];
   }
 
   function removeSection(s: Section) {
+    console.log(
+      s.tasks,
+      s.tasks.some((t) => t.id)
+    );
+    if (s.tasks.some((t) => t.id))
+      s.tasks.forEach((t) => t.id && removedQuestions.push(t.id));
     const updated = [...sections.filter((section) => section !== s)];
     sections = [...updated];
   }
 
   function removeTask(s: Section, i: number) {
+    const task = s.tasks[i];
+    if (task.id) removedQuestions.push(task.id);
     s.tasks.splice(i, 1);
     sections = [...sections];
   }
 
   async function createTasklist() {
-    await Promise.all(
-      sections
-        .map((section) =>
-          section.tasks.map((task) => {
-            return api({
-              endpoint: "questions",
-              method: "POST",
-              body: JSON.stringify({
-                responses,
-                text: task,
-                mime: section.mime,
-                media:
-                  section.media && section.mime
-                    ? dataURItoInt8Array(section.media, section.mime)
-                    : undefined,
-              }),
-            });
-          })
-        )
-        .flat()
-    );
+    if (!revision?.id) return;
+
+    const questions = sections
+      .map((section) =>
+        section.tasks.map((task) => ({
+          id: task.id,
+          text: task.text,
+          media: section.media,
+          mediaMIME: section.mime,
+          createdBy: $me?.user?.email,
+          curratedResponses: {
+            connect: responses.map(({ id }) => ({ id })),
+          },
+        }))
+      )
+      .flat();
+
+    if (existing && survey) {
+      await api({
+        method: "PUT",
+        endpoint: "surveyId",
+        body: JSON.stringify({
+          questions,
+          removedQuestions,
+        }),
+        substitutions: { surveyId: survey.id },
+      });
+    } else {
+      await api({
+        endpoint: "surveys",
+        method: "POST",
+        body: JSON.stringify({
+          questions,
+          revisionId: revision.id,
+          scoreTypeId: taskType.get()?.id,
+          label: `tasklist_${revision.id}`,
+        }),
+      });
+    }
+
+    window.history.back();
   }
 
-  $: console.log(sections);
+  async function deleteTasklist() {
+    if (deleteDialog.returnValue !== "Delete Tasklist" || !survey) {
+      return;
+    }
+
+    await api({
+      method: "DELETE",
+      endpoint: "surveyId",
+      substitutions: { surveyId: survey.id },
+    });
+
+    window.history.back();
+  }
 
   export { revision };
 </script>
@@ -130,14 +189,27 @@
           </p>
         </div>
         <button type="submit" class="btn btn-primary text-neutral"
-          >Create Task List</button
+          >{existing ? "Update" : "Create"} Task List</button
+        >
+        <div class="divider">
+          <span>Danger Zone</span>
+        </div>
+
+        <button
+          type="button"
+          on:click={() => (showConfirmDelete = true)}
+          class="btn btn-error btn-outline hover:!text-neutral"
+          >Delete Tasklist</button
         >
       </div>
     {/if}
   </aside>
   <div class="flex-1 card bg-neutral rounded-lg shadow-sm p-4 w-full">
     <CardHeader icon="mdi:list-status" class="mb-4 flex-none">
-      <span>Create a new user test task list</span>
+      <span
+        >{existing ? "Update user" : "Create a new user"} test task list</span
+      >
+
       <span slot="sub"
         >Task lists provide the ability to proctor and track the completion of
         certain tasks during a prototype user test.</span
@@ -207,7 +279,7 @@
                   type="text"
                   class="input w-full"
                   placeholder={`${placeholder}`}
-                  bind:value={sections[s].tasks[t]}
+                  bind:value={sections[s].tasks[t].text}
                 />
               </td>
               {#each responses as _}
@@ -245,3 +317,14 @@
     </div>
   </div>
 </form>
+{#if showConfirmDelete}
+  <ConfirmDialog
+    open
+    bind:elm={deleteDialog}
+    on:close={deleteTasklist}
+    confirmText="Delete Tasklist"
+  >
+    Deleting the tasklist will also delete any responses recorded on this
+    tasklist.
+  </ConfirmDialog>
+{/if}

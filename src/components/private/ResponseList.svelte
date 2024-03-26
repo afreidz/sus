@@ -24,8 +24,8 @@
 
 {#if revision && $susType}
   {@const susSurvey = revision.surveys.find(
-    (survey) => survey.survey.scoreTypeId === $susType?.id
-  )?.survey}
+    (survey) => survey.scoreTypeId === $susType?.id
+  )}
   <div class="card bg-neutral rounded-lg shadow-sm p-4 w-full">
     <CardHeader icon="mdi:bullhorn-outline" class="mb-4">
       <span>Respondent Responses</span>
@@ -50,8 +50,7 @@
             </thead>
             <tbody>
               {#if susSurvey?.questions}
-                {#each susSurvey.questions as surveyQuestion}
-                  {@const question = surveyQuestion.question}
+                {#each susSurvey.questions as question}
                   {@const response = respondent.responses.find(
                     (r) => r.questionId === question.id
                   )}

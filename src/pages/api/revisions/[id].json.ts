@@ -1,24 +1,21 @@
 import orm from "./schema";
 import type { APIRoute } from "astro";
 import type { ORM } from "@/helpers/orm";
+import { bufferToDataUri } from "@/helpers/image";
 
 export type revisionId = {
   GET: ORM.RevisionGetPayload<{
     include: {
       system: { include: { client: true } };
-      surveys: {
-        include: {
-          survey: {
-            include: {
-              questionOrdering: true;
-              questions: { include: { question: true } };
-            };
-          };
-        };
-      };
       respondents: {
         include: {
           responses: { include: { curratedResponse: true; question: true } };
+        };
+      };
+      surveys: {
+        include: {
+          questionOrdering: true;
+          questions: { include: { curratedResponses: true } };
         };
       };
     };
@@ -38,30 +35,25 @@ export const GET: APIRoute = async ({ params }) => {
     where: { id: params.id },
     include: {
       system: { include: { client: true } },
-      surveys: {
-        include: {
-          survey: {
-            include: {
-              questionOrdering: true,
-              questions: { include: { question: true } },
-            },
-          },
-        },
-      },
       respondents: {
         include: {
           responses: { include: { curratedResponse: true, question: true } },
         },
       },
+      surveys: {
+        include: {
+          questionOrdering: true,
+          questions: { include: { curratedResponses: true } },
+        },
+      },
     },
   });
 
-  revision?.surveys.forEach((revisionSurvey) => {
-    const survey = revisionSurvey.survey;
+  revision?.surveys.forEach((survey) => {
     if (survey && survey.questionOrdering) {
       survey.questions = survey.questionOrdering.order
         .map((id) => {
-          return survey.questions.find((q) => q.questionId === id);
+          return survey.questions.find((q) => q.id === id);
         })
         .filter(Boolean) as typeof survey.questions;
     }

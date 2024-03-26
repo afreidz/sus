@@ -1,0 +1,48 @@
+---
+import api from "@/helpers/api";
+import PrivateLayout from "@/layouts/private.astro";
+import Tasklist from "@/components/private/Tasklist.svelte";
+
+const { revision: rid, respondent: respondentId } = Astro.params;
+
+const typeId = (
+  await api({
+    endpoint: "typesType",
+    base: Astro.url.origin,
+    headers: Astro.request.headers,
+    substitutions: { typesType: "tasks" },
+  })
+)?.id;
+
+const revision =
+  typeId === ""
+    ? null
+    : await api({
+        method: "GET",
+        base: Astro.url.origin,
+        endpoint: "revisionSurveyType",
+        headers: Astro.request.headers,
+        substitutions: {
+          typeId,
+          revisionId: rid ?? "",
+        },
+      });
+
+const respondent = respondentId
+  ? await api({
+      method: "GET",
+      base: Astro.url.origin,
+      headers: Astro.request.headers,
+      endpoint: "respondentBySurveyId",
+      substitutions: { respondentId, surveyId: revision?.surveys[0].id },
+    })
+  : undefined;
+---
+
+{
+  revision?.surveys[0] && respondent && (
+    <PrivateLayout class="w-full flex-none flex">
+      <Tasklist client:load survey={revision.surveys[0]} {respondent} />
+    </PrivateLayout>
+  )
+}

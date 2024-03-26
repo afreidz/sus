@@ -16,7 +16,7 @@
   onMount(async () => {
     await refreshTypes();
     susSurvey = revision.surveys.find(
-      (survey) => survey.survey.scoreTypeId === susType.get()?.id
+      (survey) => survey.scoreTypeId === susType.get()?.id
     );
   });
 
@@ -33,7 +33,7 @@
   {#if susSurvey}
     {@const average = calculateAverageSUSScore(
       revision.respondents.filter(
-        (r) => r.complete && r.surveyId === susSurvey?.surveyId
+        (r) => r.complete && r.surveyId === susSurvey?.id
       )
     )}
     <div class="flex flex-1 flex-col gap-6">
@@ -53,7 +53,7 @@
           differentialSubtitle="to industry benchmark"
         />
       </div>
-      <Invite revision={revision.id} survey={susSurvey.surveyId} />
+      <Invite revision={revision.id} survey={susSurvey.id} />
     </div>
   {/if}
   <div class="flex-1 flex justify-center">
