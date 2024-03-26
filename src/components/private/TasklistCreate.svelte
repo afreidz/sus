@@ -184,18 +184,20 @@
         <button
           type="button"
           on:click={() => window.history.back()}
-          class="btn btn-outline">Cancel</button
+          class="btn btn-outline">Back</button
         >
-        <div class="divider">
-          <span>Danger Zone</span>
-        </div>
+        {#if existing}
+          <div class="divider">
+            <span>Danger Zone</span>
+          </div>
 
-        <button
-          type="button"
-          on:click={() => (showConfirmDelete = true)}
-          class="btn btn-error btn-outline hover:!text-neutral"
-          >Delete Tasklist</button
-        >
+          <button
+            type="button"
+            on:click={() => (showConfirmDelete = true)}
+            class="btn btn-error btn-outline hover:!text-neutral"
+            >Delete Tasklist</button
+          >
+        {/if}
       </div>
     {/if}
   </aside>
@@ -245,11 +247,11 @@
                 >Tasks</span
               >
             </th>
-            {#each responses as response}
+            {#each responses as response, i}
               <th
-                class="w-[15%] last-of-type:rounded-tr-lg overflow-clip align-top text-center border-r border-base-200 last-of-type:border-r-0 text-base bg-sus-surface-10 p-0"
+                class="w-[15%] last-of-type:rounded-tr-lg overflow-clip align-bottom text-center border-r border-base-200 last-of-type:border-r-0 text-base bg-sus-surface-10 p-0"
               >
-                <span class="block p-4 border-b border-base-200 bg-neutral"
+                <span class="block p-4 border-t border-base-200 bg-neutral"
                   >{response.label}</span
                 >
               </th>
@@ -279,8 +281,13 @@
                 />
               </td>
               {#each responses as _}
-                <th class="border-r border-base-200 last-of-type:border-r-0"
-                ></th>
+                <th
+                  class="border-r border-base-200 last-of-type:border-r-0 !p-0"
+                >
+                  <label class="p-4 w-full h-full flex justify-center">
+                    <input type="radio" class="radio radio-primary" disabled />
+                  </label>
+                </th>
               {/each}
             </tr>
           {/each}

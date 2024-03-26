@@ -25,7 +25,6 @@ export function fileToResizedDataURI(imageFile: File) {
         canvas.width = w;
         canvas.height = h;
         ctx.drawImage(img, 0, 0, w, h);
-        console.log(canvas.toDataURL(imageFile.type));
         r(canvas.toDataURL(imageFile.type));
       };
       img.src = e.target.result as string;

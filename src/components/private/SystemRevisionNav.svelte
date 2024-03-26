@@ -17,12 +17,8 @@
   let newRevisionDialog: HTMLDialogElement;
   let system: APIResponses["systemId"]["GET"];
   let deleteRevisionDialog: HTMLDialogElement;
-  let deleteTasklistDialog: HTMLDialogElement;
   let revisionToDelete: (typeof system)["revisions"][number] | undefined =
     undefined;
-  let tasklistToDelete:
-    | (typeof system)["revisions"][number]["surveys"][number]
-    | undefined = undefined;
 
   $: if (system && $actives[system.id])
     history.replaceState(null, "", `#${$actives[system.id]}`);
@@ -63,25 +59,6 @@
     });
 
     revisionToDelete = undefined;
-    window.location.reload();
-  }
-
-  async function deleteTasklist() {
-    if (
-      deleteTasklistDialog.returnValue !== "Delete Tasklist" ||
-      !tasklistToDelete
-    ) {
-      tasklistToDelete = undefined;
-      return;
-    }
-
-    await api({
-      method: "DELETE",
-      endpoint: "surveyId",
-      substitutions: { surveyId: tasklistToDelete.id },
-    });
-
-    tasklistToDelete = undefined;
     window.location.reload();
   }
 
@@ -229,13 +206,6 @@
             class="btn btn-error btn-outline hover:!text-neutral"
             >Delete Revision</button
           >
-          {#if tasklist}
-            <button
-              on:click={() => (tasklistToDelete = tasklist)}
-              class="btn btn-error btn-outline hover:!text-neutral"
-              >Delete Tasklist</button
-            >
-          {/if}
         </div>
       </div>
     {/if}
@@ -255,16 +225,5 @@
     bind:confirmText={revisionToDelete.title}
   >
     Deleting the revision will also delete any respondents and responses.
-  </ConfirmDialog>
-{/if}
-{#if tasklistToDelete}
-  <ConfirmDialog
-    open
-    on:close={deleteTasklist}
-    confirmText="Delete Tasklist"
-    bind:elm={deleteTasklistDialog}
-  >
-    Deleting the tasklist will also delete any responses recorded on this
-    tasklist.
   </ConfirmDialog>
 {/if}

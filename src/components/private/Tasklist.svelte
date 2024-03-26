@@ -40,21 +40,38 @@
                 {/if}
               </div>
             </div>
-            <span
-              class="block text-base p-4 text-center border-t border-base-200"
-              >Tasks</span
-            >
+          </th>
+          <th class="border-r border-base-200 text-base bg-sus-surface-10 p-0"
+          ></th>
+          <th class="border-r border-base-200 text-base bg-sus-surface-10 p-0"
+          ></th>
+          <th class="border-r border-base-200 text-base bg-sus-surface-10 p-0"
+          ></th>
+          <th class="border-r border-base-200 text-base bg-sus-surface-10 p-0"
+          ></th>
+          <th class="border-r border-base-200 text-base bg-sus-surface-10 p-0"
+          ></th>
+        </tr>
+        <tr class="sticky top-36">
+          <th
+            class="border-r border-base-200 text-center text-base bg-neutral p-0"
+          >
+            <span class="border-b border-base-200 p-4 block w-full">Tasks</span>
           </th>
           {#each survey.questions[0].curratedResponses as response}
             <th
-              class="w-[15%] last-of-type:rounded-tr-lg overflow-clip align-top text-center border-r border-base-200 last-of-type:border-r-0 text-base bg-sus-surface-10 p-0"
+              class="w-[15%] text-center text-base bg-neutral p-0 border-r border-base-200"
             >
-              <span
-                class="block p-4 border-b border-base-200 bg-neutral sticky top-[150px]"
+              <span class="border-b border-base-200 p-4 block w-full"
                 >{response.label}</span
               >
             </th>
           {/each}
+          <th
+            class="w-[15%] rounded-tr-lg overflow-clip text-center bg-neutral text-base p-0"
+          >
+            <span class="border-b border-base-200 p-4 block w-full">Notes</span>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -64,7 +81,7 @@
               {t + 1}. {sections[s].tasks[t].text}
             </td>
             {#each survey.questions[0].curratedResponses as resp}
-              <th class="border-r border-base-200 last-of-type:border-r-0 !p-0">
+              <td class="border-r border-base-200 !p-0">
                 <label class="p-4 w-full h-full flex justify-center">
                   <input
                     class="radio radio-primary"
@@ -73,8 +90,11 @@
                     type="radio"
                   />
                 </label>
-              </th>
+              </td>
             {/each}
+            <td class="border-base-200">
+              <textarea name={`section_${s}_task_${t}_notes`}></textarea>
+            </td>
           </tr>
         {/each}
       </tbody>
