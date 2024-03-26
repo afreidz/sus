@@ -5,7 +5,7 @@ import type { ORM } from "@/helpers/orm";
 export type clients = {
   GET: ORM.ClientGetPayload<{
     include: {
-      systems: true;
+      systems: { include: { revisions: { include: { respondents: true } } } };
     };
   }>[];
   POST: ORM.ClientGetPayload<{ include: { systems: true } }>;
@@ -14,7 +14,7 @@ export type clients = {
 export const GET: APIRoute = async () => {
   const clients = await orm.client.findMany({
     include: {
-      systems: true,
+      systems: { include: { revisions: { include: { respondents: true } } } },
     },
   });
 

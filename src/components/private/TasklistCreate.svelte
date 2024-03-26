@@ -2,11 +2,11 @@
   import api from "@/helpers/api";
   import { onMount } from "svelte";
   import me, { refreshMe } from "@/stores/me";
-  import { groupByDataUri } from "@/helpers/image";
   import type { APIResponses } from "@/helpers/api";
   import { taskType, refreshTypes } from "@/stores/types";
   import CardHeader from "@/components/common/CardHeader.svelte";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
+  import { groupByDataUri, fileToResizedDataURI } from "@/helpers/image";
 
   type Section = {
     media?: string;
@@ -54,13 +54,7 @@
     if (!e.currentTarget?.files?.[0]) return;
     const imageFile = e.currentTarget.files[0];
 
-    const data = await new Promise<string>((r) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        r(e.target?.result as string);
-      };
-      reader.readAsDataURL(imageFile);
-    });
+    const data = await fileToResizedDataURI(imageFile);
 
     section.media = data;
     section.mime = imageFile.type;
@@ -80,10 +74,6 @@
   }
 
   function removeSection(s: Section) {
-    console.log(
-      s.tasks,
-      s.tasks.some((t) => t.id)
-    );
     if (s.tasks.some((t) => t.id))
       s.tasks.forEach((t) => t.id && removedQuestions.push(t.id));
     const updated = [...sections.filter((section) => section !== s)];
@@ -191,6 +181,11 @@
         <button type="submit" class="btn btn-primary text-neutral"
           >{existing ? "Update" : "Create"} Task List</button
         >
+        <button
+          type="button"
+          on:click={() => window.history.back()}
+          class="btn btn-outline">Cancel</button
+        >
         <div class="divider">
           <span>Danger Zone</span>
         </div>
@@ -227,6 +222,7 @@
                   {#if section.media}
                     <img
                       src={section.media}
+                      class="w-full max-w-80"
                       alt="section tasklist screenshot"
                     />
                   {:else}

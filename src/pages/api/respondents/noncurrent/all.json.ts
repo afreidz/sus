@@ -6,12 +6,7 @@ export type nonCurrentSUSRespondents = {
   GET: ORM.RespondentGetPayload<{
     include: {
       revision: true;
-      responses: true;
-      survey: {
-        include: {
-          questions: { include: { curratedResponses: true } };
-        };
-      };
+      responses: { include: { curratedResponse: true; question: true } };
     };
   }>[];
 };
@@ -30,14 +25,7 @@ export const GET: APIRoute = async () => {
     },
     include: {
       revision: true,
-      responses: true,
-      survey: {
-        include: {
-          questions: {
-            include: { curratedResponses: true },
-          },
-        },
-      },
+      responses: { include: { curratedResponse: true, question: true } },
     },
   });
 

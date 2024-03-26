@@ -41,7 +41,7 @@ const respondent = respondentId
 
 {
   revision?.surveys[0] && respondent && (
-    <PrivateLayout class="w-full flex-none flex">
+    <PrivateLayout class="w-full flex-1 flex justify-center p-8">
       <Tasklist client:load survey={revision.surveys[0]} {respondent} />
     </PrivateLayout>
   )

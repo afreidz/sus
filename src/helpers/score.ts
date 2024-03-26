@@ -9,8 +9,9 @@ import { susType } from "@/stores/types";
 import type { APIResponses } from "@/helpers/api";
 
 type SurveyRespondents =
-  | APIResponses["systemId"]["GET"]["revisions"][number]["respondents"]
-  | APIResponses["revisionId"]["GET"]["respondents"];
+  | APIResponses["nonCurrentSUSRespondents"]["GET"]
+  | APIResponses["revisionId"]["GET"]["respondents"]
+  | APIResponses["systemId"]["GET"]["revisions"][number]["respondents"];
 
 export function calculateAverageSUSScore(respondents: SurveyRespondents) {
   const scores = calculateSUSScoreFromRespondents(respondents);
