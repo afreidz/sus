@@ -1,7 +1,6 @@
 import orm from "./schema";
 import type { APIRoute } from "astro";
 import type { ORM } from "@/helpers/orm";
-import { bufferToDataUri } from "@/helpers/image";
 
 export type revisionId = {
   GET: ORM.RevisionGetPayload<{
