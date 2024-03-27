@@ -5,6 +5,7 @@
   import type { APIResponses } from "@/helpers/api";
   import { taskType, refreshTypes } from "@/stores/types";
   import CardHeader from "@/components/common/CardHeader.svelte";
+  import { orderResponseByNumericalValue } from "@/helpers/order";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
   import { groupByDataUri, fileToResizedDataURI } from "@/helpers/image";
 
@@ -42,7 +43,9 @@
       method: "GET",
       endpoint: "curratedResponsesByType",
       substitutions: { scoreType: $taskType.id },
-    }).then((r) => (responses = r));
+    }).then((r) => {
+      responses = orderResponseByNumericalValue<(typeof responses)[number]>(r);
+    });
   }
 
   type ImageSelectEvent = Event & {
@@ -99,7 +102,10 @@
           mediaMIME: section.mime,
           createdBy: $me?.user?.email,
           curratedResponses: {
-            connect: responses.map(({ id }) => ({ id })),
+            connect:
+              orderResponseByNumericalValue<(typeof responses)[number]>(
+                responses
+              ),
           },
         }))
       )

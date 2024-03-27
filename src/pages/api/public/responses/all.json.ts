@@ -19,8 +19,13 @@ export const POST: APIRoute = async ({ request }) => {
   });
 
   const response = existing
-    ? await orm.response.update({ where: { id: existing.id }, data })
-    : await orm.response.create({ data });
+    ? await orm.response.update({
+        where: { id: existing.id },
+        data,
+      })
+    : await orm.response.create({
+        data,
+      });
 
   return new Response(JSON.stringify(response), {
     status: 200,

@@ -1,8 +1,9 @@
 import Client, { z, type ORM } from "@/helpers/orm";
 
 export const RespondentResponseSchema = z.object({
-  revisionId: z.string(),
+  surveyId: z.string(),
   createdBy: z.string(),
+  revisionId: z.string(),
   questionId: z.string(),
   respondentId: z.string(),
   freeformResponse: z.string().optional(),

@@ -1,6 +1,7 @@
 import orm from "./schema";
 import type { APIRoute } from "astro";
 import type { ORM } from "@/helpers/orm";
+import { orderByKey } from "@/helpers/order";
 
 export type revisionSurveyType = {
   GET: ORM.RevisionGetPayload<{
@@ -46,20 +47,22 @@ export const GET: APIRoute = async ({ params }) => {
 
   revision?.surveys.forEach((survey) => {
     if (survey && survey.questionOrdering) {
-      survey.questions = survey.questionOrdering.order
-        .map((id) => {
-          return survey.questions.find((q) => q.id === id);
-        })
-        .filter(Boolean) as typeof survey.questions;
+      survey.questions = orderByKey(
+        survey.questionOrdering.order,
+        survey.questions,
+        "id"
+      );
     }
-    if (survey.responseOrdering) {
+    if (survey.responseOrdering?.order) {
       survey.questions.forEach((question) => {
         if (question.curratedResponses) {
           question.curratedResponses = survey.responseOrdering?.order
-            .map((id) => {
-              return question.curratedResponses.find((cr) => cr.id === id);
-            })
-            .filter(Boolean) as typeof question.curratedResponses;
+            ? orderByKey(
+                survey.responseOrdering?.order,
+                question.curratedResponses,
+                "id"
+              )
+            : question.curratedResponses;
         }
       });
     }

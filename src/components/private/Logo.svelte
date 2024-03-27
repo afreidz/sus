@@ -1,7 +1,9 @@
 <heading class="flex items-center gap-4 ps-4 pe-4">
-  <h1 class="text-sus-primary-60 text-center font-extrabold text-2xl">
-    Systems Usability Survey
-  </h1>
+  <a href="/">
+    <h1 class="text-sus-primary-60 text-center font-extrabold text-2xl">
+      Systems Usability Survey
+    </h1>
+  </a>
   <div class="flex items-center justify-center text-sus-surface-30">
     <span class="text-sm">powered by:</span>
     <svg viewBox="0 0 300 35" class="h-3 md:h-4">

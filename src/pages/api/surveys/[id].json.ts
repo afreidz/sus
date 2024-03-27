@@ -41,21 +41,57 @@ export const PUT: APIRoute = async ({ params, request }) => {
       (q.media = dataURItoBuffer(q.media as string))
   );
 
+  const newQuestions = data.questions.filter((q: any) => !q.id);
+  const existingQuestion = data.questions.filter((q: any) => !!q.id);
+  const removedQuestions = data.removedQuestions
+    ? [...data.removedQuestions]
+    : [];
+
+  delete data.removedQuestions;
+
   const survey = await orm.survey.update({
     where: { id: params.id },
     data: {
-      label: data.label,
-      createdBy: data.createdBy,
-      scoreTypeId: data.scoreTypeId,
+      ...data,
       questions: {
-        connectOrCreate: data.questions.map((q: { id: string }) => ({
-          where: { id: q.id ?? "" },
+        create: newQuestions,
+        connectOrCreate: existingQuestion.map((q: { id: string }) => ({
+          where: { id: q.id },
           create: q,
         })),
-        disconnect: data.removedQuestions.map((id: string) => ({ id })),
+        disconnect: removedQuestions.map((id: string) => ({ id })),
       },
     },
+    include: { questions: { include: { curratedResponses: true } } },
   });
+
+  // await orm.surveyQuestionOrder.upsert({
+  //   where: { surveyId: survey.id },
+  //   update: {
+  //     surveyId: survey.id,
+  //     createdBy: survey.createdBy,
+  //     order: survey.questions.map((q) => q.id),
+  //   },
+  //   create: {
+  //     surveyId: survey.id,
+  //     createdBy: survey.createdBy,
+  //     order: survey.questions.map((q) => q.id),
+  //   },
+  // });
+
+  // await orm.curratedResponseOrder.upsert({
+  //   where: { surveyId: survey.id },
+  //   update: {
+  //     surveyId: survey.id,
+  //     createdBy: survey.createdBy,
+  //     order: survey.questions[0].curratedResponses.map((q) => q.id),
+  //   },
+  //   create: {
+  //     surveyId: survey.id,
+  //     createdBy: survey.createdBy,
+  //     order: survey.questions[0].curratedResponses.map((q) => q.id),
+  //   },
+  // });
 
   return new Response(JSON.stringify(survey), {
     status: 200,

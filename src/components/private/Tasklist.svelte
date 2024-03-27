@@ -5,6 +5,7 @@
   import { groupByDataUri } from "@/helpers/image";
   import type { APIResponses } from "@/helpers/api";
   import CardHeader from "@/components/common/CardHeader.svelte";
+  import { orderResponseByNumericalValue } from "@/helpers/order";
 
   let loading = false;
   let complete = false;
@@ -50,6 +51,7 @@
           endpoint: "responses",
           body: JSON.stringify({
             questionId,
+            surveyId: survey.id,
             freeformResponse: notes,
             respondentId: respondent.id,
             curratedResponseId: response,
@@ -83,12 +85,18 @@
       below</span
     >
     <div slot="pull">
-      {#if sections?.length && !loading}
+      {#if sections?.length && !loading && !complete}
         <button type="submit" class="btn btn-primary">Complete Session</button>
       {/if}
     </div>
   </CardHeader>
-  {#if sections?.length && !loading}
+  {#if complete}
+    <div class="flex-1 w-full flex items-center justify-center">
+      <h2 class="text-2xl xl:text-4xl font-extrabold ms-10 me-10 text-center">
+        The results have been recorded.
+      </h2>
+    </div>
+  {:else if sections?.length && !loading}
     {#each sections as section, s}
       <table
         class="table mb-8 rounded-lg ring-4 ring-base-300/50 border-base-200"
@@ -126,7 +134,7 @@
                 >Tasks</span
               >
             </th>
-            {#each survey.questions[0].curratedResponses as response}
+            {#each orderResponseByNumericalValue(survey.questions[0].curratedResponses) as response}
               <th
                 class="w-[15%] text-center text-base bg-neutral p-0 border-r border-base-200"
               >
@@ -150,7 +158,7 @@
               <td class="border-r border-base-200">
                 {t + 1}. {sections[s].tasks[t].text}
               </td>
-              {#each survey.questions[0].curratedResponses as resp, r}
+              {#each orderResponseByNumericalValue(survey.questions[0].curratedResponses) as resp, r}
                 <td class="border-r border-base-200 !p-0">
                   {#if task.id}
                     <label class="p-4 w-full h-full flex justify-center">
