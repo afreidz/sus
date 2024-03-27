@@ -13,28 +13,32 @@ type SurveyRespondents =
   | APIResponses["revisionId"]["GET"]["respondents"]
   | APIResponses["systemId"]["GET"]["revisions"][number]["respondents"];
 
-export function calculateAverageSUSScore(respondents: SurveyRespondents) {
-  const scores = calculateSUSScoreFromRespondents(respondents);
+export function calculateAverageSUSScore(
+  respondents: SurveyRespondents,
+  scoreTypeId: string
+) {
+  const scores = calculateSUSScoreFromRespondents(respondents, scoreTypeId);
   return scores.reduce((a, b) => a + b, 0) / scores.length || 0;
 }
 
 export function calculateSUSScoreFromRespondents(
-  respondents: SurveyRespondents
+  respondents: SurveyRespondents,
+  scoreTypeId: string
 ) {
-  const scores = respondents.map(calculateSUSScoreFromRespondent);
+  const scores = respondents.map((r) =>
+    calculateSUSScoreFromRespondent(r, scoreTypeId)
+  );
   return scores;
 }
 
 export function calculateSUSScoreFromRespondent(
-  respondent: SurveyRespondents[number]
+  respondent: SurveyRespondents[number],
+  scoreTypeId: string
 ) {
-  const sus = susType.get();
-
-  if (!sus) throw new Error("No SUS type found");
-
   const score = respondent.responses
     .filter(
-      (r) => r.curratedResponse && r.curratedResponse.scoreTypeId === sus.id
+      (r) =>
+        r.curratedResponse && r.curratedResponse.scoreTypeId === scoreTypeId
     )
     .reduce((score, response) => {
       if (!response.curratedResponse?.numericalValue) return score;

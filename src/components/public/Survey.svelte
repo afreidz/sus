@@ -1,6 +1,7 @@
 <script lang="ts">
   import api from "@/helpers/api";
   import { onMount } from "svelte";
+  import confetti from "@/helpers/confetti";
   import type { APIResponses } from "@/helpers/api";
 
   let completed = false;
@@ -25,6 +26,7 @@
         substitutions: { respondentId: respondent.id, revisionId: revision.id },
       });
     }
+    if (respondent?.complete) confetti();
   });
 
   async function focusIndex(q: number = 0) {
@@ -84,6 +86,7 @@
     });
 
     completed = true;
+    confetti();
   }
 
   const containerClass =
@@ -139,9 +142,9 @@
           <ul class="join join-vertical xl:join-horizontal">
             {#each question.curratedResponses as response}
               <li
-                class="join-item btn btn-outline btn-lg bg-neutral border-neutral-300 has-[:checked]:border-sus-primary-60 has-[:checked]:ring-1 ring-sus-primary-60 has-[:checked]:z-10"
+                class="p-0 join-item btn btn-outline btn-lg bg-neutral border-neutral-300 has-[:checked]:border-sus-primary-60 has-[:checked]:ring-1 ring-sus-primary-60 has-[:checked]:z-10"
               >
-                <label class="group flex flex-1 items-center gap-4">
+                <label class="group flex flex-1 h-full items-center gap-4 px-4">
                   <input
                     required
                     type="radio"

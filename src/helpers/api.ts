@@ -20,6 +20,7 @@ import type { nonCurrentSUSRespondents } from "@/pages/api/respondents/noncurren
 import type { revisionSurveyType } from "@/api/public/surveys/[revision]/[type]/first.json";
 import type { curratedResponsesByType } from "@/pages/api/curratedResponses/[scoreType]/all.json";
 import type { respondentResponses } from "@/pages/api/public/responses/revision/[revisionId]/[respondentId].json";
+import type { respondentSurveyResponses } from "@/pages/api/public/responses/survey/[surveyId]/[respondentId].json";
 
 export type APIResponses = {
   me: Me;
@@ -43,6 +44,7 @@ export type APIResponses = {
   respondentResponseRevision: respondentResponses;
   curratedResponsesByType: curratedResponsesByType;
   nonCurrentSUSRespondents: nonCurrentSUSRespondents;
+  respondentSurveyResponses: respondentSurveyResponses;
 };
 
 type Endpoints = keyof typeof endpoints;
@@ -81,6 +83,10 @@ type CustomSubstitutions = {
   curratedResponsesByType: {
     scoreType: string;
   };
+  respondentSurveyResponses: {
+    surveyId: string;
+    respondentId: string;
+  };
 };
 
 type APIProps<E, M> = {
@@ -117,6 +123,8 @@ export const endpoints = {
   revisionSurveyType: "/api/public/surveys/{revisionId}/{typeId}/first.json",
   respondentResponseRevision:
     "/api/public/responses/revision/{revisionId}/{respondentId}.json",
+  respondentSurveyResponses:
+    "/api/public/responses/survey/{surveyId}/{respondentId}.json",
 } as const;
 
 export default async function api<

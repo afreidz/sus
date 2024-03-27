@@ -6,6 +6,7 @@
   import CardHeader from "@/components/common/CardHeader.svelte";
   import RespondentList from "@/components/private/RespondentList.svelte";
 
+  let loading = false;
   let surveyId: string;
   let newInviteList = "";
   let revision: APIResponses["revisionId"]["GET"];
@@ -18,19 +19,23 @@
   $: if (!$taskType) refreshTypes();
 
   async function refreshSystem() {
+    loading = true;
     system = await api({
       method: "GET",
       endpoint: "systemId",
       substitutions: { systemId: revision.systemId },
     });
+    loading = false;
   }
 
   async function refreshRevision() {
+    loading = true;
     revision = await api({
       method: "GET",
       endpoint: "revisionId",
       substitutions: { revisionId: revisionId },
     });
+    loading = false;
   }
 
   async function invite() {
@@ -45,6 +50,7 @@
       return !isEmail.safeParse(email).success;
     });
 
+    loading = true;
     await Promise.all(
       validEmails.map((email) => {
         return api({
@@ -63,7 +69,7 @@
 </script>
 
 <div
-  class:skeleton={!system || !revision}
+  class:skeleton={!system || !revision || loading}
   class="card bg-neutral rounded-lg shadow-sm p-4 w-full"
 >
   {#if system && revision && surveyId}

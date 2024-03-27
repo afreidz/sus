@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { APIResponses } from "@/helpers/api";
+  import { refreshTypes, susType } from "@/stores/types";
   import surveys, { refreshSurveys } from "@/stores/surveys";
-  import { refreshTypes, susType, taskType } from "@/stores/types";
 
   type SingleSystem = APIResponses["systemId"]["GET"];
 
@@ -13,17 +13,15 @@
   let newRevisionTitle: string = "";
   let newRevisionSurveys: string[] = [];
   let susSurveys: APIResponses["surveys"]["GET"] = [];
-  let taskSurveys: APIResponses["surveys"]["GET"] = [];
 
   onMount(() => {
-    refreshTypes();
     refreshSurveys();
   });
 
+  if (!$susType?.id) refreshTypes();
+
   $: if ($surveys?.length) {
     susSurveys = $surveys?.filter((s) => s.scoreTypeId === $susType?.id) ?? [];
-    taskSurveys =
-      $surveys?.filter((s) => s.scoreTypeId === $taskType?.id) ?? [];
   }
 
   $: if (open && elm) {
@@ -77,24 +75,6 @@
             class="select w-full max-w-xs"
           >
             {#each susSurveys as survey}
-              <option value={survey.id}>{survey.label}</option>
-            {/each}
-          </select>
-        </label>
-      {/if}
-      {#if taskSurveys.length}
-        <label class="form-control">
-          <div class="label">
-            <span class="label-text"
-              >Pick a user test tasklist for revision</span
-            >
-          </div>
-          <select
-            required
-            bind:value={newRevisionSurveys[1]}
-            class="select w-full max-w-xs"
-          >
-            {#each taskSurveys as survey}
               <option value={survey.id}>{survey.label}</option>
             {/each}
           </select>

@@ -7,6 +7,7 @@
   import { averageOccurringString } from "@/helpers/strings";
   import CardHeader from "@/components/common/CardHeader.svelte";
 
+  let loading = false;
   let revisionId: string;
   let surveyTestLink = "";
   let revision: APIResponses["revisionId"]["GET"];
@@ -15,12 +16,14 @@
     surveyTestLink = `${window.location.origin}/surveys/sus/${revision.id}`;
 
   onMount(async () => {
+    loading = true;
     await refreshTypes();
     revision = await api({
       method: "GET",
       endpoint: "revisionId",
       substitutions: { revisionId },
     });
+    loading = false;
   });
 
   function getResponseCount(qid: string) {
@@ -64,7 +67,7 @@
       completing the SUS survey for this revision</span
     >
   </CardHeader>
-  <table class="table flex-1">
+  <table class:skeleton={loading} class="table flex-1 bg-neutral">
     <thead>
       <tr>
         <th></th>

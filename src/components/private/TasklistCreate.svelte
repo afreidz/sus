@@ -17,6 +17,7 @@
     }[];
   };
 
+  let loading = false;
   let existing = false;
   let showConfirmDelete = false;
   let deleteDialog: HTMLDialogElement;
@@ -26,8 +27,6 @@
   let sections: Section[] = [{ tasks: [{ text: "" }] }];
   let survey: (typeof revision)["surveys"][number] | undefined;
   let responses: APIResponses["curratedResponsesByType"]["GET"] = [];
-
-  onMount(refreshMe);
 
   onMount(async () => {
     if (!taskType.get()) await refreshTypes();
@@ -90,6 +89,7 @@
   async function createTasklist() {
     if (!revision?.id) return;
 
+    await refreshMe();
     const questions = sections
       .map((section) =>
         section.tasks.map((task) => ({
@@ -214,7 +214,8 @@
     </CardHeader>
     {#each sections as section, s}
       <table
-        class="table mb-8 rounded-lg ring-4 ring-base-300/50 border-base-200"
+        class:skeleton={loading}
+        class="bg-neutral table mb-8 rounded-lg ring-4 ring-base-300/50 border-base-200"
       >
         <thead>
           <tr>

@@ -12,6 +12,15 @@ const system = await api({
   headers: Astro.request.headers,
   substitutions: { systemId: id },
 });
+
+const typeId = (
+  await api({
+    endpoint: "typesType",
+    base: Astro.url.origin,
+    headers: Astro.request.headers,
+    substitutions: { typesType: "sus" },
+  })
+)?.id;
 ---
 
 <PrivateLayout class="flex-1 flex flex-col items-center">
@@ -39,9 +48,12 @@ const system = await api({
       linkType="anchor"
     />
     {
-      system.revisions.map((revision) => (
-        <SystemRevisionContent {revision} client:load />
-      ))
+      system.revisions.map((revision) => {
+        const survey = revision.surveys.find((s) => s.scoreTypeId === typeId);
+        return (
+          survey && <SystemRevisionContent {revision} {survey} client:load />
+        );
+      })
     }
   </div>
 </PrivateLayout>

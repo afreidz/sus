@@ -30,6 +30,17 @@ export const POST: APIRoute = async ({ request }) => {
         },
       },
     },
+    include: {
+      questions: true,
+    },
+  });
+
+  await orm.surveyQuestionOrder.create({
+    data: {
+      surveyId: survey.id,
+      createdBy: survey.createdBy,
+      order: survey.questions.map((q) => q.id),
+    },
   });
 
   return new Response(JSON.stringify(survey), {

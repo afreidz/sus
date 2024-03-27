@@ -17,6 +17,7 @@
   $: if (newSystemNameElement) newSystemNameElement.focus();
 
   async function deleteClient() {
+    loading = true;
     confirmDeleteClient = false;
     if (client && confirmElement.returnValue === client.name) {
       await api({
@@ -26,9 +27,11 @@
       });
       window.location.href = "/clients";
     }
+    loading = false;
   }
 
   async function createNewSystem() {
+    loading = true;
     if (newSystemDialog.returnValue) {
       await api({
         method: "POST",
@@ -38,6 +41,7 @@
       window.location.reload();
     }
     showNewSystemDialog = false;
+    loading = true;
   }
 </script>
 

@@ -58,6 +58,7 @@ model Survey {
   questions        Question[]
   responseOrdering CurratedResponseOrder?
   questionOrdering SurveyQuestionOrder?
+  Response         Response[]
 }
 
 model Question {
@@ -149,6 +150,8 @@ model Response {
   revision           Revision          @relation(fields: [revisionId], references: [id], onDelete: Cascade)
   questionId         String
   question           Question          @relation(fields: [questionId], references: [id])
+  surveyId           String?
+  survey             Survey?           @relation(fields: [surveyId], references: [id], onDelete: Cascade)
 
   @@unique([respondentId, revisionId, questionId])
 }

@@ -7,16 +7,19 @@
   import CardHeader from "@/components/common/CardHeader.svelte";
   import { calculateSUSScoreFromRespondent } from "@/helpers/score";
 
+  let loading = false;
   let revisionId: string;
   let revision: APIResponses["revisionId"]["GET"];
 
   onMount(async () => {
+    loading = true;
     await refreshTypes();
     revision = await api({
       method: "GET",
       endpoint: "revisionId",
       substitutions: { revisionId },
     });
+    loading = false;
   });
 
   export { revisionId as revision };
@@ -26,12 +29,15 @@
   {@const susSurvey = revision.surveys.find(
     (survey) => survey.scoreTypeId === $susType?.id
   )}
-  <div class="card bg-neutral rounded-lg shadow-sm p-4 w-full">
+  <div
+    class:skeleton={loading}
+    class="card bg-neutral rounded-lg shadow-sm p-4 w-full"
+  >
     <CardHeader icon="mdi:bullhorn-outline" class="mb-4">
       <span>Respondent Responses</span>
     </CardHeader>
     {#each revision.respondents.filter((r) => r.complete) as respondent, i}
-      {@const score = calculateSUSScoreFromRespondent(respondent)}
+      {@const score = calculateSUSScoreFromRespondent(respondent, $susType.id)}
       <div class="collapse collapse-arrow bg-neutral-50 mb-1">
         <input type="checkbox" checked={i === 0} />
         <div class="collapse-title text-xl font-medium">

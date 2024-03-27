@@ -7,6 +7,7 @@
   import copy from "clipboard-copy";
   import type { APIResponses } from "@/helpers/api";
 
+  let loading = false;
   let hasTasklist = false;
   let deleteRespondentDialog: HTMLDialogElement;
   let respondents: APIResponses["revisionId"]["GET"]["respondents"] = [];
@@ -21,6 +22,7 @@
       return;
     }
 
+    loading = true;
     await api({
       endpoint: "respondentId",
       method: "DELETE",
@@ -36,9 +38,11 @@
     ).respondents;
 
     respondentToDelete = undefined;
+    loading = false;
   }
 
   async function resetStatus(respondent: (typeof respondents)[number]) {
+    loading = true;
     await api({
       endpoint: "respondentId",
       method: "PUT",
@@ -53,6 +57,7 @@
         substitutions: { revisionId: respondent.revisionId },
       })
     ).respondents;
+    loading = false;
   }
 
   export { respondents, hasTasklist };
@@ -61,7 +66,7 @@
 <h4 class="label sticky top-0 bg-neutral left-0 right-0 z-10">
   <span class="label-text">Respondents</span>
 </h4>
-<ul class="w-full h-full">
+<ul class:skeleton={loading} class="w-full h-full bg-neutral">
   {#each respondents as respondent}
     <li class="bg-neutral-50 rounded-lg mb-1 p-3 flex items-center gap-2">
       <span class="flex-1">{respondent.email}</span>
