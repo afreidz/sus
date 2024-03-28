@@ -176,7 +176,7 @@ export default async function api<
     signal,
     headers,
     body,
-  }).catch(() => null);
+  });
 
   if (!resp?.ok) {
     throw new Error("Something went wrong. Please try again.");

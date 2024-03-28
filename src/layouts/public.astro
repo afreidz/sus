@@ -1,18 +1,21 @@
 ---
 import BaseLayout from "./base.astro";
+import ErrorBoundary from "@/components/common/ErrorBoundary.svelte";
 
 const { class: className } = Astro.props;
 ---
 
 <BaseLayout>
-  <main class="flex-1 flex overflow-auto">
-    <aside
-      class="hidden xl:flex flex-none flex-col p-6 bg-neutral shadow-sm w-full max-w-sm fixed left-0 top-0 bottom-0"
-    >
-      <slot name="sidebar" />
-    </aside>
-    <div class={`xl:pl-96 ${className ?? ""}`}>
-      <slot />
-    </div>
-  </main>
+  <ErrorBoundary client:load>
+    <main class="flex-1 flex overflow-auto">
+      <aside
+        class="hidden xl:flex flex-none flex-col p-6 bg-neutral shadow-sm w-full max-w-sm fixed left-0 top-0 bottom-0"
+      >
+        <slot name="sidebar" />
+      </aside>
+      <div class={`xl:pl-96 ${className ?? ""}`}>
+        <slot />
+      </div>
+    </main>
+  </ErrorBoundary>
 </BaseLayout>

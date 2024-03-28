@@ -3,6 +3,7 @@
   import { onMount } from "svelte";
   import me, { refreshMe } from "@/stores/me";
   import type { APIResponses } from "@/helpers/api";
+  import { safeTextRegEx } from "@/helpers/strings";
   import { taskType, refreshTypes } from "@/stores/types";
   import CardHeader from "@/components/common/CardHeader.svelte";
   import { orderResponseByNumericalValue } from "@/helpers/order";
@@ -283,8 +284,11 @@
                   required
                   type="text"
                   class="input w-full"
+                  pattern={safeTextRegEx.source}
                   placeholder={`${placeholder}`}
                   bind:value={sections[s].tasks[t].text}
+                  on:invalid={(e) =>
+                    e.currentTarget.setCustomValidity("Invalid question text")}
                 />
               </td>
               {#each responses as _}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { APIResponses } from "@/helpers/api";
+  import { safeTextRegEx } from "@/helpers/strings";
   import { refreshTypes, susType } from "@/stores/types";
   import surveys, { refreshSurveys } from "@/stores/surveys";
 
@@ -61,6 +62,9 @@
             type="text"
             class="input w-full max-w-xs"
             bind:value={newRevisionTitle}
+            pattern={safeTextRegEx.source}
+            on:invalid={(e) =>
+              e.currentTarget.setCustomValidity(`Invalid revision name`)}
           />
         </label>
       </p>

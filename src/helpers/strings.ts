@@ -29,3 +29,5 @@ export function averageOccurringString(arr: string[]): string | null {
 
   return closestString;
 }
+
+export const safeTextRegEx = /^[\w\.\- ]+$/;

@@ -1,10 +1,11 @@
+import { safeTextRegEx } from "@/helpers/strings";
 import Client, { z, type ORM } from "@/helpers/orm";
 
 export const RevisionCreateSchema = z.object({
   systemId: z.string(),
   createdBy: z.string(),
   updatedAt: z.date().optional(),
-  title: z.string().min(3).max(100),
+  title: z.string().min(3).max(100).regex(safeTextRegEx),
 }) satisfies z.Schema<ORM.RevisionUncheckedCreateInput>;
 
 export default new Client().$extends({

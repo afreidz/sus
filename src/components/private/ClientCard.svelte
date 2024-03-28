@@ -1,6 +1,7 @@
 <script lang="ts">
   import me from "@/stores/me";
   import type { ORM } from "@/helpers/orm";
+  import { safeTextRegEx } from "@/helpers/strings";
   import api, { type APIResponses } from "@/helpers/api";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
   import NewSystemDialog from "@/components/private/NewSystemDialog.svelte";
@@ -89,7 +90,10 @@
           id="new_client_name"
           placeholder="New client name"
           class="input w-full max-w-xs"
+          pattern={safeTextRegEx.source}
           bind:this={newClientNameElement}
+          on:invalid={(e) =>
+            e.currentTarget.setCustomValidity(`Invalid client name`)}
         />
 
         <button class="btn btn-secondary text-neutral"> Create </button>

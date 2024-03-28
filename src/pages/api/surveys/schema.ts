@@ -1,3 +1,4 @@
+import { safeTextRegEx } from "@/helpers/strings";
 import Client, { z, type ORM } from "@/helpers/orm";
 
 export const SurveyCreateSchema = z.object({
@@ -5,7 +6,7 @@ export const SurveyCreateSchema = z.object({
   scoreTypeId: z.string(),
   updatedAt: z.date().optional(),
   revisionId: z.string().optional(),
-  label: z.string().min(3).max(100),
+  label: z.string().min(3).max(100).regex(safeTextRegEx),
 }) satisfies z.Schema<ORM.SurveyUncheckedCreateInput>;
 
 export default new Client();

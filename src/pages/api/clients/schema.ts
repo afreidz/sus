@@ -1,11 +1,8 @@
+import { safeTextRegEx } from "@/helpers/strings";
 import Client, { z, type ORM } from "@/helpers/orm";
 
 export const ClientCreateSchema = z.object({
-  name: z
-    .string()
-    .min(2)
-    .max(100)
-    .regex(/^[a-zA-Z0-9\s\.,\-_'"]*$/),
+  name: z.string().min(2).max(100).regex(safeTextRegEx),
   createdBy: z.string(),
   updatedAt: z.date().optional(),
 }) satisfies z.Schema<ORM.ClientUncheckedCreateInput>;

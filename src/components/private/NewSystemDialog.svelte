@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { APIResponses } from "@/helpers/api";
+  import { safeTextRegEx } from "@/helpers/strings";
 
   type SingleClient = APIResponses["clientId"]["GET"];
 
@@ -44,6 +45,9 @@
             type="text"
             class="input w-full max-w-xs"
             bind:value={newSystemTitle}
+            pattern={safeTextRegEx.source}
+            on:invalid={(e) =>
+              e.currentTarget.setCustomValidity(`Invalid system name`)}
           />
         </label>
       </p>
