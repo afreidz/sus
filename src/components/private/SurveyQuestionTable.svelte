@@ -1,7 +1,6 @@
 <script lang="ts">
   import api from "@/helpers/api";
   import { onMount } from "svelte";
-  import copy from "clipboard-copy";
   import type { APIResponses } from "@/helpers/api";
   import { susType, refreshTypes } from "@/stores/types";
   import { averageOccurringString } from "@/helpers/strings";
@@ -98,25 +97,4 @@
       </tbody>
     {/if}
   </table>
-  <div class="flex gap-2 items-end mb-4 flex-none">
-    <label class="form-control w-full">
-      <div class="label">
-        <span class="label-text">Test survey link</span>
-      </div>
-      <div class="flex">
-        <a class="btn btn-outline me-2" href={surveyTestLink} target="_blank">
-          <iconify-icon class="text-xl" icon="carbon:view"></iconify-icon>
-        </a>
-        <input
-          disabled
-          type="text"
-          bind:value={surveyTestLink}
-          class="input input-bordered !bg-neutral-100 w-full"
-        />
-      </div>
-    </label>
-    <button on:click={() => copy(surveyTestLink)} class="btn btn-outline"
-      >Copy</button
-    >
-  </div>
 </div>
