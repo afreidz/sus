@@ -12,8 +12,8 @@ import type { type } from "@/api/public/types/[type].json";
 import type { revisionId } from "@/api/revisions/[id].json";
 import type { respondents } from "@/api/respondents/all.json";
 import type { response } from "@/api/public/responses/all.json";
-import type { respondentId } from "@/api/respondents/[id].json";
 import type { surveyType } from "@/api/surveys/type/[type].json";
+import type { respondentId } from "@/api/public/respondents/[id].json";
 import type { publicRespondentId } from "@/api/public/respondents/[id].json";
 import type { respondentBySurveyId } from "@/pages/api/respondents/[surveyId]/[id].json";
 import type { nonCurrentSUSRespondents } from "@/pages/api/respondents/noncurrent/all.json";
@@ -115,7 +115,7 @@ export const endpoints = {
   revisionId: "/api/revisions/{revisionId}.json",
   typesType: "/api/public/types/{typesType}.json",
   surveyType: "/api/surveys/type/{surveyType}.json",
-  respondentId: "/api/respondents/{respondentId}.json",
+  respondentId: "/api/public/respondents/{respondentId}.json",
   nonCurrentSUSRespondents: "/api/respondents/noncurrent/all.json",
   curratedResponsesByType: "/api/curratedResponses/{scoreType}/all.json",
   respondentBySurveyId: "/api/respondents/{surveyId}/{respondentId}.json",
