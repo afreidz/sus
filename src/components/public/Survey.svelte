@@ -59,6 +59,7 @@
         questionId: q.id,
         revisionId: revision.id,
         respondentId: respondent.id,
+        surveyId: respondent.surveyId,
         curratedResponseId: response?.id,
         freeformResponse: !response ? value : undefined,
       }),

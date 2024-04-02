@@ -17,6 +17,7 @@ export type publicRespondentId = {
 export type respondentId = {
   GET: ORM.RespondentGetPayload<{
     include: {
+      survey: true;
       responses: {
         include: { curratedResponse: true; question: true };
       };
@@ -30,6 +31,7 @@ export const GET: APIRoute = async ({ params }) => {
   const respondent = await orm.respondent.findFirst({
     where: { id: params.id },
     include: {
+      survey: true,
       responses: {
         include: { curratedResponse: true, question: true },
       },
