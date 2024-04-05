@@ -30,4 +30,4 @@ export function averageOccurringString(arr: string[]): string | null {
   return closestString;
 }
 
-export const safeTextRegEx = /^[a-zA-Z0-9\s\.\(\)_]*$/;
+export const safeTextRegEx = /^[a-zA-Z0-9\s\"\.\(\)_]*$/;

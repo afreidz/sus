@@ -287,8 +287,6 @@
                   pattern={safeTextRegEx.source}
                   placeholder={`${placeholder}`}
                   bind:value={sections[s].tasks[t].text}
-                  on:invalid={(e) =>
-                    e.currentTarget.setCustomValidity("Invalid question text")}
                 />
               </td>
               {#each responses as _}

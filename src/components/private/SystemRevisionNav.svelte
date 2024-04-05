@@ -144,10 +144,10 @@
     {@const revision = system.revisions.find(
       (r) => r.id === $actives[system.id]
     )}
+    {@const tasklist = revision?.surveys.find(
+      (s) => s.scoreTypeId === $taskType?.id
+    )}
     {#if revision}
-      {@const tasklist = revision.surveys.find(
-        (s) => s.scoreTypeId === $taskType?.id
-      )}
       <div class="card bg-neutral shadow-sm sticky top-20 mr-4 mt-8">
         <div class="card-body">
           <header class="prose">
