@@ -1,3 +1,7 @@
+import { bufferToDataUri } from "./image";
+import type { APIResponses } from "./api";
+import type { TasklistSection } from "@/components/private/TasklistCreate.svelte";
+
 export function orderByKey<
   K extends string,
   T extends {
@@ -18,4 +22,53 @@ export function orderResponseByNumericalValue<
     : r.sort((a, b) => {
         return (b.numericalValue as number) - (a.numericalValue as number);
       });
+}
+
+export function groupTasklistSectionByDataUri(
+  arr: APIResponses["revisionId"]["GET"]["surveys"][number]["questions"]
+): TasklistSection[] {
+  return arr.reduce((current, question) => {
+    const key =
+      question.media && question.mediaMIME
+        ? bufferToDataUri(question.mediaMIME, question.media)
+        : undefined;
+    const exists = current.find((i) => i.media === key);
+
+    if (!exists)
+      current.push({
+        media: key,
+        tasks: [],
+        mime: question.mediaMIME ?? undefined,
+      });
+
+    current.find((i) => i.media === key)?.tasks.push({ ...question });
+
+    return current;
+  }, [] as TasklistSection[]);
+}
+
+export function groupTaskListSection(
+  arr: APIResponses["revisionId"]["GET"]["surveys"][number]["questions"],
+): TasklistSection[] {
+  return arr.reduce((current, question) => {
+    const group = question.group || undefined;
+    const exists = current.find((i) => i.group === group);
+
+    const media =
+      question.media && question.mediaMIME
+        ? bufferToDataUri(question.mediaMIME, question.media)
+        : undefined;
+
+    if (!exists)
+      current.push({
+        group,
+        media,
+        tasks: [],
+        mime: question.mediaMIME ?? undefined,
+      });
+
+    current.find((i) => i.group === group)?.tasks.push({ ...question });
+
+    return current;
+  }, [] as TasklistSection[]);
 }

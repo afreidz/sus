@@ -41,7 +41,7 @@
       window.location.reload();
     }
     showNewSystemDialog = false;
-    loading = true;
+    loading = false;
   }
 </script>
 

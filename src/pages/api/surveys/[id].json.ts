@@ -42,7 +42,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
   );
 
   const newQuestions = data.questions.filter((q: any) => !q.id);
-  const existingQuestion = data.questions.filter((q: any) => !!q.id);
+  const existingQuestions = data.questions.filter((q: any) => !!q.id);
   const removedQuestions = data.removedQuestions
     ? [...data.removedQuestions]
     : [];
@@ -55,43 +55,54 @@ export const PUT: APIRoute = async ({ params, request }) => {
       ...data,
       questions: {
         create: newQuestions,
-        connectOrCreate: existingQuestion.map((q: { id: string }) => ({
-          where: { id: q.id },
-          create: q,
-        })),
-        disconnect: removedQuestions.map((id: string) => ({ id })),
+        update: existingQuestions.map((q: { id: string }) => {
+          return {
+            where: { id: q.id },
+            data: q,
+          };
+        }),
       },
     },
     include: { questions: { include: { curratedResponses: true } } },
   });
 
-  // await orm.surveyQuestionOrder.upsert({
-  //   where: { surveyId: survey.id },
-  //   update: {
-  //     surveyId: survey.id,
-  //     createdBy: survey.createdBy,
-  //     order: survey.questions.map((q) => q.id),
-  //   },
-  //   create: {
-  //     surveyId: survey.id,
-  //     createdBy: survey.createdBy,
-  //     order: survey.questions.map((q) => q.id),
-  //   },
-  // });
+  if (removedQuestions.length) {
+    await orm.question.deleteMany({
+      where: {
+        id: {
+          in: removedQuestions,
+        },
+      },
+    });
+  }
 
-  // await orm.curratedResponseOrder.upsert({
-  //   where: { surveyId: survey.id },
-  //   update: {
-  //     surveyId: survey.id,
-  //     createdBy: survey.createdBy,
-  //     order: survey.questions[0].curratedResponses.map((q) => q.id),
-  //   },
-  //   create: {
-  //     surveyId: survey.id,
-  //     createdBy: survey.createdBy,
-  //     order: survey.questions[0].curratedResponses.map((q) => q.id),
-  //   },
-  // });
+  await orm.surveyQuestionOrder.upsert({
+    where: { surveyId: survey.id },
+    update: {
+      surveyId: survey.id,
+      createdBy: survey.createdBy,
+      order: survey.questions.map((q) => q.id),
+    },
+    create: {
+      surveyId: survey.id,
+      createdBy: survey.createdBy,
+      order: survey.questions.map((q) => q.id),
+    },
+  });
+
+  await orm.curratedResponseOrder.upsert({
+    where: { surveyId: survey.id },
+    update: {
+      surveyId: survey.id,
+      createdBy: survey.createdBy,
+      order: survey.questions[0].curratedResponses.map((q) => q.id),
+    },
+    create: {
+      surveyId: survey.id,
+      createdBy: survey.createdBy,
+      order: survey.questions[0].curratedResponses.map((q) => q.id),
+    },
+  });
 
   return new Response(JSON.stringify(survey), {
     status: 200,
@@ -113,7 +124,17 @@ export const DELETE: APIRoute = async ({ params }) => {
       where: { id: { in: survey.questions.map((q) => q.id) } },
     });
 
-    await orm.survey.delete({ where: { id: survey.id } });
+    await orm.survey.delete({
+      where: {
+        id: survey.id,
+        questionOrdering: {
+          surveyId: survey.id,
+        },
+        responseOrdering: {
+          surveyId: survey.id,
+        },
+      },
+    });
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

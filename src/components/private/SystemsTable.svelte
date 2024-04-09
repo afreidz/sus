@@ -5,6 +5,7 @@
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
   import NewSystemDialog from "@/components/private/NewSystemDialog.svelte";
   import SystemRevisionNav from "@/components/private/SystemRevisionNav.svelte";
+  import { MessageHandler } from "@/stores/messages";
 
   type SingleClient = APIResponses["clientId"]["GET"];
   type SingleSystem = APIResponses["systemId"]["GET"];
@@ -72,6 +73,7 @@
 
     systemToDelete = undefined;
     await refreshClient();
+    MessageHandler({ type: "success", message: "The system has been deleted" });
   }
 
   async function createNewSystem() {
@@ -84,6 +86,7 @@
       await refreshClient();
     }
     showNewSystemDialog = false;
+    MessageHandler({ type: "success", message: "The system has been added" });
   }
 
   function navToRevision(e: MouseEvent) {

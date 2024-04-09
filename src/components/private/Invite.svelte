@@ -1,6 +1,7 @@
 <script lang="ts">
   import z from "zod";
   import { onMount } from "svelte";
+  import { MessageHandler } from "@/stores/messages";
   import api, { type APIResponses } from "@/helpers/api";
   import { refreshTypes, taskType } from "@/stores/types";
   import CardHeader from "@/components/common/CardHeader.svelte";
@@ -61,8 +62,24 @@
       })
     );
 
+    loading = false;
     newInviteList = "";
-    await refreshRevision();
+
+    if (validEmails.length) {
+      MessageHandler({
+        type: "success",
+        message: "Respondents have been added to the survey",
+      });
+      await refreshRevision();
+    }
+
+    if (invalidEmails.length)
+      MessageHandler({
+        type: "error",
+        message: "Some of the email addresses could not be added",
+        detail:
+          `The following:\n${invalidEmails.join("\n")}\nare not valid.\n`.trimStart(),
+      });
   }
 
   export { revisionId as revision, surveyId as survey };
@@ -77,9 +94,9 @@
       (s) => s.scoreTypeId === $taskType?.id
     )}
     <CardHeader icon="mdi:invite" class="mb-4">
-      <span>Invite a new respondent</span>
+      <span>Add a new respondent</span>
       <span slot="sub">
-        Fill in an email address to invite someone to take the SUS Survey for <span
+        Fill in an email address to add a respondent to the SUS Survey for <span
           class="font-semibold text-neutral-950"
           >"{system.title}:
           {revision.title}."</span
@@ -89,7 +106,7 @@
     <form on:submit|preventDefault={invite} class="flex gap-2 items-end mb-4">
       <label class="form-control w-full">
         <div class="label">
-          <span class="label-text">Invite email</span>
+          <span class="label-text">Respondent email</span>
         </div>
         <input
           type="text"
@@ -98,7 +115,7 @@
           class="input input-bordered bg-neutral w-full"
         />
       </label>
-      <button class="btn btn-primary">Invite</button>
+      <button class="btn btn-primary">Add</button>
     </form>
     <div class="mb-4 h-96 overflow-auto">
       <RespondentList {hasTasklist} respondents={revision.respondents} />

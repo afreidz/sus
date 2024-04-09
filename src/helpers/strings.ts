@@ -1,33 +1,30 @@
-export function averageOccurringString(arr: string[]): string | null {
-  let frequencyMap: { [key: string]: number } = {};
+export const safeTextRegEx = new RegExp(`[A-Za-z0-9\x22\.\\-\\s\\{\\}\\(\\)\\[\\],_]*`);
 
-  for (let str of arr) {
-    if (str in frequencyMap) {
-      frequencyMap[str]++;
-    } else {
-      frequencyMap[str] = 1;
-    }
+export function getAverageResponseLabel<
+  T extends { numericalValue: number | null },
+>(responses: T[], possible: { label: string; value: number }[]): string {
+  // Check if the array is not empty
+  if (responses.length === 0) return "none"
+
+  const filteredResponses = responses.filter(
+    (r) => r.numericalValue !== null
+  ) as { numericalValue: number }[];
+
+  // Sum all the response values
+  let sum = filteredResponses.reduce(
+    (total, response) => total + response.numericalValue,
+    0
+  );
+
+  // Calculate the average
+  let average = Math.round(sum / responses.length);
+
+  // Find and return the corresponding label
+  let label = possible.find((response) => response.value === average);
+
+  if (label) {
+    return label.label;
+  } else {
+    throw new Error("Average value does not correspond to any label");
   }
-
-  let totalFrequency: number = 0;
-  let totalStrings: number = 0;
-  for (let str in frequencyMap) {
-    totalFrequency += frequencyMap[str];
-    totalStrings++;
-  }
-  let averageFrequency: number = totalFrequency / totalStrings;
-
-  let closestString: string | null = null;
-  let closestDifference = Number.MAX_VALUE;
-  for (let str in frequencyMap) {
-    let difference = Math.abs(frequencyMap[str] - averageFrequency);
-    if (difference < closestDifference) {
-      closestDifference = difference;
-      closestString = str;
-    }
-  }
-
-  return closestString;
 }
-
-export const safeTextRegEx = /^[a-zA-Z0-9\s\"\.\(\)_]*$/;

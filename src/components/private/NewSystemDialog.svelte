@@ -46,8 +46,7 @@
             class="input w-full max-w-xs"
             bind:value={newSystemTitle}
             pattern={safeTextRegEx.source}
-            on:invalid={(e) =>
-              e.currentTarget.setCustomValidity(`Invalid system name`)}
+            title="Invalid system name"
           />
         </label>
       </p>

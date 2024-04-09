@@ -1,23 +1,28 @@
+<script lang="ts" context="module">
+  export type TasklistSection = {
+    media?: string;
+    mime?: string;
+    group?: string;
+    tasks: {
+      id?: string;
+      text: string;
+    }[];
+  };
+</script>
+
 <script lang="ts">
   import api from "@/helpers/api";
   import { onMount } from "svelte";
   import me, { refreshMe } from "@/stores/me";
   import type { APIResponses } from "@/helpers/api";
   import { safeTextRegEx } from "@/helpers/strings";
+  import { MessageHandler } from "@/stores/messages";
+  import { groupTaskListSection } from "@/helpers/order";
+  import { fileToResizedDataURI } from "@/helpers/image";
   import { taskType, refreshTypes } from "@/stores/types";
   import CardHeader from "@/components/common/CardHeader.svelte";
   import { orderResponseByNumericalValue } from "@/helpers/order";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
-  import { groupByDataUri, fileToResizedDataURI } from "@/helpers/image";
-
-  type Section = {
-    media?: string;
-    mime?: string;
-    tasks: {
-      id?: string;
-      text: string;
-    }[];
-  };
 
   let loading = false;
   let existing = false;
@@ -26,16 +31,19 @@
   let removedQuestions: string[] = [];
   let placeholder = "Do something...";
   let revision: APIResponses["revisionId"]["GET"];
-  let sections: Section[] = [{ tasks: [{ text: "" }] }];
   let survey: (typeof revision)["surveys"][number] | undefined;
   let responses: APIResponses["curratedResponsesByType"]["GET"] = [];
+  let sections: TasklistSection[] = [
+    { tasks: [{ text: "" }], group: `section_${+new Date()}` },
+  ];
 
   onMount(async () => {
     if (!taskType.get()) await refreshTypes();
     survey = revision.surveys.find((s) => s.scoreTypeId === $taskType?.id);
     if (survey && survey.questions) {
       existing = true;
-      sections = groupByDataUri(survey.questions);
+      console.log(groupTaskListSection(survey.questions));
+      sections = groupTaskListSection(survey.questions);
     }
   });
 
@@ -53,37 +61,39 @@
     currentTarget: EventTarget & HTMLInputElement;
   };
 
-  async function handleImage(e: ImageSelectEvent, section: Section) {
-    if (!e.currentTarget?.files?.[0]) return;
-    const imageFile = e.currentTarget.files[0];
+  async function handleImage(
+    e: ImageSelectEvent | null,
+    section: TasklistSection
+  ) {
+    const imageFile = e?.currentTarget?.files?.[0];
 
-    const data = await fileToResizedDataURI(imageFile);
+    const data = imageFile ? await fileToResizedDataURI(imageFile) : undefined;
 
     section.media = data;
-    section.mime = imageFile.type;
+    section.mime = imageFile?.type;
 
     sections = [...sections];
   }
 
   function addSection() {
     const updated = [...sections];
-    updated.push({ tasks: [{ text: "" }] });
+    updated.push({ tasks: [{ text: "" }], group: `section_${+new Date()}` });
     sections = updated;
   }
 
-  function addTask(s: Section) {
+  function addTask(s: TasklistSection) {
     s.tasks.push({ text: "" });
     sections = [...sections];
   }
 
-  function removeSection(s: Section) {
+  function removeSection(s: TasklistSection) {
     if (s.tasks.some((t) => t.id))
       s.tasks.forEach((t) => t.id && removedQuestions.push(t.id));
     const updated = [...sections.filter((section) => section !== s)];
     sections = [...updated];
   }
 
-  function removeTask(s: Section, i: number) {
+  function removeTask(s: TasklistSection, i: number) {
     const task = s.tasks[i];
     if (task.id) removedQuestions.push(task.id);
     s.tasks.splice(i, 1);
@@ -99,6 +109,7 @@
         section.tasks.map((task) => ({
           id: task.id,
           text: task.text,
+          group: section.group,
           media: section.media,
           mediaMIME: section.mime,
           createdBy: $me?.user?.email,
@@ -136,6 +147,7 @@
     }
 
     window.history.back();
+    MessageHandler({ type: "success", message: "Tasklist has been updated" });
   }
 
   async function deleteTasklist() {
@@ -150,6 +162,7 @@
     });
 
     window.history.back();
+    MessageHandler({ type: "success", message: "Tasklist has been deleted" });
   }
 
   export { revision };
@@ -185,13 +198,11 @@
             >
           </p>
         </div>
-        <button type="submit" class="btn btn-primary text-neutral"
-          >{existing ? "Update" : "Create"} Task List</button
-        >
+        <button type="submit" class="btn btn-primary text-neutral">Save</button>
         <button
           type="button"
           on:click={() => window.history.back()}
-          class="btn btn-outline">Back</button
+          class="btn btn-outline">Cancel</button
         >
         {#if existing}
           <div class="divider">
@@ -227,7 +238,15 @@
         <thead>
           <tr>
             <th class="w-[30%] border-r border-base-200 p-0">
-              <div class="mockup-window bg-sus-primary-40 m-4">
+              <div class="mockup-window bg-sus-primary-40 m-4 relative">
+                {#if section.media}
+                  <button
+                    on:click={() => handleImage(null, section)}
+                    class="absolute p-0 right-2 top-3 btn btn-xs btn-ghost"
+                  >
+                    <iconify-icon icon="mdi:close"></iconify-icon>
+                  </button>
+                {/if}
                 <div class="flex justify-center bg-sus-surface-20">
                   {#if section.media}
                     <img
@@ -243,7 +262,7 @@
                       <input
                         type="file"
                         class="hidden"
-                        accept="image/*"
+                        accept="image/png"
                         on:change={(e) => handleImage(e, section)}
                       />
                     </label>
@@ -284,8 +303,9 @@
                   required
                   type="text"
                   class="input w-full"
-                  pattern={safeTextRegEx.source}
+                  title="Invalid task text"
                   placeholder={`${placeholder}`}
+                  pattern={safeTextRegEx.source}
                   bind:value={sections[s].tasks[t].text}
                 />
               </td>

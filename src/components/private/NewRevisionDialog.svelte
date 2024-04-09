@@ -61,10 +61,9 @@
             required
             type="text"
             class="input w-full max-w-xs"
+            title="Invalid revision name"
             bind:value={newRevisionTitle}
             pattern={safeTextRegEx.source}
-            on:invalid={(e) =>
-              e.currentTarget.setCustomValidity(`Invalid revision name`)}
           />
         </label>
       </p>

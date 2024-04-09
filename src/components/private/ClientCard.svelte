@@ -88,12 +88,11 @@
           required
           type="text"
           id="new_client_name"
-          placeholder="New client name"
           class="input w-full max-w-xs"
-          pattern={safeTextRegEx.source}
+          title="Invalid client name"
+          placeholder="New client name"
           bind:this={newClientNameElement}
-          on:invalid={(e) =>
-            e.currentTarget.setCustomValidity(`Invalid client name`)}
+          pattern={safeTextRegEx.source}
         />
 
         <button class="btn btn-secondary text-neutral"> Create </button>

@@ -67,10 +67,10 @@ model Question {
   updatedAt         DateTime           @updatedAt
   createdBy         String
   text              String
-  mediaLocation     String?
   positive          Boolean            @default(true)
   media             Bytes?
   mediaMIME         String?
+  group             String?
   responses         Response[]
   curratedResponses CurratedResponse[]
   surveys           Survey[]
@@ -83,7 +83,7 @@ model SurveyQuestionOrder {
   createdBy String
   order     String[]
   surveyId  String   @unique
-  survey    Survey   @relation(fields: [surveyId], references: [id])
+  survey    Survey   @relation(fields: [surveyId], references: [id], onDelete: Cascade)
 }
 
 model CurratedResponseOrder {
@@ -93,7 +93,7 @@ model CurratedResponseOrder {
   createdBy String?
   order     String[]
   surveyId  String   @unique
-  survey    Survey   @relation(fields: [surveyId], references: [id])
+  survey    Survey   @relation(fields: [surveyId], references: [id], onDelete: Cascade)
 }
 
 model ScoreType {

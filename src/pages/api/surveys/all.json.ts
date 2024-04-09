@@ -35,25 +35,25 @@ export const POST: APIRoute = async ({ request }) => {
     },
   });
 
-  // if (survey.questions.length) {
-  //   await orm.surveyQuestionOrder.create({
-  //     data: {
-  //       surveyId: survey.id,
-  //       createdBy: survey.createdBy,
-  //       order: survey.questions.map((q) => q.id),
-  //     },
-  //   });
-  // }
+  if (survey.questions.length) {
+    await orm.surveyQuestionOrder.create({
+      data: {
+        surveyId: survey.id,
+        createdBy: survey.createdBy,
+        order: survey.questions.map((q) => q.id),
+      },
+    });
+  }
 
-  // if (survey.questions[0].curratedResponses.length) {
-  //   await orm.curratedResponseOrder.create({
-  //     data: {
-  //       surveyId: survey.id,
-  //       createdBy: survey.createdBy,
-  //       order: survey.questions[0].curratedResponses.map((r) => r.id),
-  //     },
-  //   });
-  // }
+  if (survey.questions[0].curratedResponses.length) {
+    await orm.curratedResponseOrder.create({
+      data: {
+        surveyId: survey.id,
+        createdBy: survey.createdBy,
+        order: survey.questions[0].curratedResponses.map((r) => r.id),
+      },
+    });
+  }
 
   return new Response(JSON.stringify(survey), {
     status: 200,

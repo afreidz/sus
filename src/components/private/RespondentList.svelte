@@ -6,6 +6,7 @@
   import api from "@/helpers/api";
   import copy from "clipboard-copy";
   import type { APIResponses } from "@/helpers/api";
+  import { MessageHandler } from "@/stores/messages";
 
   let loading = false;
   let hasTasklist = false;
@@ -39,6 +40,7 @@
 
     respondentToDelete = undefined;
     loading = false;
+    MessageHandler({ type: "success", message: "Respondent has been removed" });
   }
 
   async function resetStatus(respondent: (typeof respondents)[number]) {
@@ -58,6 +60,10 @@
       })
     ).respondents;
     loading = false;
+    MessageHandler({
+      type: "success",
+      message: "Respondent SUS responses are now available for editing",
+    });
   }
 
   export { respondents, hasTasklist };

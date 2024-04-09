@@ -3,16 +3,44 @@
   import { onMount } from "svelte";
   import type { APIResponses } from "@/helpers/api";
   import { susType, refreshTypes } from "@/stores/types";
-  import { averageOccurringString } from "@/helpers/strings";
+  import { getAverageResponseLabel } from "@/helpers/strings";
   import CardHeader from "@/components/common/CardHeader.svelte";
+
+  type Response = {
+    label: string;
+    value: number;
+  };
 
   let loading = false;
   let revisionId: string;
   let surveyTestLink = "";
+  let possibleResponses: Response[] = [];
   let revision: APIResponses["revisionId"]["GET"];
+  let susSurvey: (typeof revision)["surveys"][number] | undefined;
 
   $: if (revision)
     surveyTestLink = `${window.location.origin}/surveys/sus/${revision.id}`;
+
+  $: if (revision && $susType) {
+    susSurvey = revision.surveys.find(
+      (survey) => survey.scoreTypeId === $susType?.id
+    );
+  }
+
+  $: if (susSurvey) {
+    const responseMap = new Map<string, number>();
+    susSurvey.questions.forEach((q) => {
+      q.curratedResponses.forEach((r) => {
+        if (!r.numericalValue) return;
+        responseMap.set(r.label, r.numericalValue);
+      });
+    });
+
+    possibleResponses = Array.from(responseMap.keys()).map((k) => ({
+      label: k,
+      value: responseMap.get(k) ?? 0,
+    }));
+  }
 
   onMount(async () => {
     loading = true;
@@ -25,34 +53,36 @@
     loading = false;
   });
 
+  function nonNullable<T>(value: T): value is NonNullable<T> {
+    return value !== null && value !== undefined;
+  }
+
   function getResponseCount(qid: string) {
-    return revision.respondents.reduce((count, respondent) => {
-      return (count += respondent.responses.find(
-        (response) => response.questionId === qid
-      )
-        ? 1
-        : 0);
-    }, 0);
+    return revision.respondents
+      .filter((r) => r.complete)
+      .reduce((count, respondent) => {
+        return (count += respondent.responses.find(
+          (response) => response.questionId === qid
+        )
+          ? 1
+          : 0);
+      }, 0);
   }
 
   function getAverageResponse(qid: string) {
     const responses = revision.respondents
-      .map((respondent) =>
-        respondent.responses.find((response) => response.questionId === qid)
+      .filter((r) => r.complete)
+      .map(
+        (respondent) =>
+          respondent.responses.find(
+            (response) =>
+              response.curratedResponse?.numericalValue &&
+              response.questionId === qid
+          )?.curratedResponse
       )
-      .filter(Boolean) as (typeof revision.respondents)[number]["responses"];
+      .filter(nonNullable);
 
-    const possibleResponses = responses
-      .reduce<(string | undefined)[]>((possible, response) => {
-        possible.push(
-          (response?.curratedResponse?.label || response?.freeformResponse) ??
-            undefined
-        );
-        return possible;
-      }, [])
-      .filter(Boolean) as string[];
-
-    return averageOccurringString(possibleResponses) ?? "none";
+    return getAverageResponseLabel(responses, possibleResponses) ?? "none";
   }
 
   export { revisionId };
@@ -75,10 +105,7 @@
         <th>Respondents</th>
       </tr>
     </thead>
-    {#if revision && $susType}
-      {@const susSurvey = revision.surveys.find(
-        (survey) => survey.scoreTypeId === $susType?.id
-      )}
+    {#if susSurvey}
       <tbody>
         {#if susSurvey?.questions}
           {#each susSurvey.questions as question}

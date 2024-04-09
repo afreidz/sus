@@ -2,14 +2,14 @@
   import api from "@/helpers/api";
   import { onMount } from "svelte";
   import confetti from "@/helpers/confetti";
-  import { groupByDataUri } from "@/helpers/image";
   import type { APIResponses } from "@/helpers/api";
+  import { groupTaskListSection } from "@/helpers/order";
   import CardHeader from "@/components/common/CardHeader.svelte";
   import { orderResponseByNumericalValue } from "@/helpers/order";
 
   let loading = false;
   let complete = false;
-  let sections: ReturnType<typeof groupByDataUri>;
+  let sections: ReturnType<typeof groupTaskListSection>;
   let respondent: APIResponses["respondentBySurveyId"]["GET"];
   let survey: APIResponses["revisionId"]["GET"]["surveys"][number];
 
@@ -20,7 +20,7 @@
     if (!survey.questions) return;
 
     loading = true;
-    sections = groupByDataUri(survey.questions);
+    sections = groupTaskListSection(survey.questions);
 
     const existingResponses = await api({
       method: "GET",
