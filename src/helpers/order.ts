@@ -72,3 +72,12 @@ export function groupTaskListSection(
     return current;
   }, [] as TasklistSection[]);
 }
+
+export function removeDuplicatesById<T extends { id: string, [key: string]: any }>(arr: T[]) {
+  const uniqueArray = arr.filter((item, index, self) =>
+        index === self.findIndex((t: (typeof arr)[number]) => (
+            t.id === item.id
+        ))
+    );
+    return uniqueArray;
+}

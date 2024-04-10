@@ -80,10 +80,11 @@
         <li class="group">
           {#if i !== 0}<hr />{/if}
           <a
+            title={revision.title}
             class:!timeline-end={!stacked && i % 2}
             class:opacity-30={highlightActive &&
               $actives[system.id] !== revision.id}
-            class="timeline-start timeline-box border-current text-current bg-transparent"
+            class="timeline-start timeline-box border-current text-current bg-transparent overflow-hidden whitespace-nowrap text-ellipsis max-w-32"
             href={linkType === "anchor"
               ? `#${revision.id}`
               : `/systems/${revision.systemId}#${revision.id}`}
@@ -196,7 +197,7 @@
             class="btn btn-secondary text-neutral">New Revision</button
           >
           <a href={`/tasklist/${revision.id}`} class="btn btn-outline"
-            >{tasklist ? "Edit" : "Create"} user test checklist</a
+            >{tasklist ? "Edit" : "Create"} user test tasklist</a
           >
           <div class="divider">
             <span>Danger Zone</span>

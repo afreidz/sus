@@ -31,7 +31,7 @@
   class:hidden={$activeRevisionsBySystem[revision.systemId] !== revision.id}
   class="flex gap-8 flex-1 flex-wrap max-w-6xl"
 >
-  <div class="flex flex-1 flex-col gap-6">
+  <div class="flex flex-1 gap-6">
     <div class="card bg-neutral rounded-lg shadow-sm p-4 w-full">
       <CardHeader icon="mdi:speedometer" class="mb-4">
         <span>Score for revision</span>
@@ -50,10 +50,8 @@
     </div>
     <Invite revision={revision.id} survey={susSurvey.id} />
   </div>
-  <div class="flex-1 flex justify-center">
-    <SurveyQuestionTable revisionId={revision.id} />
-  </div>
-  <div class="w-full">
+  <div class="w-full flex flex-col gap-8">
     <ResponseList revision={revision.id} />
+    <SurveyQuestionTable revisionId={revision.id} />
   </div>
 </div>

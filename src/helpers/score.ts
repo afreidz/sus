@@ -4,8 +4,6 @@
 // for "negative" question ids subtract the user response from 5
 // sum and multiply the final score by 2.5 to get a score out of 100
 // average all the responses to get a final raw score
-
-import { susType } from "@/stores/types";
 import type { APIResponses } from "@/helpers/api";
 
 type SurveyRespondents =

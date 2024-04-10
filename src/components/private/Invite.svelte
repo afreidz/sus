@@ -117,7 +117,7 @@
       </label>
       <button class="btn btn-primary">Add</button>
     </form>
-    <div class="mb-4 h-96 overflow-auto">
+    <div class="mb-4 h-60 overflow-auto">
       <RespondentList {hasTasklist} respondents={revision.respondents} />
     </div>
   {/if}
