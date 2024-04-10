@@ -2,7 +2,7 @@
 import api from "@/helpers/api";
 import PrivateLayout from "@/layouts/private.astro";
 import ClientMeta from "@/components/private/ClientMeta.svelte";
-import SystemsTable from "@/components/private/SystemsTable.svelte";
+import SystemsList from "@/components/private/SystemsList.svelte";
 
 const id = Astro.params.id as string;
 const client = await api({
@@ -23,7 +23,7 @@ const client = await api({
   </div>
   <div class="w-full flex gap-0 max-w-screen-xl justify-self-center">
     <main class="flex-1 p-4 p-r2">
-      <SystemsTable client:visible {client} />
+      <SystemsList client:visible {client} />
     </main>
     <aside class="flex-none p-4 pl-2">
       <ClientMeta client:visible {client} />

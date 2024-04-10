@@ -2,10 +2,11 @@
   import api from "@/helpers/api";
   import { onMount } from "svelte";
   import type { APIResponses } from "@/helpers/api";
+  import { MessageHandler } from "@/stores/messages";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
   import NewSystemDialog from "@/components/private/NewSystemDialog.svelte";
   import SystemRevisionNav from "@/components/private/SystemRevisionNav.svelte";
-  import { MessageHandler } from "@/stores/messages";
+  import NewRevisionDialog from "@/components/private/NewRevisionDialog.svelte";
 
   type SingleClient = APIResponses["clientId"]["GET"];
   type SingleSystem = APIResponses["systemId"]["GET"];
@@ -14,8 +15,10 @@
 
   let active: SingleSystem["id"];
   let showNewSystemDialog = false;
+  let showNewRevisionDialog = false;
   let sections: HTMLInputElement[] = [];
   let newSystemDialog: HTMLDialogElement;
+  let newRevisionDialog: HTMLDialogElement;
   let deleteSystemDialog: HTMLDialogElement;
   let systems: Promise<SingleSystem>[] = [];
   let systemToDelete: SingleClient["systems"][number] | undefined = undefined;
@@ -89,6 +92,20 @@
     MessageHandler({ type: "success", message: "The system has been added" });
   }
 
+  async function createNewRevision() {
+    showNewRevisionDialog = false;
+    if (!newRevisionDialog.returnValue) return;
+
+    await api({
+      method: "POST",
+      endpoint: "revisions",
+      body: newRevisionDialog.returnValue,
+    });
+    newRevisionDialog.returnValue = "";
+    await refreshClient();
+    MessageHandler({ type: "success", message: "The revision has been added" });
+  }
+
   function navToRevision(e: MouseEvent) {
     window.location.href = (e.target as HTMLAnchorElement).href;
   }
@@ -122,30 +139,6 @@
 
           <div class="collapse-title flex items-center justify-between pr-4">
             <strong class="text-xl font-medium">{system.title}</strong>
-            <div class="dropdown dropdown-end rounded-box">
-              <!-- svelte-ignore a11y-click-events-have-key-events -->
-              <div
-                tabindex="0"
-                role="button"
-                on:focus={() => sections[x]?.click()}
-                on:click={() => sections[x]?.click()}
-                class="btn btn-square btn-ghost btn-sm m-1 relative z-10 text-xl"
-              >
-                <iconify-icon icon="pepicons-pencil:dots-y"></iconify-icon>
-              </div>
-              <ul
-                class="dropdown-content menu w-56 bg-neutral rounded-box absolute z-10 shadow text-left"
-              >
-                <li>
-                  <a href={`/systems/${system.id}`}> View Details </a>
-                </li>
-                <li class="text-error">
-                  <button on:click={() => (systemToDelete = system)}>
-                    Delete!
-                  </button>
-                </li>
-              </ul>
-            </div>
           </div>
           <div
             class="collapse-content bg-sus-surface-90 text-sus-surface-90-fg"
@@ -168,6 +161,43 @@
                   stacked={false}
                   highlightActive={false}
                   on:click={navToRevision}
+                />
+                <div
+                  class="flex justify-end p-2 -m-4 mt-4 bg-neutral text-base-content"
+                >
+                  <div class="dropdown dropdown-top dropdown-end rounded-box">
+                    <div
+                      tabindex="0"
+                      role="button"
+                      class="btn btn-square btn-ghost btn-sm m-1 relative z-10 text-xl"
+                    >
+                      <iconify-icon icon="pepicons-pencil:dots-y"
+                      ></iconify-icon>
+                    </div>
+                    <ul
+                      class="dropdown-content menu w-56 bg-neutral rounded-box absolute z-10 shadow text-left"
+                    >
+                      <li>
+                        <a href={`/systems/${system?.id}`}> View Details </a>
+                      </li>
+                      <li>
+                        <button on:click={() => (showNewRevisionDialog = true)}>
+                          New Revision
+                        </button>
+                      </li>
+                      <li class="text-error">
+                        <button on:click={() => (systemToDelete = system)}>
+                          Delete!
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                <NewRevisionDialog
+                  {system}
+                  bind:elm={newRevisionDialog}
+                  on:close={createNewRevision}
+                  open={showNewRevisionDialog}
                 />
               {/await}
             </div>

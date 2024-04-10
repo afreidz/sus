@@ -132,15 +132,6 @@
       {/each}
     {/if}
   </ul>
-  {#if !showMeta}
-    <div class="flex justify-center m-4 py-4 border-t border-dotted">
-      <button
-        on:click={() => (showNewRevisionDialog = true)}
-        class="btn btn-sm btn-outline border-current text-current"
-        >New Revision</button
-      >
-    </div>
-  {/if}
   {#if showMeta && $actives[system.id]}
     {@const revision = system.revisions.find(
       (r) => r.id === $actives[system.id]
