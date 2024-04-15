@@ -3,7 +3,7 @@ import type { APIRoute } from "astro";
 import type { ORM } from "@/helpers/orm";
 
 export type clientId = {
-  GET: ORM.ClientGetPayload<{ include: { systems: true } }>;
+  GET: ORM.ClientGetPayload<{ include: { systems: { include: { client: true, revisions: { include: { surveys: true, respondents: true }, } } } } }>;
   PUT: ORM.ClientGetPayload<{ include: { systems: true } }>;
   DELETE: { success: boolean };
 };
@@ -11,7 +11,7 @@ export type clientId = {
 export const GET: APIRoute = async ({ params }) => {
   const client = await orm.client.findFirst({
     where: { id: params.id },
-    include: { systems: true },
+    include: { systems: { include: { client: true, revisions: { include: { surveys: true, respondents: true } } } } },
   });
 
   return new Response(JSON.stringify(client), {

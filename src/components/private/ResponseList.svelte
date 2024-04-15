@@ -1,4 +1,8 @@
 <script lang="ts">
+  import {
+    removeDuplicatesById,
+    orderResponseByNumericalValue,
+  } from "@/helpers/order";
   import api from "@/helpers/api";
   import { onMount } from "svelte";
   import type { APIResponses } from "@/helpers/api";
@@ -6,11 +10,6 @@
   import CardHeader from "@/components/common/CardHeader.svelte";
   import { susType, taskType, refreshTypes } from "@/stores/types";
   import { calculateSUSScoreFromRespondent } from "@/helpers/score";
-  import Tasklist from "./Tasklist.svelte";
-  import {
-    orderResponseByNumericalValue,
-    removeDuplicatesById,
-  } from "@/helpers/order";
 
   let loading = false;
   let revisionId: string;

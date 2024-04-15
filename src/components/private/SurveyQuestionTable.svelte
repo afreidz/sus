@@ -1,8 +1,5 @@
 <script lang="ts">
-  import api from "@/helpers/api";
-  import { onMount } from "svelte";
   import type { APIResponses } from "@/helpers/api";
-  import { susType, refreshTypes } from "@/stores/types";
   import { getAverageResponseLabel } from "@/helpers/strings";
   import CardHeader from "@/components/common/CardHeader.svelte";
 
@@ -11,25 +8,15 @@
     value: number;
   };
 
-  let loading = false;
-  let revisionId: string;
-  let surveyTestLink = "";
   let possibleResponses: Response[] = [];
-  let revision: APIResponses["revisionId"]["GET"];
-  let susSurvey: (typeof revision)["surveys"][number] | undefined;
+  let respondents: APIResponses["systemId"]["GET"]["revisions"][number]["respondents"];
+  let survey:
+    | APIResponses["systemId"]["GET"]["revisions"][number]["surveys"][number]
+    | undefined;
 
-  $: if (revision)
-    surveyTestLink = `${window.location.origin}/surveys/sus/${revision.id}`;
-
-  $: if (revision && $susType) {
-    susSurvey = revision.surveys.find(
-      (survey) => survey.scoreTypeId === $susType?.id
-    );
-  }
-
-  $: if (susSurvey) {
+  $: if (survey) {
     const responseMap = new Map<string, number>();
-    susSurvey.questions.forEach((q) => {
+    survey.questions.forEach((q) => {
       q.curratedResponses.forEach((r) => {
         if (!r.numericalValue) return;
         responseMap.set(r.label, r.numericalValue);
@@ -42,35 +29,22 @@
     }));
   }
 
-  onMount(async () => {
-    loading = true;
-    await refreshTypes();
-    revision = await api({
-      method: "GET",
-      endpoint: "revisionId",
-      substitutions: { revisionId },
-    });
-    loading = false;
-  });
-
   function nonNullable<T>(value: T): value is NonNullable<T> {
     return value !== null && value !== undefined;
   }
 
   function getResponseCount(qid: string) {
-    return revision.respondents
-      .filter((r) => r.complete)
-      .reduce((count, respondent) => {
-        return (count += respondent.responses.find(
-          (response) => response.questionId === qid
-        )
-          ? 1
-          : 0);
-      }, 0);
+    return respondents.reduce((count, respondent) => {
+      return (count += respondent.responses.find(
+        (response) => response.questionId === qid
+      )
+        ? 1
+        : 0);
+    }, 0);
   }
 
   function getAverageResponse(qid: string) {
-    const responses = revision.respondents
+    const mappedResponses = respondents
       .filter((r) => r.complete)
       .map(
         (respondent) =>
@@ -82,10 +56,12 @@
       )
       .filter(nonNullable);
 
-    return getAverageResponseLabel(responses, possibleResponses) ?? "none";
+    return (
+      getAverageResponseLabel(mappedResponses, possibleResponses) ?? "none"
+    );
   }
 
-  export { revisionId };
+  export { survey, respondents };
 </script>
 
 <div class="card bg-neutral shadow-sm p-4 flex flex-col">
@@ -96,7 +72,7 @@
       completing the SUS survey for this revision</span
     >
   </CardHeader>
-  <table class:skeleton={loading} class="table flex-1 bg-neutral">
+  <table class="table flex-1 bg-neutral">
     <thead>
       <tr>
         <th></th>
@@ -105,10 +81,10 @@
         <th>Respondents</th>
       </tr>
     </thead>
-    {#if susSurvey}
+    {#if survey}
       <tbody>
-        {#if susSurvey?.questions}
-          {#each susSurvey.questions as question}
+        {#if survey?.questions}
+          {#each survey.questions as question}
             <tr class="text-base font-light">
               <th></th>
               <td class="italic opacity-50">"{question.text}"</td>

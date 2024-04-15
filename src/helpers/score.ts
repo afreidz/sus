@@ -13,31 +13,24 @@ type SurveyRespondents =
 
 export function calculateAverageSUSScore(
   respondents: SurveyRespondents,
-  scoreTypeId: string
 ) {
-  const scores = calculateSUSScoreFromRespondents(respondents, scoreTypeId);
+  const scores = calculateSUSScoreFromRespondents(respondents);
   return scores.reduce((a, b) => a + b, 0) / scores.length || 0;
 }
 
 export function calculateSUSScoreFromRespondents(
   respondents: SurveyRespondents,
-  scoreTypeId: string
 ) {
   const scores = respondents.map((r) =>
-    calculateSUSScoreFromRespondent(r, scoreTypeId)
+    calculateSUSScoreFromRespondent(r)
   );
   return scores;
 }
 
 export function calculateSUSScoreFromRespondent(
   respondent: SurveyRespondents[number],
-  scoreTypeId: string
 ) {
   const score = respondent.responses
-    .filter(
-      (r) =>
-        r.curratedResponse && r.curratedResponse.scoreTypeId === scoreTypeId
-    )
     .reduce((score, response) => {
       if (!response.curratedResponse?.numericalValue) return score;
       return (score += response.question.positive

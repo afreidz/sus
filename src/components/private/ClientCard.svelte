@@ -1,5 +1,4 @@
 <script lang="ts">
-  import me from "@/stores/me";
   import type { ORM } from "@/helpers/orm";
   import { safeTextRegEx } from "@/helpers/strings";
   import api, { type APIResponses } from "@/helpers/api";
@@ -19,7 +18,6 @@
   let newClientNameElement: HTMLInputElement;
 
   $: if (newClientNameElement) newClientNameElement.focus();
-  $: if ($me?.user?.name) name = $me.user.name;
 
   async function createNewClient() {
     const newClient: Omit<ORM.ClientCreateInput, "createdBy"> = {

@@ -9,58 +9,40 @@
   import NewRevisionDialog from "@/components/private/NewRevisionDialog.svelte";
 
   type SingleClient = APIResponses["clientId"]["GET"];
-  type SingleSystem = APIResponses["systemId"]["GET"];
+  type SingleSystem = SingleClient["systems"][number];
 
   export let client: SingleClient;
 
-  let active: SingleSystem["id"];
+  let loading: boolean = false;
   let showNewSystemDialog = false;
   let showNewRevisionDialog = false;
   let sections: HTMLInputElement[] = [];
   let newSystemDialog: HTMLDialogElement;
   let newRevisionDialog: HTMLDialogElement;
   let deleteSystemDialog: HTMLDialogElement;
-  let systems: Promise<SingleSystem>[] = [];
+  let active: SingleSystem["id"] | undefined;
   let systemToDelete: SingleClient["systems"][number] | undefined = undefined;
-
-  onMount(() => {
-    if (client.systems.length) {
-      systems = client.systems.map(async (system) => {
-        return await api({
-          method: "GET",
-          endpoint: "systemId",
-          substitutions: { systemId: system.id },
-        });
-      });
-    }
-  });
 
   onMount(() => {
     if (window.location.hash) {
       active = window.location.hash.replace("#", "");
-    } else if (client.systems.length) {
+    } else {
+      console.log(client.systems);
       active = client.systems[0].id;
     }
   });
 
+  $: if (active) history.replaceState(null, "", `#${active}`);
+
   async function refreshClient() {
+    loading = true;
     client = await api({
       method: "GET",
       endpoint: "clientId",
       substitutions: { clientId: client.id },
     });
-    if (client.systems.length) {
-      systems = client.systems.map(async (system) => {
-        return await api({
-          method: "GET",
-          endpoint: "systemId",
-          substitutions: { systemId: system.id },
-        });
-      });
-    }
+    loading = false;
   }
-
-  $: if (active) history.replaceState(null, "", `#${active}`);
 
   async function deleteSystem() {
     if (deleteSystemDialog.returnValue !== systemToDelete?.title) {
@@ -77,19 +59,25 @@
     systemToDelete = undefined;
     await refreshClient();
     MessageHandler({ type: "success", message: "The system has been deleted" });
+    active = client.systems[0]?.id;
+    if (!active) history.replaceState(null, "", "");
   }
 
   async function createNewSystem() {
     if (newSystemDialog.returnValue) {
-      await api({
+      const newSystem = await api({
         method: "POST",
         endpoint: "systems",
         body: newSystemDialog.returnValue,
       });
       await refreshClient();
+      showNewSystemDialog = false;
+      MessageHandler({ type: "success", message: "The system has been added" });
+      active = newSystem.id;
+      console.log(active);
+    } else {
+      MessageHandler({ type: "error", message: "Unable to add the system" });
     }
-    showNewSystemDialog = false;
-    MessageHandler({ type: "success", message: "The system has been added" });
   }
 
   async function createNewRevision() {
@@ -101,6 +89,7 @@
       endpoint: "revisions",
       body: newRevisionDialog.returnValue,
     });
+
     newRevisionDialog.returnValue = "";
     await refreshClient();
     MessageHandler({ type: "success", message: "The revision has been added" });
@@ -116,7 +105,9 @@
     class:items-center={!client.systems.length}
     class="flex-1 flex flex-col gap-4"
   >
-    {#if client.systems?.length === 0}
+    {#if loading}
+      <span class="loading loading-spinner loading-lg"></span>
+    {:else if client.systems?.length === 0}
       <strong class="w-full py-10 text-center uppercase opacity-50"
         >No client systems</strong
       >
@@ -144,62 +135,56 @@
             class="collapse-content bg-sus-surface-90 text-sus-surface-90-fg"
           >
             <div class="pt-6 flex flex-col">
-              {#await systems[x]}
-                <span class="loading loading-dots loading-md"
-                  >loading system</span
+              {#if !system?.revisions.length}
+                <strong
+                  class="w-full py-10 text-center uppercase text-neutral/50"
+                  >No revisions for system yet</strong
                 >
-              {:then system}
-                {#if !system?.revisions.length}
-                  <strong
-                    class="w-full py-10 text-center uppercase text-neutral/50"
-                    >No revisions for system yet</strong
+              {/if}
+              <SystemRevisionNav
+                vertical
+                stacked={false}
+                bind:system
+                highlightActive={false}
+                on:click={navToRevision}
+                on:update={refreshClient}
+              />
+              <div
+                class="flex justify-end p-2 -m-4 mt-4 bg-neutral text-base-content"
+              >
+                <div class="dropdown dropdown-top dropdown-end rounded-box">
+                  <div
+                    tabindex="0"
+                    role="button"
+                    class="btn btn-square btn-ghost btn-sm m-1 relative z-10 text-xl"
                   >
-                {/if}
-                <SystemRevisionNav
-                  {system}
-                  vertical
-                  stacked={false}
-                  highlightActive={false}
-                  on:click={navToRevision}
-                />
-                <div
-                  class="flex justify-end p-2 -m-4 mt-4 bg-neutral text-base-content"
-                >
-                  <div class="dropdown dropdown-top dropdown-end rounded-box">
-                    <div
-                      tabindex="0"
-                      role="button"
-                      class="btn btn-square btn-ghost btn-sm m-1 relative z-10 text-xl"
-                    >
-                      <iconify-icon icon="pepicons-pencil:dots-y"
-                      ></iconify-icon>
-                    </div>
-                    <ul
-                      class="dropdown-content menu w-56 bg-neutral rounded-box absolute z-10 shadow text-left"
-                    >
-                      <li>
-                        <a href={`/systems/${system?.id}`}> View Details </a>
-                      </li>
-                      <li>
-                        <button on:click={() => (showNewRevisionDialog = true)}>
-                          New Revision
-                        </button>
-                      </li>
-                      <li class="text-error">
-                        <button on:click={() => (systemToDelete = system)}>
-                          Delete!
-                        </button>
-                      </li>
-                    </ul>
+                    <iconify-icon icon="pepicons-pencil:dots-y"></iconify-icon>
                   </div>
+                  <ul
+                    class="dropdown-content menu w-56 bg-neutral rounded-box absolute z-10 shadow text-left"
+                  >
+                    <li>
+                      <a href={`/systems/${system?.id}`}> View Details </a>
+                    </li>
+                    <li>
+                      <button on:click={() => (showNewRevisionDialog = true)}>
+                        New Revision
+                      </button>
+                    </li>
+                    <li class="text-error">
+                      <button on:click={() => (systemToDelete = system)}>
+                        Delete!
+                      </button>
+                    </li>
+                  </ul>
                 </div>
-                <NewRevisionDialog
-                  {system}
-                  bind:elm={newRevisionDialog}
-                  on:close={createNewRevision}
-                  open={showNewRevisionDialog}
-                />
-              {/await}
+              </div>
+              <NewRevisionDialog
+                {system}
+                bind:elm={newRevisionDialog}
+                on:close={createNewRevision}
+                open={showNewRevisionDialog}
+              />
             </div>
           </div>
         </div>

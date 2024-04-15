@@ -1,7 +1,6 @@
 ---
 import api from "@/helpers/api";
 import PrivateLayout from "@/layouts/private.astro";
-import SystemRevisionNav from "@/components/private/SystemRevisionNav.svelte";
 import SystemRevisionContent from "@/components/private/SystemRevision.svelte";
 
 const id = Astro.params.id as string;
@@ -13,14 +12,23 @@ const system = await api({
   substitutions: { systemId: id },
 });
 
-const typeId = (
+const sus = (
   await api({
     endpoint: "typesType",
     base: Astro.url.origin,
     headers: Astro.request.headers,
     substitutions: { typesType: "sus" },
   })
-)?.id;
+);
+
+const task = (
+  await api({
+    endpoint: "typesType",
+    base: Astro.url.origin,
+    headers: Astro.request.headers,
+    substitutions: { typesType: "tasks" },
+  })
+);
 ---
 
 <PrivateLayout class="flex-1 flex flex-col items-center">
@@ -38,22 +46,8 @@ const typeId = (
       >Client Readout</a
     > -->
   </div>
+
   <div class="p-4 flex w-full">
-    <SystemRevisionNav
-      {system}
-      vertical
-      showMeta
-      client:load
-      class="flex-none"
-      linkType="anchor"
-    />
-    {
-      system.revisions.map((revision) => {
-        const survey = revision.surveys.find((s) => s.scoreTypeId === typeId);
-        return (
-          survey && <SystemRevisionContent {revision} {survey} client:load />
-        );
-      })
-    }
+    <SystemRevisionContent active={system.revisions[0].id} {system} {sus} {task} client:load />
   </div>
 </PrivateLayout>

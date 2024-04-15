@@ -13,13 +13,13 @@
 <script lang="ts">
   import api from "@/helpers/api";
   import { onMount } from "svelte";
+  import { taskType } from "@/stores/types";
   import me, { refreshMe } from "@/stores/me";
   import type { APIResponses } from "@/helpers/api";
   import { safeTextRegEx } from "@/helpers/strings";
   import { MessageHandler } from "@/stores/messages";
   import { groupTaskListSection } from "@/helpers/order";
   import { fileToResizedDataURI } from "@/helpers/image";
-  import { taskType, refreshTypes } from "@/stores/types";
   import CardHeader from "@/components/common/CardHeader.svelte";
   import { orderResponseByNumericalValue } from "@/helpers/order";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
@@ -30,6 +30,7 @@
   let deleteDialog: HTMLDialogElement;
   let removedQuestions: string[] = [];
   let placeholder = "Do something...";
+  let task: APIResponses["types"]["GET"][number];
   let revision: APIResponses["revisionId"]["GET"];
   let survey: (typeof revision)["surveys"][number] | undefined;
   let responses: APIResponses["curratedResponsesByType"]["GET"] = [];
@@ -38,20 +39,22 @@
   ];
 
   onMount(async () => {
-    if (!taskType.get()) await refreshTypes();
-    survey = revision.surveys.find((s) => s.scoreTypeId === $taskType?.id);
+    survey = revision.surveys.find((s) => s.scoreTypeId === task.id);
     if (survey && survey.questions) {
       existing = true;
-      console.log(groupTaskListSection(survey.questions));
       sections = groupTaskListSection(survey.questions);
     }
   });
+
+  $: if (task) {
+    taskType.set(task);
+  }
 
   $: if ($taskType?.id) {
     api({
       method: "GET",
       endpoint: "curratedResponsesByType",
-      substitutions: { scoreType: $taskType.id },
+      substitutions: { scoreType: task.id },
     }).then((r) => {
       responses = orderResponseByNumericalValue<(typeof responses)[number]>(r);
     });
@@ -139,8 +142,8 @@
         method: "POST",
         body: JSON.stringify({
           questions,
+          scoreTypeId: task.id,
           revisionId: revision.id,
-          scoreTypeId: taskType.get()?.id,
           label: `tasklist_${revision.id}`,
         }),
       });
@@ -165,7 +168,7 @@
     MessageHandler({ type: "success", message: "Tasklist has been deleted" });
   }
 
-  export { revision };
+  export { revision, task };
 </script>
 
 <form

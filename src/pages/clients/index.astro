@@ -17,14 +17,25 @@ const respondents = await api({
   headers: Astro.request.headers,
   endpoint: "nonCurrentSUSRespondents",
 });
+
+const auth = await api({
+  method: "GET",
+  endpoint: "me",
+  base: Astro.url.origin,
+  headers: Astro.request.headers,
+});
+
+const name = auth.user?.name ?? "";
 ---
 
 <PrivateLayout>
-  <header class="flex p-8 justify-center items-center text-center">
-    <Stats {clients} {respondents} client:only="svelte" />
-  </header>
+  {!!respondents.length && (
+    <header class="flex p-8 justify-center items-center text-center">
+      <Stats {clients} {respondents} client:only="svelte" />
+    </header>
+  )}
   <section class="p-10 flex flex-wrap gap-4 justify-evenly">
-    <ClientCard client:visible />
+    <ClientCard client:visible name={name} />
     {clients.map((client) => <ClientCard client:visible {client} />)}
   </section>
 </PrivateLayout>

@@ -7,7 +7,7 @@ export const RespondentResponseSchema = z.object({
   questionId: z.string(),
   respondentId: z.string(),
   curratedResponseId: z.string().optional(),
-  freeformResponse: z.string().min(3).max(1000).optional(),
+  freeformResponse: z.string().max(1000).optional(),
 }) satisfies z.Schema<ORM.ResponseUncheckedCreateInput>;
 
 export default new Client().$extends({

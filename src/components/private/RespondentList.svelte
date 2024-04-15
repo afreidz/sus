@@ -73,7 +73,7 @@
   <span class="label-text">Respondents</span>
 </h4>
 <ul class:skeleton={loading} class="w-full h-full bg-neutral">
-  {#each respondents as respondent}
+  {#each respondents as respondent, i}
     <li class="bg-neutral-50 rounded-lg mb-1 p-3 flex items-center gap-2">
       <span class="flex-1">{respondent.email}</span>
       {#if respondent.complete}
@@ -83,7 +83,11 @@
       {:else}
         <div class="badge">not started</div>
       {/if}
-      <div class="dropdown dropdown-end rounded-box">
+      <div
+        class:dropdown-end={i >= 2}
+        class:dropdown-start={i < 2}
+        class="dropdown dropdown-left rounded-box"
+      >
         <div
           role="button"
           tabindex="0"

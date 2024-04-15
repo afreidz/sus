@@ -1,43 +1,18 @@
 <script lang="ts">
   import z from "zod";
-  import { onMount } from "svelte";
+  import { createEventDispatcher } from "svelte";
   import { MessageHandler } from "@/stores/messages";
   import api, { type APIResponses } from "@/helpers/api";
-  import { refreshTypes, taskType } from "@/stores/types";
   import CardHeader from "@/components/common/CardHeader.svelte";
   import RespondentList from "@/components/private/RespondentList.svelte";
 
   let loading = false;
   let surveyId: string;
   let newInviteList = "";
-  let revision: APIResponses["revisionId"]["GET"];
-  let system: APIResponses["systemId"]["GET"] | undefined;
-  let revisionId: APIResponses["systemId"]["GET"]["revisions"][number]["id"];
+  let hasTasklist: boolean;
+  let revision: APIResponses["systemId"]["GET"]["revisions"][number];
 
-  onMount(refreshRevision);
-
-  $: if (revision) refreshSystem();
-  $: if (!$taskType) refreshTypes();
-
-  async function refreshSystem() {
-    loading = true;
-    system = await api({
-      method: "GET",
-      endpoint: "systemId",
-      substitutions: { systemId: revision.systemId },
-    });
-    loading = false;
-  }
-
-  async function refreshRevision() {
-    loading = true;
-    revision = await api({
-      method: "GET",
-      endpoint: "revisionId",
-      substitutions: { revisionId: revisionId },
-    });
-    loading = false;
-  }
+  const dispatch = createEventDispatcher();
 
   async function invite() {
     const isEmail = z.string().email();
@@ -57,7 +32,7 @@
         return api({
           endpoint: "respondents",
           method: "POST",
-          body: JSON.stringify({ email, revisionId, surveyId }),
+          body: JSON.stringify({ email, revisionId: revision.id, surveyId }),
         });
       })
     );
@@ -70,7 +45,7 @@
         type: "success",
         message: "Respondents have been added to the survey",
       });
-      await refreshRevision();
+      dispatch("update");
     }
 
     if (invalidEmails.length)
@@ -82,43 +57,51 @@
       });
   }
 
-  export { revisionId as revision, surveyId as survey };
+  export { revision, surveyId as survey, hasTasklist };
 </script>
 
 <div
-  class:skeleton={!system || !revision || loading}
+  class:skeleton={loading}
   class="card bg-neutral rounded-lg shadow-sm p-4 w-full"
 >
-  {#if system && revision && surveyId}
-    {@const hasTasklist = !!revision.surveys.find(
-      (s) => s.scoreTypeId === $taskType?.id
-    )}
-    <CardHeader icon="mdi:invite" class="mb-4">
-      <span>Add a new respondent</span>
-      <span slot="sub">
-        Fill in an email address to add a respondent to the SUS Survey for <span
-          class="font-semibold text-neutral-950"
-          >"{system.title}:
-          {revision.title}."</span
-        > Use comma-separated list for multiple.
-      </span>
-    </CardHeader>
-    <form on:submit|preventDefault={invite} class="flex gap-2 items-end mb-4">
-      <label class="form-control w-full">
-        <div class="label">
-          <span class="label-text">Respondent email</span>
-        </div>
-        <input
-          type="text"
-          required
-          bind:value={newInviteList}
-          class="input input-bordered bg-neutral w-full"
-        />
-      </label>
-      <button class="btn btn-primary">Add</button>
-    </form>
-    <div class="mb-4 h-60 overflow-auto">
+  <CardHeader icon="mdi:invite" class="mb-4">
+    <span>Add a new respondent</span>
+    <span slot="sub">
+      Fill in an email address to add a respondent to the SUS Survey for <span
+        class="font-semibold text-neutral-950"
+        >"{revision.system.title}:
+        {revision.title}."</span
+      > Use comma-separated list for multiple.
+    </span>
+  </CardHeader>
+  <form on:submit|preventDefault={invite} class="flex gap-2 items-end mb-4">
+    <label class="form-control w-full">
+      <div class="label">
+        <span class="label-text">Respondent email</span>
+      </div>
+      <input
+        type="text"
+        required
+        bind:value={newInviteList}
+        class="input input-bordered bg-neutral w-full"
+      />
+    </label>
+    <button class="btn btn-primary">Add</button>
+  </form>
+  <div
+    class:h-80={revision.respondents.length}
+    class:h-32={!revision.respondents.length}
+    class="mb-4 overflow-auto flex flex-col"
+  >
+    {#if revision.respondents.length}
       <RespondentList {hasTasklist} respondents={revision.respondents} />
-    </div>
-  {/if}
+    {:else}
+      <strong
+        class="uppercase flex-1 flex items-center text-center font-semibold opacity-30 text-balance px-4"
+        >There are no repsondents for this revision yet. Survey links are unique
+        to each respondent, and will only be available once a respondent is
+        created.</strong
+      >
+    {/if}
+  </div>
 </div>
