@@ -116,6 +116,14 @@
             </li>
           {/if}
           <li>
+            <a
+              target="_blank"
+              href={`/sessions/${respondent.revisionId}/${respondent.id}/moderator`}
+            >
+              Start a live session
+            </a>
+          </li>
+          <li>
             <button
               on:click={() =>
                 copy(

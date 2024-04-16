@@ -10,7 +10,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
     url.pathname.startsWith("/api/auth") ||
     url.pathname.startsWith("/api/public") ||
     url.pathname.startsWith("/auth/login") ||
-    url.pathname.startsWith("/surveys/sus")
+    url.pathname.startsWith("/surveys/sus") ||
+    url.pathname.startsWith("/sessions/participant")
   )
     return next();
 

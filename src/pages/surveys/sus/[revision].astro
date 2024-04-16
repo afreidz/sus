@@ -32,7 +32,7 @@ const revision =
 
 {
   revision && (
-    <PublicLayout class="w-full flex-none flex">
+    <PublicLayout sidebar={true} class="w-full flex-none flex">
       <Sidebar
         slot="sidebar"
         system={`${revision?.system.title}: ${revision?.title}`}
