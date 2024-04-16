@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { Peer, type PeerOptions } from "peerjs";
+  import { type PeerOptions } from "peerjs";
   import { MessageHandler } from "@/stores/messages";
 
   const PEER_OPTS: PeerOptions = {
@@ -9,7 +9,7 @@
     //path: "/sessions"
   };
 
-  let connection: Peer;
+  let connection: any;
   let container: HTMLElement;
   let localStream: MediaStream;
   let remoteStream: MediaStream;
@@ -32,8 +32,10 @@
 
     return new Promise((r) => {
       connection =
-        type === "host" && id ? new Peer(id, PEER_OPTS) : new Peer(PEER_OPTS);
-      connection.on("open", (id) => {
+        type === "host" && id
+          ? new window.Peer(id, PEER_OPTS)
+          : new window.Peer(PEER_OPTS);
+      connection.on("open", (id: string) => {
         console.log(`Connected as: ${id}`);
         r(connection);
       });
@@ -56,10 +58,10 @@
     await connect();
     await initLocalCamera();
     if (type === "host") {
-      connection.on("call", (call) => {
+      connection.on("call", (call: any) => {
         console.log(`Answering`, call.peer);
         call.answer(localStream);
-        call.on("stream", (stream) => {
+        call.on("stream", (stream: MediaStream) => {
           remoteStream = stream;
         });
       });
@@ -71,7 +73,7 @@
         });
       console.log(`Calling host at ${hostId}`);
       const call = connection.call(hostId, localStream);
-      call.on("stream", (stream) => {
+      call.on("stream", (stream: MediaStream) => {
         remoteStream = stream;
       });
     }
