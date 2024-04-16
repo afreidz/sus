@@ -14,11 +14,6 @@ export default defineConfig({
   },
   vite: {
     envPrefix: "PUBLIC_",
-    build: {
-      rollupOptions: {
-        external: ["peerjs"],
-      },
-    },
   },
   output: "server",
   adapter: vercel(),
