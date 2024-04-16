@@ -5,7 +5,9 @@
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
   import NewSystemDialog from "@/components/private/NewSystemDialog.svelte";
 
-  type SingleClient = APIResponses["clientId"]["GET"];
+  type SingleClient =
+    | APIResponses["clientId"]["GET"]
+    | APIResponses["clients"]["GET"][number];
 
   export let name = "";
   export let loading = false;

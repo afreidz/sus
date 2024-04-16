@@ -2,7 +2,9 @@
   import type { APIResponses } from "@/helpers/api";
   import { safeTextRegEx } from "@/helpers/strings";
 
-  type SingleClient = APIResponses["clientId"]["GET"];
+  type SingleClient =
+    | APIResponses["clientId"]["GET"]
+    | APIResponses["clients"]["GET"][number];
 
   export let client: SingleClient;
   export let open: boolean = false;
