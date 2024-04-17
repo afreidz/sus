@@ -1,12 +1,13 @@
 <script lang="ts">
-  import me from "@/stores/me";
   import type { ORM } from "@/helpers/orm";
   import { safeTextRegEx } from "@/helpers/strings";
   import api, { type APIResponses } from "@/helpers/api";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
   import NewSystemDialog from "@/components/private/NewSystemDialog.svelte";
 
-  type SingleClient = APIResponses["clientId"]["GET"];
+  type SingleClient =
+    | APIResponses["clientId"]["GET"]
+    | APIResponses["clients"]["GET"][number];
 
   export let name = "";
   export let loading = false;
@@ -19,7 +20,6 @@
   let newClientNameElement: HTMLInputElement;
 
   $: if (newClientNameElement) newClientNameElement.focus();
-  $: if ($me?.user?.name) name = $me.user.name;
 
   async function createNewClient() {
     const newClient: Omit<ORM.ClientCreateInput, "createdBy"> = {

@@ -4,6 +4,7 @@ import PrivateLayout from "@/layouts/private.astro";
 import TasklistCreate from "@/components/private/TasklistCreate.svelte";
 
 const id = Astro.params.id as string;
+
 const revision = await api({
   method: "GET",
   endpoint: "revisionId",
@@ -11,6 +12,15 @@ const revision = await api({
   headers: Astro.request.headers,
   substitutions: { revisionId: id },
 });
+
+const task = (
+  await api({
+    endpoint: "typesType",
+    base: Astro.url.origin,
+    headers: Astro.request.headers,
+    substitutions: { typesType: "tasks" },
+  })
+);
 ---
 
 <PrivateLayout class="flex-1 flex flex-col items-center">
@@ -31,5 +41,5 @@ const revision = await api({
       <li class="font-semibold">User Test Task List</li>
     </ul>
   </div>
-  <TasklistCreate {revision} client:only />
+  <TasklistCreate {task} {revision} client:only="svelte" />
 </PrivateLayout>

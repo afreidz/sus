@@ -33,11 +33,12 @@
   async function createNewSystem() {
     loading = true;
     if (newSystemDialog.returnValue) {
-      await api({
+      const newSystem = await api({
         method: "POST",
         endpoint: "systems",
         body: newSystemDialog.returnValue,
       });
+      window.location.hash = newSystem.id;
       window.location.reload();
     }
     showNewSystemDialog = false;

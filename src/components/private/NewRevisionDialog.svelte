@@ -1,31 +1,42 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import api from "@/helpers/api";
   import type { APIResponses } from "@/helpers/api";
   import { safeTextRegEx } from "@/helpers/strings";
-  import { refreshTypes, susType } from "@/stores/types";
-  import surveys, { refreshSurveys } from "@/stores/surveys";
+  import { MessageHandler } from "@/stores/messages";
+  import { susType, refreshTypes } from "@/stores/types";
 
-  type SingleSystem = APIResponses["systemId"]["GET"];
+  type SingleSystem =
+    | APIResponses["systemId"]["GET"]["revisions"][number]["system"]
+    | APIResponses["revisionId"]["GET"]["system"];
 
-  export let open: boolean = false;
-  export let elm: HTMLDialogElement;
-  export let system: SingleSystem | null = null;
+  let open: boolean = false;
+  let elm: HTMLDialogElement;
+  let system: SingleSystem | null = null;
 
   let newRevisionTitle: string = "";
   let newRevisionSurveys: string[] = [];
-  let susSurveys: APIResponses["surveys"]["GET"] = [];
+  let surveys: APIResponses["surveyType"]["GET"] = [];
 
-  onMount(() => {
-    refreshSurveys();
-  });
+  $: if (open && elm) showModal();
 
-  if (!$susType?.id) refreshTypes();
+  async function showModal() {
+    if (!$susType?.id) await refreshTypes();
+    const id = $susType?.id;
 
-  $: if ($surveys?.length) {
-    susSurveys = $surveys?.filter((s) => s.scoreTypeId === $susType?.id) ?? [];
-  }
+    if (!surveys.length && id) {
+      surveys = await api({
+        endpoint: "surveyType",
+        method: "GET",
+        substitutions: { surveyType: id },
+      });
+    }
 
-  $: if (open && elm) {
+    if (!surveys.length)
+      return MessageHandler({
+        type: "error",
+        message: "Could not find any surveys for revision",
+      });
+
     elm.showModal();
   }
 
@@ -33,6 +44,8 @@
     newRevisionTitle = "";
     newRevisionSurveys = [];
   }
+
+  export { elm, open, system };
 </script>
 
 <dialog class="modal text-neutral-950" bind:this={elm} on:close>
@@ -67,7 +80,7 @@
           />
         </label>
       </p>
-      {#if susSurveys.length}
+      {#if surveys.length}
         <label class="form-control">
           <div class="label">
             <span class="label-text">Pick a SUS survey type for revision</span>
@@ -77,7 +90,7 @@
             bind:value={newRevisionSurveys[0]}
             class="select w-full max-w-xs"
           >
-            {#each susSurveys as survey}
+            {#each surveys as survey}
               <option value={survey.id}>{survey.label}</option>
             {/each}
           </select>

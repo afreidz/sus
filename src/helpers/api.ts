@@ -133,7 +133,6 @@ export default async function api<
 >({
   body,
   base,
-  signal,
   method,
   headers: h,
   endpoint: e,
@@ -170,13 +169,19 @@ export default async function api<
     }
   }
 
-  const resp = await fetch(url, {
-    ...fetchProps,
-    method,
-    signal,
-    headers,
-    body,
-  });
+  const resp =
+    !method || method === "GET"
+      ? await fetch(url, {
+          ...fetchProps,
+          headers,
+          method: "GET",
+        })
+      : await fetch(url, {
+          ...fetchProps,
+          body,
+          method,
+          headers,
+        });
 
   if (!resp?.ok) {
     throw new Error("Something went wrong. Please try again.");

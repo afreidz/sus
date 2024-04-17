@@ -1,5 +1,5 @@
 import { map } from "nanostores";
 
-const activeRevisionsBySystem = map<Record<string, string>>({});
+const activeRevisionsBySystem = map<{ [key: string]: string }>({});
 
 export { activeRevisionsBySystem };

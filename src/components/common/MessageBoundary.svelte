@@ -5,7 +5,6 @@
 
 <svelte:window
   on:unhandledrejection={(e) => {
-    console.log(e);
     MessageHandler({
       type: "error",
       message: e.reason.message || "Something went wrong",

@@ -1,0 +1,29 @@
+---
+import api from "@/helpers/api";
+import PublicLayout from "@/layouts/public.astro";
+import Session from "@/components/common/Session.svelte";
+
+const { revision: rid, respondent: id } = Astro.params;
+
+const revision = await api({
+  method: "GET",
+  base: Astro.url.origin,
+  endpoint: "revisionId",
+  headers: Astro.request.headers,
+  substitutions: {
+    revisionId: rid ?? "",
+  },
+});
+
+const respondent = await api({
+  method: "GET",
+  base: Astro.url.origin,
+  endpoint: "respondentId",
+  headers: Astro.request.headers,
+  substitutions: { respondentId: id ?? "" },
+});
+---
+
+<PublicLayout sidbar={false} class="flex-1 flex flex-col">
+  <Session type="participant" {revision} {respondent} client:only="svelte" />
+</PublicLayout>
