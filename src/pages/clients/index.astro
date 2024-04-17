@@ -18,12 +18,12 @@ const respondents = await api({
   endpoint: "nonCurrentSUSRespondents",
 });
 
-const auth = await api({
+const auth: any = {}; /*await api({
   method: "GET",
   endpoint: "me",
   base: Astro.url.origin,
   headers: Astro.request.headers,
-});
+})*/
 
 const name = auth.user?.name ?? "";
 ---
