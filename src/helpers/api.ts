@@ -133,7 +133,6 @@ export default async function api<
 >({
   body,
   base,
-  signal,
   method,
   headers: h,
   endpoint: e,
@@ -171,17 +170,15 @@ export default async function api<
   }
 
   const resp =
-    method === "POST" || method === "PUT" || method === "DELETE"
+    !method || method === "GET"
       ? await fetch(url, {
           ...fetchProps,
-          body,
-          signal,
-          method,
           headers,
+          method: "GET",
         })
       : await fetch(url, {
           ...fetchProps,
-          signal,
+          body,
           method,
           headers,
         });
