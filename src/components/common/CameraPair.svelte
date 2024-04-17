@@ -1,23 +1,16 @@
 <script lang="ts">
+  import type Peer from "peerjs";
   import { onMount } from "svelte";
-  import { Peer, type PeerOptions } from "peerjs";
   import { MessageHandler } from "@/stores/messages";
 
-  const PEER_OPTS: PeerOptions = {
-    //host: "localhost",
-    //port: 1999,
-    //path: "/sessions"
-  };
-
-  let connection: Peer;
   let container: HTMLElement;
   let localStream: MediaStream;
   let remoteStream: MediaStream;
   let type: "host" | "participant";
   let localCamera: HTMLVideoElement;
   let remoteCamera: HTMLVideoElement;
-  let id: string | undefined = undefined;
-  let hostId: string | undefined = undefined;
+  let session: Readonly<Peer> | null;
+  let host: string | undefined = undefined;
   let deviceId: string | undefined = undefined;
   let availableCameras: MediaDeviceInfo[] = [];
 
@@ -26,19 +19,6 @@
     availableCameras = (await navigator.mediaDevices.enumerateDevices()).filter(
       (d) => d.kind === "videoinput"
     );
-  }
-
-  function connect() {
-    if (connection) return Promise.resolve(connection);
-
-    return new Promise((r) => {
-      connection =
-        type === "host" && id ? new Peer(id, PEER_OPTS) : new Peer(PEER_OPTS);
-      connection.on("open", (id) => {
-        console.log(`Connected as: ${id}`);
-        r(connection);
-      });
-    });
   }
 
   async function initLocalCamera() {
@@ -54,24 +34,35 @@
   }
 
   async function initRemoteCamera() {
-    await connect();
+    if (!session) {
+      MessageHandler({
+        type: "error",
+        message: "Unable to connect to session",
+      });
+      return;
+    }
+
     await initLocalCamera();
     if (type === "host") {
-      connection.on("call", (call) => {
-        console.log(`Answering`, call.peer);
-        call.answer(localStream);
-        call.on("stream", (stream) => {
-          remoteStream = stream;
-        });
+      session.on("call", (call) => {
+        if (call.metadata.type === "camera" && remoteCamera) {
+          console.log(`Answering camera call from ${call.peer}`);
+          call.answer(localStream);
+          call.on("stream", (stream) => {
+            remoteCamera.srcObject = stream;
+          });
+        }
       });
     } else if (type === "participant") {
-      if (!hostId)
+      if (!host)
         return MessageHandler({
           type: "error",
           message: "Unable to connect to host",
         });
-      console.log(`Calling host at ${hostId}`);
-      const call = connection.call(hostId, localStream);
+      console.log(`Calling host at ${host}`);
+      const call = session.call(host, localStream, {
+        metadata: { type: "camera" },
+      });
       call.on("stream", (stream) => {
         remoteStream = stream;
       });
@@ -84,7 +75,7 @@
   $: if (localStream && localCamera) localCamera.srcObject = localStream;
   $: if (remoteStream && remoteCamera) remoteCamera.srcObject = remoteStream;
 
-  export { type, id, hostId };
+  export { type, host, session };
 </script>
 
 <div
@@ -104,7 +95,7 @@
       </select>
     {:else}
       <!-- svelte-ignore a11y-media-has-caption -->
-      <video autoplay muted bind:this={localCamera} class="w-full h-full" />
+      <video autoplay bind:this={localCamera} class="w-full h-full" />
     {/if}
   </div>
   <div class="flex items-center justify-center relative">
