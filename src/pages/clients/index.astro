@@ -11,12 +11,12 @@ const clients: any[] = []; /*await api({
   headers: Astro.request.headers,
 });*/
 
-const respondents = await api({
+const respondents: any[] = []; /*await api({
   method: "GET",
   base: Astro.url.origin,
   headers: Astro.request.headers,
   endpoint: "nonCurrentSUSRespondents",
-});
+});*/
 
 const auth: any = {}; /*await api({
   method: "GET",
