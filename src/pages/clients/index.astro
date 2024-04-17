@@ -4,12 +4,12 @@ import PrivateLayout from "@/layouts/private.astro";
 import Stats from "@/components/private/Stats.svelte";
 import ClientCard from "@/components/private/ClientCard.svelte";
 
-const clients = await api({
+const clients: any[] = []; /*await api({
   method: "GET",
   endpoint: "clients",
   base: Astro.url.origin,
   headers: Astro.request.headers,
-});
+});*/
 
 const respondents = await api({
   method: "GET",
@@ -29,11 +29,13 @@ const name = auth.user?.name ?? "";
 ---
 
 <PrivateLayout>
-  {!!respondents.length && (
-    <header class="flex p-8 justify-center items-center text-center">
-      <Stats {clients} {respondents} client:only="svelte" />
-    </header>
-  )}
+  {
+    !!respondents.length && (
+      <header class="flex p-8 justify-center items-center text-center">
+        <Stats {clients} {respondents} client:only="svelte" />
+      </header>
+    )
+  }
   <section class="p-10 flex flex-wrap gap-4 justify-evenly">
     <ClientCard client:visible name={name} />
     {clients.map((client) => <ClientCard client:visible {client} />)}
