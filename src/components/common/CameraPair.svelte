@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { type PeerOptions } from "peerjs";
+  import { Peer, type PeerOptions } from "peerjs";
   import { MessageHandler } from "@/stores/messages";
 
   const PEER_OPTS: PeerOptions = {
@@ -9,7 +9,7 @@
     //path: "/sessions"
   };
 
-  let connection: any;
+  let connection: Peer;
   let container: HTMLElement;
   let localStream: MediaStream;
   let remoteStream: MediaStream;
@@ -28,15 +28,16 @@
   }
 
   function connect() {
-    // if (connection) return Promise.resolve(connection);
-    // return new Promise((r) => {
-    //   connection =
-    //     type === "host" && id ? new Peer(id, PEER_OPTS) : new Peer(PEER_OPTS);
-    //   connection.on("open", (id) => {
-    //     console.log(`Connected as: ${id}`);
-    //     r(connection);
-    //   });
-    // });
+    if (connection) return Promise.resolve(connection);
+
+    return new Promise((r) => {
+      connection =
+        type === "host" && id ? new Peer(id, PEER_OPTS) : new Peer(PEER_OPTS);
+      connection.on("open", (id) => {
+        console.log(`Connected as: ${id}`);
+        r(connection);
+      });
+    });
   }
 
   async function initLocalCamera() {
@@ -55,24 +56,24 @@
     await connect();
     await initLocalCamera();
     if (type === "host") {
-      // connection.on("call", (call) => {
-      //   console.log(`Answering`, call.peer);
-      //   call.answer(localStream);
-      //   call.on("stream", (stream) => {
-      //     remoteStream = stream;
-      //   });
-      // });
+      connection.on("call", (call) => {
+        console.log(`Answering`, call.peer);
+        call.answer(localStream);
+        call.on("stream", (stream) => {
+          remoteStream = stream;
+        });
+      });
     } else if (type === "participant") {
       if (!hostId)
         return MessageHandler({
           type: "error",
           message: "Unable to connect to host",
         });
-      // console.log(`Calling host at ${hostId}`);
-      // const call = connection.call(hostId, localStream);
-      // call.on("stream", (stream) => {
-      //   remoteStream = stream;
-      // });
+      console.log(`Calling host at ${hostId}`);
+      const call = connection.call(hostId, localStream);
+      call.on("stream", (stream) => {
+        remoteStream = stream;
+      });
     }
   }
 
