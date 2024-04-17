@@ -22,11 +22,6 @@ import type { curratedResponsesByType } from "@/pages/api/curratedResponses/[sco
 import type { respondentResponses } from "@/pages/api/public/responses/revision/[revisionId]/[respondentId].json";
 import type { respondentSurveyResponses } from "@/pages/api/public/responses/survey/[surveyId]/[respondentId].json";
 
-(async () => {
-  if (typeof window === "undefined")
-    (globalThis as any).fetch = (await import("node-fetch")).default;
-})();
-
 export type APIResponses = {
   me: Me;
   types: types;
@@ -175,13 +170,21 @@ export default async function api<
     }
   }
 
-  const resp = await fetch(url, {
-    ...fetchProps,
-    method,
-    signal,
-    headers,
-    body,
-  });
+  const resp =
+    method === "POST" || method === "PUT" || method === "DELETE"
+      ? await fetch(url, {
+          ...fetchProps,
+          body,
+          signal,
+          method,
+          headers,
+        })
+      : await fetch(url, {
+          ...fetchProps,
+          signal,
+          method,
+          headers,
+        });
 
   if (!resp?.ok) {
     throw new Error("Something went wrong. Please try again.");
