@@ -120,7 +120,7 @@
               target="_blank"
               href={`/sessions/${respondent.revisionId}/${respondent.id}/moderator`}
             >
-              Start a live session
+              Start a live session (BETA/not-working)
             </a>
           </li>
           <li>
