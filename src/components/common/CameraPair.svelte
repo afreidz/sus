@@ -22,6 +22,7 @@
   let availableCameras: MediaDeviceInfo[] = [];
 
   async function getCameras() {
+    await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
     availableCameras = (await navigator.mediaDevices.enumerateDevices()).filter(
       (d) => d.kind === "videoinput"
     );
