@@ -11,8 +11,7 @@
   let respondent: APIResponses["respondentId"]["GET"];
 
   $: if (revision && !host) host = `host${revision.id}host`;
-
-  $: if (!$session && host) connect(type === "moderator" ? host : undefined);
+  $: if (!$session) connect(type === "moderator" ? host : undefined);
 
   $: if (respondent.id && revision.id) {
     const url = new URL(window.location.origin);

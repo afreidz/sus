@@ -1,7 +1,7 @@
 import orm from "./schema";
 import type { APIRoute } from "astro";
 import type { ORM } from "@/helpers/orm";
-import { dataURItoBuffer } from "@/helpers/image";
+import { dataURItoBuffer } from "@/helpers/media";
 
 export type surveyId = {
   GET: ORM.SurveyGetPayload<{

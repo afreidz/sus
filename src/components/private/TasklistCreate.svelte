@@ -19,7 +19,7 @@
   import { safeTextRegEx } from "@/helpers/strings";
   import { MessageHandler } from "@/stores/messages";
   import { groupTaskListSection } from "@/helpers/order";
-  import { fileToResizedDataURI } from "@/helpers/image";
+  import { fileToResizedDataURI } from "@/helpers/media";
   import CardHeader from "@/components/common/CardHeader.svelte";
   import { orderResponseByNumericalValue } from "@/helpers/order";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";

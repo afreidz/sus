@@ -1,4 +1,4 @@
-import { bufferToDataUri } from "./image";
+import { bufferToDataUri } from "./media";
 import type { APIResponses } from "./api";
 import type { TasklistSection } from "@/components/private/TasklistCreate.svelte";
 
@@ -48,7 +48,7 @@ export function groupTasklistSectionByDataUri(
 }
 
 export function groupTaskListSection(
-  arr: APIResponses["revisionId"]["GET"]["surveys"][number]["questions"],
+  arr: APIResponses["revisionId"]["GET"]["surveys"][number]["questions"]
 ): TasklistSection[] {
   return arr.reduce((current, question) => {
     const group = question.group || undefined;
@@ -73,11 +73,12 @@ export function groupTaskListSection(
   }, [] as TasklistSection[]);
 }
 
-export function removeDuplicatesById<T extends { id: string, [key: string]: any }>(arr: T[]) {
-  const uniqueArray = arr.filter((item, index, self) =>
-        index === self.findIndex((t: (typeof arr)[number]) => (
-            t.id === item.id
-        ))
-    );
-    return uniqueArray;
+export function removeDuplicatesById<
+  T extends { id: string; [key: string]: any },
+>(arr: T[]) {
+  const uniqueArray = arr.filter(
+    (item, index, self) =>
+      index === self.findIndex((t: (typeof arr)[number]) => t.id === item.id)
+  );
+  return uniqueArray;
 }

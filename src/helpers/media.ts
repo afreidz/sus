@@ -48,3 +48,41 @@ export function bufferToDataUri(
   let base64 = buffer.toString("base64");
   return `data:${mimeType};base64,${base64}`;
 }
+
+export function streamToCanvas(
+  mediaStream: MediaStream,
+  domRect: DOMRect,
+  canvasElement: HTMLCanvasElement
+): void {
+  let videoElement: HTMLVideoElement = document.createElement("video");
+
+  videoElement.onloadedmetadata = videoElement.oncanplay = function () {
+    let context = canvasElement.getContext("2d");
+    // Update the canvas size to match the DOMRect
+    canvasElement.width = domRect.width;
+    canvasElement.height = domRect.height;
+
+    videoElement.play();
+
+    requestAnimationFrame(function draw() {
+      if (context) {
+        context.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+        context.drawImage(
+          videoElement,
+          domRect.x,
+          domRect.y,
+          domRect.width,
+          domRect.height,
+          0,
+          0,
+          canvasElement.width,
+          canvasElement.height
+        );
+      }
+      requestAnimationFrame(draw);
+    });
+  };
+
+  videoElement.srcObject = mediaStream;
+}
