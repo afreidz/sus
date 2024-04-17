@@ -4,26 +4,26 @@ import PrivateLayout from "@/layouts/private.astro";
 import Stats from "@/components/private/Stats.svelte";
 import ClientCard from "@/components/private/ClientCard.svelte";
 
-const clients: any[] = []; /*await api({
+const clients = await api({
   method: "GET",
   endpoint: "clients",
   base: Astro.url.origin,
   headers: Astro.request.headers,
-});*/
+});
 
-const respondents: any[] = []; /*await api({
+const respondents = await api({
   method: "GET",
   base: Astro.url.origin,
   headers: Astro.request.headers,
   endpoint: "nonCurrentSUSRespondents",
-});*/
+});
 
-const auth: any = {}; /*await api({
+const auth = await api({
   method: "GET",
   endpoint: "me",
   base: Astro.url.origin,
   headers: Astro.request.headers,
-})*/
+});
 
 const name = auth.user?.name ?? "";
 ---

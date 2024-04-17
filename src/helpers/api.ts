@@ -22,6 +22,11 @@ import type { curratedResponsesByType } from "@/pages/api/curratedResponses/[sco
 import type { respondentResponses } from "@/pages/api/public/responses/revision/[revisionId]/[respondentId].json";
 import type { respondentSurveyResponses } from "@/pages/api/public/responses/survey/[surveyId]/[respondentId].json";
 
+(async () => {
+  if (typeof window === "undefined")
+    (globalThis as any).fetch = (await import("node-fetch")).default;
+})();
+
 export type APIResponses = {
   me: Me;
   types: types;

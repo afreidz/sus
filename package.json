@@ -40,6 +40,7 @@
     "daisyui": "^4.7.2",
     "iconify-icon": "^2.0.0",
     "nanostores": "^0.10.0",
+    "node-fetch": "^3.3.2",
     "peerjs": "^1.5.2"
   }
 }
