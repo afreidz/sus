@@ -103,7 +103,7 @@
       </select>
     {:else}
       <!-- svelte-ignore a11y-media-has-caption -->
-      <video autoplay bind:this={localCamera} class="absolute inset-0" />
+      <video autoplay muted bind:this={localCamera} class="w-full h-full" />
     {/if}
   </div>
   <div class="flex items-center justify-center relative">
