@@ -9,6 +9,7 @@
     "migrate": "npm run migrate -w prisma",
     "generate": "npm run generate -w prisma",
     "migrate-dev": "npm run migrate-dev -w prisma",
+    "session-server": "peerjs --port 1999 --key --path /sessions",
     "postinstall": "npm run generate -w prisma && npm run migrate -w prisma",
     "astro": "astro"
   },
@@ -40,6 +41,7 @@
     "daisyui": "^4.7.2",
     "iconify-icon": "^2.0.0",
     "nanostores": "^0.10.0",
+    "peer": "^1.0.2",
     "peerjs": "^1.5.2"
   },
   "volta": {

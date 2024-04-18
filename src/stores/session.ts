@@ -1,11 +1,13 @@
 import { atom } from "nanostores";
 import { Peer, type PeerOptions } from "peerjs";
 
-const PEER_OPTS: PeerOptions = {
-  //host: "localhost",
-  //port: 1999,
-  //path: "/sessions"
-};
+const PEER_OPTS: PeerOptions = import.meta.env.DEV
+  ? {
+      host: "localhost",
+      port: 1999,
+      path: "/sessions",
+    }
+  : {};
 
 const session = atom<null | Peer>(null);
 

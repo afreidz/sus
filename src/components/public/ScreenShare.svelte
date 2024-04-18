@@ -102,9 +102,11 @@
         message: "Unable to establish data connection",
       });
     dataConnection.send({ type: "push-url", url: urlToPush });
+    urlToPush = "";
   }
 
   export { host, type, session };
+  // https://www.figma.com/embed?embed_host=share&url=https%3A%2F%2Fwww.figma.com%2Fproto%2FAwLTIxmcDcwZVSQcs17uut%2FSafeMe%3Ftype%3Ddesign%26node-id%3D800-7332%26t%3D3igDjlYctrkKRXBi-1%26scaling%3Dscale-down%26page-id%3D502%253A96%26starting-point-node-id%3D800%253A7332%26show-proto-sidebar%3D1%26mode%3Ddesign
 </script>
 
 <div bind:this={frame} class="h-full w-full flex-1 p-8 flex flex-col">
@@ -120,7 +122,7 @@
       />
     </div>
     <div
-      class="navbar bg-neutral-900/20 glass rounded-box shadow-sm absolute bottom-3 left-3 right-3 px-3"
+      class="navbar bg-neutral-900/20 glass rounded-box shadow-sm fixed bottom-3 px-3 max-w-[calc(100vw_-_760px)]"
     >
       <div class="flex-1">
         <div
