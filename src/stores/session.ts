@@ -7,19 +7,24 @@ const PEER_OPTS: PeerOptions = {
   //path: "/sessions"
 };
 
-const connection = atom<null | Peer>(null);
+const session = atom<null | Peer>(null);
 
 export async function connect(id?: string, host?: boolean) {
-  const existing = connection.get();
+  const existing = session.get();
   if (existing) return existing;
 
-  connection.set(id ? new Peer(id, PEER_OPTS) : new Peer(PEER_OPTS));
+  const connection = id ? new Peer(id, PEER_OPTS) : new Peer(PEER_OPTS);
 
-  const c = connection.get();
+  await new Promise((r) =>
+    connection.on("open", (id) => {
+      console.log(`Connected to session as: ${id}`);
+      r(id);
+    })
+  );
 
-  if (c) c.on("open", (id) => console.log(`Connected to session as: ${id}`));
+  session.set(connection);
 
-  return connection.get();
+  return session.get();
 }
 
-export default connection;
+export default session;
