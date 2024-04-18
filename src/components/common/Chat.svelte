@@ -112,8 +112,13 @@
       type="text"
       placeholder="Type here"
       bind:value={newMessage}
+      disabled={!dataConnection}
       class="flex-1 input input-bordered"
     />
-    <button type="submit" class="btn btn-primary flex-none">Send</button>
+    <button
+      disabled={!dataConnection}
+      type="submit"
+      class="btn btn-primary flex-none">Send</button
+    >
   </form>
 </div>

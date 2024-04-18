@@ -132,11 +132,18 @@
     class="aspect-square max-w-[700px] relative"
     style="max-height: {size}px;"
   >
-    <video autoplay bind:this={elements.remoteCamera} class="w-full h-full" />
-    {#if peerName && streams.remote}
-      <div class="badge glass badge-lg text-neutral absolute top-6 right-3">
-        {peerName}
-      </div>
+    {#if streams.remote}
+      <video autoplay bind:this={elements.remoteCamera} class="w-full h-full" />
+      {#if peerName}
+        <div class="badge glass badge-lg text-neutral absolute top-6 right-3">
+          {peerName}
+        </div>
+      {/if}
+    {:else}
+      <strong
+        class="h-full w-full text-neutral opacity-25 uppercase font-semibold text-xl flex items-center justify-center"
+        >Waiting on {#if type === "host"}the participant{:else}host{/if} to connect...</strong
+      >
     {/if}
   </div>
 </div>
