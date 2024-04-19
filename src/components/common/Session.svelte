@@ -3,7 +3,7 @@
   import copy from "clipboard-copy";
   import type { APIResponses } from "@/helpers/api";
   import Chat from "@/components/common/Chat.svelte";
-  import session, { connect } from "@/stores/session";
+  import session, { connect } from "@/stores/_session";
   import CameraPair from "@/components/common/CameraPair.svelte";
   import ScreenShare from "@/components/public/ScreenShare.svelte";
 

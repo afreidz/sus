@@ -1,7 +1,7 @@
 ---
 import api from "@/helpers/api";
-import PublicLayout from "@/layouts/public.astro";
-import Session from "@/components/common/Session.svelte";
+import SessionLayout from "@/layouts/session.astro";
+import ParticipantComponent from "@/components/sessions/Participant.svelte";
 
 const { revision: rid, respondent: id } = Astro.params;
 
@@ -24,6 +24,13 @@ const respondent = await api({
 });
 ---
 
-<PublicLayout sidbar={false} class="flex-1 flex flex-col">
-  <Session type="participant" {revision} {respondent} client:only="svelte" />
-</PublicLayout>
+<SessionLayout class="p-2">
+  <ParticipantComponent
+    client:only="svelte"
+    name={respondent.email}
+    hostName={revision.createdBy}
+    title={revision.system.title}
+    id={`par${respondent.id}par`}
+    host={`host${revision.id}host`}
+  />
+</SessionLayout>

@@ -1,0 +1,14 @@
+---
+import BaseLayout from "./base.astro";
+import MessageBoundary from "@/components/common/MessageBoundary.svelte";
+
+const { class: className, sidebar } = Astro.props;
+---
+
+<BaseLayout>
+  <MessageBoundary client:load>
+    <main class={`flex-1 flex flex-col bg-neutral-950 ${className ?? ""}`}>
+      <slot />
+    </main>
+  </MessageBoundary>
+</BaseLayout>

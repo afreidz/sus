@@ -5,22 +5,35 @@
 </script>
 
 <script lang="ts">
-  export let open: boolean = false;
-  export let elm: HTMLDialogElement;
-  export let title: string = "Are you sure?";
-  export let confirmText: string | undefined = undefined;
+  let error = true;
+  let open: boolean = false;
+  let className: string = "";
+  let elm: HTMLDialogElement;
+  let title: string = "Are you sure?";
+  let placeholder: string | undefined = undefined;
+  let confirmText: string | undefined = undefined;
 
   let confirmTextValue: string;
 
   $: if (open && elm) {
     elm.showModal();
   }
+
+  export {
+    open,
+    elm,
+    title,
+    error,
+    confirmText,
+    placeholder,
+    className as class,
+  };
 </script>
 
 <dialog class="modal text-neutral-950" bind:this={elm} on:close>
   <form
     method="dialog"
-    class="modal-box bg-neutral"
+    class="modal-box bg-neutral {className ?? ''}"
     on:submit|preventDefault={() =>
       elm.close(
         confirmText && confirmTextValue === confirmText
@@ -41,10 +54,13 @@
             <input
               required
               type="text"
+              class:input-error={error}
               id="confirm_delete_client"
               bind:value={confirmTextValue}
               class="input input-error w-full max-w-xs"
-              placeholder={`Type "${confirmText}" to confirm`}
+              placeholder={placeholder !== undefined
+                ? placeholder
+                : `Type "${confirmText}" to confirm`}
             />
           </label>
         </p>

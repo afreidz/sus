@@ -97,6 +97,7 @@
 
   $: if (streams.remote && elements.remoteCamera) {
     elements.remoteCamera.srcObject = streams.remote;
+    elements.remoteCamera.requestPictureInPicture();
   }
 
   export { type, host, session, name, size, peerName };

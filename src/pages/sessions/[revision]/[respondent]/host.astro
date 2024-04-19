@@ -1,7 +1,7 @@
 ---
 import api from "@/helpers/api";
-import PrivateLayout from "@/layouts/private.astro";
-import Session from "@/components/common/Session.svelte";
+import SessionLayout from "@/layouts/session.astro";
+import HostComponent from "@/components/sessions/Host.svelte";
 
 const { revision: rid, respondent: id } = Astro.params;
 
@@ -26,8 +26,13 @@ const respondent = await api({
 
 {
   revision && (
-    <PrivateLayout class="flex-1 flex flex-col">
-      <Session type="moderator" {revision} {respondent} client:only="svelte" />
-    </PrivateLayout>
+    <SessionLayout>
+      <HostComponent
+        client:only="svelte"
+        name={revision.createdBy}
+        id={`host${revision.id}host`}
+        participantName={respondent.email}
+      />
+    </SessionLayout>
   )
 }
