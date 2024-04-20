@@ -1,47 +1,36 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import session, { connect } from "@/stores/session";
-  import {
-    initLocalCamera,
-    combineCameraStreams,
-    combineAllStreams,
-    recordStreamFor10Seconds,
-  } from "@/helpers/media";
+  import type { APIResponses } from "@/helpers/api";
+  import CardHeader from "@/components/common/CardHeader.svelte";
+  import session, { RECORDING_OPTS, connect } from "@/stores/session";
+  import { combineAllStreams, combineCameraStreams } from "@/helpers/media";
 
   let id: string;
   let name: string;
+  let recording: string;
   let camsEnabled = false;
   let shareEnabled = false;
-  let recorderReady = false;
   let participantName: string;
   let cameras: HTMLVideoElement;
   let screenshare: HTMLVideoElement;
   let recordedVideo: HTMLVideoElement;
-  let recording: string;
 
-  onMount(async () => {
-    const cams = await initLocalCamera(500);
-    if (cams.muted) session.setKey("media.local.camera.muted", cams.muted);
-    if (cams.unmuted)
-      session.setKey("media.local.camera.unmuted", cams.unmuted);
-    await connect(id, id);
-  });
+  let revision: APIResponses["revisionId"]["GET"];
+  let respondent: APIResponses["respondentId"]["GET"];
+
+  onMount(() => connect(id, id));
+
+  $: name = revision.createdBy;
+  $: id = `host${revision.id}host`;
+  $: participantName = respondent.email;
 
   $: if (
-    $session.media.remote?.camera &&
-    $session.media.local?.camera?.muted &&
     cameras &&
-    !camsEnabled
-  ) {
-    combineCameraStreams(
-      $session.media.remote.camera,
-      $session.media.local.camera.muted,
-      400
-    ).then((stream) => {
-      cameras.srcObject = stream;
-      camsEnabled = true;
-    });
-  }
+    !camsEnabled &&
+    $session.media.remote?.camera &&
+    $session.media.local?.camera?.muted
+  )
+    initCameras();
 
   $: if ($session.media.remote?.screen && screenshare && !shareEnabled) {
     screenshare.srcObject = $session.media.remote.screen;
@@ -49,28 +38,53 @@
   }
 
   $: if (
+    !$session.record.ready &&
+    $session.media.remote?.camera &&
     $session.media.remote?.screen &&
-    $session.media.remote.camera &&
-    $session.media.local?.camera?.unmuted &&
-    !recorderReady
-  ) {
-    combineAllStreams(
+    $session.media.local?.camera?.unmuted
+  )
+    initRecording();
+
+  async function initCameras() {
+    if (
+      !$session.media.remote?.camera ||
+      !$session.media.local?.camera?.muted ||
+      !cameras
+    )
+      throw new Error("Cameras initialize before all streams are ready.");
+
+    const cameraStream = await combineCameraStreams(
+      $session.media.remote.camera,
+      $session.media.local.camera.muted,
+      400
+    );
+
+    cameras.srcObject = cameraStream;
+    camsEnabled = true;
+  }
+
+  async function initRecording() {
+    if (
+      !$session.media.remote?.camera ||
+      !$session.media.remote.screen ||
+      !$session.media.local?.camera?.unmuted
+    )
+      throw new Error("Recording initialized before all streams are ready");
+
+    const compositeStream = await combineAllStreams(
       $session.media.remote.screen,
       $session.media.remote.camera,
       $session.media.local.camera.unmuted
-    ).then(async (stream: MediaStream) => {
-      recorderReady = true;
-      recording = await recordStreamFor10Seconds(
-        new MediaRecorder(stream, {
-          audioBitsPerSecond: 128000,
-          videoBitsPerSecond: 2500000,
-          mimeType: "video/webm",
-        })
-      );
-    });
+    );
+
+    session.setKey("media.composite", compositeStream);
+
+    const recorder = new MediaRecorder(compositeStream, RECORDING_OPTS);
+    session.setKey("record.recorder", recorder);
+    session.setKey("record.ready", true);
   }
 
-  export { id, name, participantName };
+  export { revision, respondent };
 </script>
 
 <div
@@ -92,8 +106,37 @@
     </div>
   </header>
   <aside
-    class="w-[600px] card row-span-2 bg-neutral rounded-box shadow-sm h-full"
-  ></aside>
+    class="w-[600px] card row-span-2 bg-neutral rounded-box shadow-sm h-full flex flex-col"
+  >
+    <CardHeader class="p-4">
+      {revision.system.title}: {revision.title}
+      <span slot="sub"
+        >You are moderating a live session with <strong
+          >{respondent.email}</strong
+        ></span
+      >
+      <button
+        slot="pull"
+        class="btn flex items-center justify-center gap-1"
+        disabled={!$session.record.ready}
+      >
+        {#if $session.record.enabled}
+          <div class="badge badge-error badge-sm aspect-square">
+            <iconify-icon class="text-neutral" icon="mdi:stop"></iconify-icon>
+          </div>
+          <span>Timestamp</span>
+        {:else}
+          <div
+            class:opacity-50={!$session.record.ready}
+            class="badge badge-error badge-sm aspect-square"
+          >
+            <iconify-icon class="text-neutral" icon="mdi:record"></iconify-icon>
+          </div>
+          <span>Start Recording</span>
+        {/if}
+      </button>
+    </CardHeader>
+  </aside>
   <section
     class="w-full max-h-[70vh] min-h-[30vh] aspect-video relative text-center"
   >

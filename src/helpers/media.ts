@@ -107,76 +107,69 @@ export async function combineAllStreams(
   stream2: MediaStream,
   stream3: MediaStream
 ): Promise<MediaStream> {
-  // Create video elements to play the streams
-  const videoElements = [stream1, stream2, stream3].map((stream) => {
-    const video = document.createElement("video");
-    video.srcObject = stream;
-    video.muted = true; // Mute to avoid feedback when playing
-    video.play(); // Start playing the video
-    return video;
-  });
-
-  // Wait for all videos metadata to load to get dimensions
-  await Promise.all(
-    videoElements.map(
-      (video) =>
-        new Promise<void>((resolve) => {
-          video.onloadedmetadata = () => resolve();
-        })
-    )
+  const videos = await Promise.all(
+    [stream1, stream2, stream3].map(async (stream, index) => {
+      const video = document.createElement("video");
+      video.srcObject = stream;
+      video.muted = true;
+      video.play();
+      await new Promise<void>((resolve) => {
+        video.onloadedmetadata = () => resolve();
+      });
+      // For the third stream, we need to load data to get the height
+      if (index === 2) {
+        await new Promise<void>((resolve) => {
+          video.onloadeddata = () => resolve();
+        });
+      }
+      return video;
+    })
   );
 
-  // Calculate the target height from the second and third video heights
-  const targetHeight =
-    videoElements[1].videoHeight + videoElements[2].videoHeight;
-
-  // Calculate the new width for the first video to preserve its aspect ratio
-  const aspectRatio1 =
-    videoElements[0].videoWidth / videoElements[0].videoHeight;
-  const newWidth1 = aspectRatio1 * targetHeight;
-
-  // Set the canvas dimensions
+  const targetHeight = videos[2].videoHeight * 2;
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d")!;
-  canvas.width =
-    newWidth1 +
-    Math.max(videoElements[1].videoWidth, videoElements[2].videoWidth);
+
+  // Calculate scaled dimensions
+  const scaledWidth1 =
+    videos[0].videoWidth * (targetHeight / videos[0].videoHeight);
+  const scaledWidth23 = videos[2].videoWidth; // Second and third video widths will be the same
+
+  // Set canvas dimensions
+  canvas.width = scaledWidth1 + scaledWidth23;
   canvas.height = targetHeight;
 
-  // Function to draw the video frames onto the canvas
-  function drawFrames() {
-    if (videoElements.every((video) => !(video.paused || video.ended))) {
-      // Clear the canvas
-      context.clearRect(0, 0, canvas.width, canvas.height);
+  function draw() {
+    // Clear the canvas
+    context.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw the first video on the left, scaled to the new width and target height
-      context.drawImage(videoElements[0], 0, 0, newWidth1, targetHeight);
+    // Draw the first video
+    context.drawImage(videos[0], 0, 0, scaledWidth1, targetHeight);
 
-      // Draw the second video on the right, top
-      context.drawImage(
-        videoElements[1],
-        newWidth1,
-        0,
-        videoElements[1].videoWidth,
-        videoElements[1].videoHeight
-      );
+    // Draw the second video (scaled to the size of the third video)
+    context.drawImage(
+      videos[1],
+      scaledWidth1,
+      0,
+      scaledWidth23,
+      videos[2].videoHeight
+    );
 
-      // Draw the third video on the right, bottom
-      context.drawImage(
-        videoElements[2],
-        newWidth1,
-        videoElements[1].videoHeight,
-        videoElements[2].videoWidth,
-        videoElements[2].videoHeight
-      );
+    // Draw the third video below the second
+    context.drawImage(
+      videos[2],
+      scaledWidth1,
+      videos[2].videoHeight,
+      scaledWidth23,
+      videos[2].videoHeight
+    );
 
-      // Continue drawing frames
-      requestAnimationFrame(drawFrames);
-    }
+    // Continue drawing frames
+    requestAnimationFrame(draw);
   }
 
-  // Start the drawing loop
-  drawFrames();
+  // Start rendering the canvas
+  draw();
 
   // Return the canvas's stream
   const combinedStream = canvas.captureStream();
@@ -186,10 +179,11 @@ export async function combineAllStreams(
 }
 
 export async function initLocalCamera(size: number) {
-  const video = {
-    height: size,
+  const video: MediaStreamConstraints["video"] = {
+    frameRate: 30,
     aspectRatio: 1,
     facingMode: "user",
+    height: { ideal: size },
   };
 
   const muted = await navigator.mediaDevices.getUserMedia({
@@ -206,40 +200,31 @@ export async function initLocalCamera(size: number) {
 }
 
 export async function initScreenShare() {
+  const video: MediaStreamConstraints["video"] = {
+    frameRate: 30,
+    aspectRatio: 16 / 9,
+    width: { ideal: 1280 },
+  };
+
   return await navigator.mediaDevices.getDisplayMedia({
+    video,
     audio: false,
-    video: true,
     preferCurrentTab: true,
   } as any);
 }
 
-export function recordStreamFor10Seconds(
-  mediaRecorder: MediaRecorder
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const chunks: BlobPart[] = [];
+export function downloadFile(file: File): void {
+  // Create an object URL for the file
+  const url = URL.createObjectURL(file);
 
-    mediaRecorder.ondataavailable = (event: BlobEvent) => {
-      if (event.data.size > 0) {
-        chunks.push(event.data);
-      }
-    };
+  // Create a temporary anchor element and trigger a download
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = file.name;
+  document.body.appendChild(a); // Append to the body temporarily
+  a.click(); // Trigger the download
 
-    mediaRecorder.onstop = () => {
-      const recordedBlob = new Blob(chunks, { type: mediaRecorder.mimeType });
-      const objectURL = URL.createObjectURL(recordedBlob);
-      resolve(objectURL);
-    };
-
-    mediaRecorder.onerror = (err) => {
-      reject(err);
-    };
-
-    mediaRecorder.start();
-
-    // Stop recording after 10 seconds
-    setTimeout(() => {
-      mediaRecorder.stop();
-    }, 10000);
-  });
+  // Clean up by removing the element and revoking the object URL
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }

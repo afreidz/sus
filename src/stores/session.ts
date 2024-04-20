@@ -5,7 +5,8 @@ import {
   type MediaConnection,
 } from "peerjs";
 
-import { computed, deepMap } from "nanostores";
+import { deepMap } from "nanostores";
+import { initLocalCamera } from "@/helpers/media";
 
 const PEER_OPTS: PeerOptions = import.meta.env.DEV
   ? {
@@ -14,6 +15,12 @@ const PEER_OPTS: PeerOptions = import.meta.env.DEV
       path: "/sessions",
     }
   : {};
+
+export const RECORDING_OPTS: MediaRecorderOptions = {
+  audioBitsPerSecond: 128000,
+  videoBitsPerSecond: 2500000,
+  mimeType: "video/webm",
+};
 
 type Session = {
   id?: string;
@@ -33,9 +40,15 @@ type Session = {
       camera?: MediaStream;
       screen?: MediaStream;
     };
+    composite?: MediaStream;
   };
 
-  recorder?: MediaRecorder;
+  record: {
+    files?: File[];
+    ready?: boolean;
+    enabled: boolean;
+    recorder?: MediaRecorder;
+  };
 
   connections: {
     data?: DataConnection;
@@ -47,6 +60,10 @@ type Session = {
 const session = deepMap<Session>({
   timestamp: new Date(),
   connections: {},
+  record: {
+    ready: false,
+    enabled: false,
+  },
   media: {},
 });
 
@@ -101,10 +118,15 @@ export async function connect(id: string, host: string) {
     });
     peer.on("call", (connection) => {
       if (connection.metadata.type === "camera") {
-        if (!media.local?.camera?.unmuted) {
-          console.log("No stream available to answer participant camera call.");
+        if (!!media.local?.camera?.unmuted) {
+          connection.answer(media.local.camera.unmuted);
+        } else {
+          initLocalCamera(500).then((streams) => {
+            session.setKey("media.local.camera.muted", streams.muted);
+            session.setKey("media.local.camera.unmuted", streams.unmuted);
+            connection.answer(streams.unmuted);
+          });
         }
-        connection.answer(media.local?.camera?.unmuted);
         session.setKey(`connections.camera`, connection);
         console.log(`Camera connection established`);
         connection.once("stream", (media) => {
@@ -147,7 +169,7 @@ export async function callHost(
   }
 
   if (type !== "data" && media) {
-    await new Promise((r) => {
+    await new Promise(async (r) => {
       const call = peer.call(host, media, { metadata: { type } });
       session.setKey(`connections.${type}`, call);
       call.on("stream", (media) => {
@@ -157,6 +179,42 @@ export async function callHost(
     });
     console.log(`${type} connection established`);
   }
+}
+
+export function startRecording() {
+  const s = session.get();
+
+  if (s.id !== s.host) throw new Error("Only the host is able to record");
+
+  if (!s.record.ready || !s.record.recorder || !s.media.composite)
+    throw new Error(`Record is not in a "ready" state`);
+
+  const chunks: BlobPart[] = [];
+
+  s.record.recorder.ondataavailable = (event: BlobEvent) => {
+    if (event.data.size > 0) {
+      chunks.push(event.data);
+    }
+  };
+
+  s.record.recorder.onstop = () => {
+    if (!s.record.recorder?.mimeType)
+      throw new Error("Unable to save recording due to missing MIME type");
+    const blob = new Blob(chunks, { type: s.record.recorder.mimeType });
+    const file = new File([blob], `${s.host}_recording_${+Date.now()}`, {
+      type: blob.type,
+      lastModified: Date.now(),
+    });
+
+    session.setKey("record.files", [...(s.record.files ?? []), file]);
+  };
+
+  session.setKey("record.enabled", true);
+  s.record.recorder.start();
+}
+
+export function stopRecording() {
+  session.get().record.recorder?.stop();
 }
 
 export default session;

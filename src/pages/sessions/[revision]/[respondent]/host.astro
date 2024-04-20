@@ -27,12 +27,7 @@ const respondent = await api({
 {
   revision && (
     <SessionLayout>
-      <HostComponent
-        client:only="svelte"
-        name={revision.createdBy}
-        id={`host${revision.id}host`}
-        participantName={respondent.email}
-      />
+      <HostComponent {revision} {respondent} client:only="svelte" />
     </SessionLayout>
   )
 }
