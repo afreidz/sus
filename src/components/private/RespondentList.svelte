@@ -118,7 +118,7 @@
           <li>
             <a
               target="_blank"
-              href={`/sessions/${respondent.revisionId}/${respondent.id}/host`}
+              href={`/sessions/host/${respondent.revisionId}/${respondent.id}`}
             >
               Start a live session (BETA)
             </a>
