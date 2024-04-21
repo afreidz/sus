@@ -13,6 +13,7 @@
   let title: string;
   let hostName: string;
   let confirmed = false;
+  let camsReady = false;
   let camsEnabled = false;
   let cameras: HTMLVideoElement;
   let confirmation: HTMLDialogElement;
@@ -32,7 +33,7 @@
     ).then((stream) => {
       camsEnabled = true;
       cameras.srcObject = stream;
-      cameras.onloadedmetadata = () => cameras.requestPictureInPicture();
+      cameras.onloadedmetadata = () => (camsReady = true);
     });
   }
 
@@ -63,8 +64,16 @@
 
 {#if confirmed}
   <div class="flex-1 mockup-browser border bg-neutral relative z-10">
-    <div class="mockup-browser-toolbar">
+    <div class="mockup-browser-toolbar relative">
       <div class="input">{title}: {name}</div>
+      {#if camsReady}
+        <button
+          on:click={() => cameras.requestPictureInPicture()}
+          class="btn btn-sm btn-ghost"
+        >
+          <iconify-icon class="text-xl" icon="mdi:video-outline"></iconify-icon>
+        </button>
+      {/if}
     </div>
     <div class="flex justify-center bg-neutral">Hello!</div>
   </div>
@@ -73,6 +82,7 @@
     class:hidden={!$session.media.local?.camera?.muted}
     class="absolute right-4 top-4 height-50 rounded-box overflow-clip shadow"
   >
+    <!-- svelte-ignore a11y-media-has-caption -->
     <video bind:this={cameras} autoplay class="size-full z-0" />
     <div class="badge glass badge-lg text-neutral absolute top-3 right-3">
       {name}
