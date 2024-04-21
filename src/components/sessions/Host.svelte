@@ -2,12 +2,22 @@
   import { onMount } from "svelte";
   import type { APIResponses } from "@/helpers/api";
   import CardHeader from "@/components/common/CardHeader.svelte";
-  import session, { RECORDING_OPTS, connect } from "@/stores/session";
-  import { combineAllStreams, combineCameraStreams } from "@/helpers/media";
+  import session, {
+    RECORDING_OPTS,
+    connect,
+    startRecording,
+    stopRecording,
+  } from "@/stores/session";
+  import {
+    combineAllStreams,
+    combineCameraStreams,
+    downloadSessionVideos,
+  } from "@/helpers/media";
 
   let id: string;
   let name: string;
   let recording: string;
+  let downloading = false;
   let camsEnabled = false;
   let shareEnabled = false;
   let participantName: string;
@@ -84,6 +94,19 @@
     session.setKey("record.ready", true);
   }
 
+  function toggleRecording() {
+    if ($session.record.recording) stopRecording();
+    if (!$session.record.recording) startRecording();
+  }
+
+  async function download() {
+    if (!$session.record.recordings?.length)
+      throw new Error("No recordings to download");
+    downloading = true;
+    await downloadSessionVideos($session.record.recordings);
+    downloading = false;
+  }
+
   export { revision, respondent };
 </script>
 
@@ -117,10 +140,11 @@
       >
       <button
         slot="pull"
+        on:click={toggleRecording}
         class="btn flex items-center justify-center gap-1"
         disabled={!$session.record.ready}
       >
-        {#if $session.record.enabled}
+        {#if $session.record.recording}
           <div class="badge badge-error badge-sm aspect-square">
             <iconify-icon class="text-neutral" icon="mdi:stop"></iconify-icon>
           </div>
@@ -136,6 +160,17 @@
         {/if}
       </button>
     </CardHeader>
+    <div class="p-4">
+      {#if $session.record.recordings?.length}
+        <button
+          on:click={download}
+          disabled={downloading}
+          class="btn btn-primary"
+        >
+          Download Session Videos
+        </button>
+      {/if}
+    </div>
   </aside>
   <section
     class="w-full max-h-[70vh] min-h-[30vh] aspect-video relative text-center"

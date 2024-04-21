@@ -1,4 +1,6 @@
+import JSZip from "jszip";
 import { Buffer } from "buffer";
+import type { SessionRecording } from "@/stores/session";
 
 const maxWidth = import.meta.env.PUBLIC_IMG_MAX_WIDTH || 300;
 
@@ -213,14 +215,23 @@ export async function initScreenShare() {
   } as any);
 }
 
-export function downloadFile(file: File): void {
+export async function downloadSessionVideos(recordings: SessionRecording[]) {
+  const zip = new JSZip();
+
+  recordings.forEach((recording) => {
+    if (!recording.file) return;
+    zip.file(recording.file.name, recording.file);
+  });
+
+  const finalZip = await zip.generateAsync({ type: "blob" });
+
   // Create an object URL for the file
-  const url = URL.createObjectURL(file);
+  const url = URL.createObjectURL(finalZip);
 
   // Create a temporary anchor element and trigger a download
   const a = document.createElement("a");
   a.href = url;
-  a.download = file.name;
+  a.download = "session_recordings.zip";
   document.body.appendChild(a); // Append to the body temporarily
   a.click(); // Trigger the download
 

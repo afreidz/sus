@@ -22,6 +22,14 @@ export const RECORDING_OPTS: MediaRecorderOptions = {
   mimeType: "video/webm",
 };
 
+const RECORDING_TIMESLICE_MS = 200;
+
+export type SessionRecording = {
+  end?: Date;
+  start: Date;
+  file?: File;
+};
+
 type Session = {
   id?: string;
   peer?: Peer;
@@ -44,10 +52,10 @@ type Session = {
   };
 
   record: {
-    files?: File[];
     ready?: boolean;
-    enabled: boolean;
+    recording: boolean;
     recorder?: MediaRecorder;
+    recordings?: SessionRecording[];
   };
 
   connections: {
@@ -62,7 +70,7 @@ const session = deepMap<Session>({
   connections: {},
   record: {
     ready: false,
-    enabled: false,
+    recording: false,
   },
   media: {},
 });
@@ -190,6 +198,9 @@ export function startRecording() {
     throw new Error(`Record is not in a "ready" state`);
 
   const chunks: BlobPart[] = [];
+  const recording: SessionRecording = {
+    start: new Date(),
+  };
 
   s.record.recorder.ondataavailable = (event: BlobEvent) => {
     if (event.data.size > 0) {
@@ -201,16 +212,21 @@ export function startRecording() {
     if (!s.record.recorder?.mimeType)
       throw new Error("Unable to save recording due to missing MIME type");
     const blob = new Blob(chunks, { type: s.record.recorder.mimeType });
-    const file = new File([blob], `${s.host}_recording_${+Date.now()}`, {
+    const file = new File([blob], `${s.host}_recording_${+Date.now()}.webm`, {
       type: blob.type,
       lastModified: Date.now(),
     });
 
-    session.setKey("record.files", [...(s.record.files ?? []), file]);
+    recording.file = file;
+    recording.end = new Date();
+    session.setKey("record.recordings", [
+      ...(s.record.recordings ?? []),
+      recording,
+    ]);
   };
 
-  session.setKey("record.enabled", true);
-  s.record.recorder.start();
+  session.setKey("record.recording", true);
+  s.record.recorder.start(RECORDING_TIMESLICE_MS);
 }
 
 export function stopRecording() {
