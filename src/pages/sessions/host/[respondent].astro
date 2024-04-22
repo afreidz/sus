@@ -3,17 +3,7 @@ import api from "@/helpers/api";
 import SessionLayout from "@/layouts/session.astro";
 import HostComponent from "@/components/sessions/Host.svelte";
 
-const { revision: rid, respondent: id } = Astro.params;
-
-const revision = await api({
-  method: "GET",
-  base: Astro.url.origin,
-  endpoint: "revisionId",
-  headers: Astro.request.headers,
-  substitutions: {
-    revisionId: rid ?? "",
-  },
-});
+const { respondent: id } = Astro.params;
 
 const respondent = await api({
   method: "GET",
@@ -21,6 +11,16 @@ const respondent = await api({
   endpoint: "respondentId",
   headers: Astro.request.headers,
   substitutions: { respondentId: id ?? "" },
+});
+
+const revision = await api({
+  method: "GET",
+  base: Astro.url.origin,
+  endpoint: "revisionId",
+  headers: Astro.request.headers,
+  substitutions: {
+    revisionId: respondent.revisionId ?? "",
+  },
 });
 ---
 

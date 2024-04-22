@@ -116,10 +116,7 @@
             </li>
           {/if}
           <li>
-            <a
-              target="_blank"
-              href={`/sessions/host/${respondent.revisionId}/${respondent.id}`}
-            >
+            <a target="_blank" href={`/sessions/host/${respondent.id}`}>
               Start a live session (BETA)
             </a>
           </li>

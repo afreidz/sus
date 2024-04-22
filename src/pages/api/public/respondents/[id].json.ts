@@ -5,6 +5,8 @@ import orm from "../../respondents/schema";
 export type publicRespondentId = {
   GET: ORM.RespondentGetPayload<{
     include: {
+      revision: { include: { system: true } };
+      survey: true;
       responses: {
         include: { curratedResponse: true; question: true };
       };
@@ -17,6 +19,7 @@ export type publicRespondentId = {
 export type respondentId = {
   GET: ORM.RespondentGetPayload<{
     include: {
+      revision: { include: { system: true } };
       survey: true;
       responses: {
         include: { curratedResponse: true; question: true };
@@ -31,6 +34,7 @@ export const GET: APIRoute = async ({ params }) => {
   const respondent = await orm.respondent.findFirst({
     where: { id: params.id },
     include: {
+      revision: { include: { system: true } },
       survey: true,
       responses: {
         include: { curratedResponse: true, question: true },

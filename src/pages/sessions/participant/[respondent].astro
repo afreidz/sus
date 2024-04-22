@@ -3,17 +3,7 @@ import api from "@/helpers/api";
 import SessionLayout from "@/layouts/session.astro";
 import ParticipantComponent from "@/components/sessions/Participant.svelte";
 
-const { revision: rid, respondent: id } = Astro.params;
-
-const revision = await api({
-  method: "GET",
-  base: Astro.url.origin,
-  endpoint: "revisionId",
-  headers: Astro.request.headers,
-  substitutions: {
-    revisionId: rid ?? "",
-  },
-});
+const { respondent: id } = Astro.params;
 
 const respondent = await api({
   method: "GET",
@@ -28,9 +18,9 @@ const respondent = await api({
   <ParticipantComponent
     client:only="svelte"
     name={respondent.email}
-    hostName={revision.createdBy}
-    title={revision.system.title}
     id={`par${respondent.id}par`}
-    host={`host${revision.id}host`}
+    title={respondent.revision.system.title}
+    host={`host${respondent.revisionId}host`}
+    hostName={respondent.revision.system.createdBy}
   />
 </SessionLayout>
