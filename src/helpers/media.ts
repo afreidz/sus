@@ -167,7 +167,7 @@ export async function combineMediaStreams(
   // Return the canvas's stream
   const combinedStream = canvas.captureStream(30);
   participant.getAudioTracks().forEach((t) => combinedStream.addTrack(t));
-  // host.getAudioTracks().forEach((t) => combinedStream.addTrack(t));
+  host.getAudioTracks().forEach((t) => combinedStream.addTrack(t));
   return combinedStream;
 }
 
@@ -225,7 +225,10 @@ export async function downloadSessionVideos(recordings: SessionRecording[]) {
   // Create a temporary anchor element and trigger a download
   const a = document.createElement("a");
   a.href = url;
-  a.download = "session_recordings.zip";
+  a.download =
+    recordings.length === 1
+      ? "session_recording.webm"
+      : "session_recordings.zip";
   document.body.appendChild(a); // Append to the body temporarily
   a.click(); // Trigger the download
 

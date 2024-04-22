@@ -3,6 +3,7 @@
   import type { APIResponses } from "@/helpers/api";
   import { downloadSessionVideos } from "@/helpers/media";
   import CardHeader from "@/components/common/CardHeader.svelte";
+  import SessionTime from "@/components/common/SessionTime.svelte";
 
   import session, {
     connect,
@@ -11,6 +12,8 @@
   } from "@/stores/session";
 
   let id: string;
+  let push: string =
+    "https://www.figma.com/embed?embed_host=share&url=https%3A%2F%2Fwww.figma.com%2Fproto%2FAwLTIxmcDcwZVSQcs17uut%2FSafeMe%3Ftype%3Ddesign%26node-id%3D800-7332%26t%3DFms1LfDhexjAWirT-1%26scaling%3Dscale-down%26page-id%3D502%253A96%26starting-point-node-id%3D800%253A7332%26mode%3Ddesign";
   let name: string;
   let recording: string;
   let downloading = false;
@@ -49,12 +52,17 @@
     shareEnabled = true;
   }
 
-  $: if (shareEnabled && camsEnabled) recordingReady = true;
+  $: if (shareEnabled && camsEnabled) startRecording();
 
-  function toggleRecording() {
-    if ($session.recorder.status === "recording") return stopRecording();
-    return startRecording();
-  }
+  $: if ($session.recorder.status === "recording")
+    $session.connections.data?.send({
+      type: "recording-start",
+    });
+
+  $: if ($session.recorder.status !== "recording")
+    $session.connections.data?.send({
+      type: "recording-stop",
+    });
 
   async function download() {
     if (!$session.recorder.recordings?.length)
@@ -62,6 +70,13 @@
     downloading = true;
     await downloadSessionVideos($session.recorder.recordings);
     downloading = false;
+  }
+
+  function pushToParticipant() {
+    $session.connections.data?.send({
+      type: "push-url",
+      url: push,
+    });
   }
 
   export { revision, respondent };
@@ -78,14 +93,18 @@
       <div class="aspect-square relative h-full">
         <!-- svelte-ignore a11y-media-has-caption -->
         <video autoplay bind:this={remoteCamera} class="size-full" />
-        <div class="badge glass badge-lg text-neutral absolute top-3 left-3">
+        <div
+          class="badge glass badge-xs text-neutral absolute bottom-3 right-3"
+        >
           {participantName}
         </div>
       </div>
       <div class="aspect-square relative h-full">
         <!-- svelte-ignore a11y-media-has-caption -->
         <video autoplay bind:this={localCamera} class="size-full" />
-        <div class="badge glass badge-lg text-neutral absolute top-3 right-3">
+        <div
+          class="badge glass badge-xs text-neutral absolute bottom-3 right-3"
+        >
           {name}
         </div>
       </div>
@@ -94,14 +113,17 @@
   <aside
     class="w-[600px] card row-span-2 bg-neutral rounded-box shadow-sm h-full flex flex-col"
   >
-    <CardHeader class="p-4">
+    <CardHeader class="p-4 flex-none">
       {revision.system.title}: {revision.title}
       <span slot="sub"
         >You are moderating a live session with <strong
           >{respondent.email}</strong
         ></span
       >
-      <button
+      <div slot="pull">
+        <SessionTime start={$session.recorder.status === "recording"} />
+      </div>
+      <!-- <button
         slot="pull"
         on:click={toggleRecording}
         disabled={!recordingReady}
@@ -122,9 +144,9 @@
           </div>
           <span>Start Recording</span>
         {/if}
-      </button>
+      </button> -->
     </CardHeader>
-    <div class="p-4">
+    <div class="p-4 flex-1 flex flex-col gap-4">
       {#if $session.recorder.recordings?.length}
         <button
           on:click={download}
@@ -134,7 +156,31 @@
           Download Session Videos
         </button>
       {/if}
+      {#if $session.recorder.status === "recording"}
+        <button on:click={() => stopRecording()} class="btn btn-error"
+          >Stop Recording</button
+        >
+      {/if}
     </div>
+    <footer class="flex-none p-4">
+      <form
+        action="/"
+        class="flex justify-center gap-4"
+        on:submit|preventDefault={pushToParticipant}
+      >
+        <input
+          type="text"
+          bind:value={push}
+          placeholder="Push url to participant..."
+          class="input input-bordered flex-1"
+        />
+        <button
+          disabled={!$session.connections.data}
+          type="submit"
+          class="btn btn-primary">Push</button
+        >
+      </form>
+    </footer>
   </aside>
   <section
     class="w-full max-h-[70vh] min-h-[30vh] aspect-video relative text-center"

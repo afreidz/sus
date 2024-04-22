@@ -1,15 +1,34 @@
 <script lang="ts">
   import session, { connect, callHost } from "@/stores/session";
+  import SessionTime from "@/components/common/SessionTime.svelte";
   import { initLocalCamera, initScreenShare } from "@/helpers/media";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
 
+  type PushURLMessage = {
+    type: "push-url";
+    url: string;
+  };
+
+  type RecordingStartMessage = {
+    type: "recording-start";
+  };
+
+  type RecordingStopMessage = {
+    type: "recording-stop";
+  };
+
+  type Message = PushURLMessage | RecordingStartMessage | RecordingStopMessage;
+
   let id: string;
+  let url: string;
   let name: string;
   let host: string;
   let title: string;
   let hostName: string;
   let confirmed = false;
+  let recording = false;
   let camsEnabled = false;
+  let screen: HTMLIFrameElement;
   let cameras: HTMLVideoElement;
   let confirmation: HTMLDialogElement;
 
@@ -22,8 +41,10 @@
 
   async function initSession() {
     await connect(id, host);
-    const cameraFeeds = await initLocalCamera(500);
     const screenShare = await initScreenShare();
+    const cameraFeeds = await initLocalCamera(500);
+
+    callHost("data");
 
     if (cameraFeeds.muted && cameras) {
       cameras.srcObject = cameraFeeds.muted;
@@ -37,28 +58,60 @@
     if (screenShare) callHost("screen", screenShare);
   }
 
+  $: $session.connections.data?.on("data", (m) => handleMessage(m as Message));
+
   function handleConfirm() {
     console.log(confirmation.returnValue);
     confirmed = true;
+  }
+
+  function handleMessage(msg: Message) {
+    if (msg.type === "push-url" && screen && msg.url) {
+      console.log(`Updating stage url to ${msg.url}`);
+      url = msg.url;
+    } else if (msg.type === "recording-start") {
+      console.log("Recording started");
+      recording = true;
+    } else if (msg.type === "recording-stop") {
+      console.log("Recording stopped");
+      recording = false;
+    }
   }
 
   export { id, host, title, name, hostName };
 </script>
 
 {#if confirmed}
-  <div class="flex-1 mockup-browser border bg-neutral relative z-10">
+  <div
+    class="flex-1 flex flex-col mockup-browser border bg-neutral relative z-10"
+  >
     <div class="mockup-browser-toolbar relative">
       <div class="input">{title}: {name}</div>
-      {#if camsEnabled}
-        <button
-          on:click={() => cameras.requestPictureInPicture()}
-          class="btn btn-sm btn-ghost"
-        >
-          <iconify-icon class="text-xl" icon="mdi:video-outline"></iconify-icon>
-        </button>
-      {/if}
+      <SessionTime bind:start={recording} />
     </div>
-    <div class="flex justify-center bg-neutral">Hello!</div>
+    <div class="flex-1 bg-neutral flex flex-col items-center justify-center">
+      {#if !url}
+        <span class="uppercase text-xl opacity-30 font-semibold"
+          >Waiting on the host to push the test application</span
+        >
+      {/if}
+      <iframe
+        src={url}
+        frameborder="0"
+        bind:this={screen}
+        class:hidden={!url}
+        class="flex-1 size-full"
+        title="Host's shared content"
+      />
+    </div>
+    {#if camsEnabled}
+      <button
+        on:click={() => cameras.requestPictureInPicture()}
+        class="btn rounded-full glass opacity-30 transition-opacity ease-in-out hover:opacity-75 btn-outline absolute right-3 bottom-3 aspect-square p-0"
+      >
+        <iconify-icon class="text-2xl" icon="mdi:video-outline"></iconify-icon>
+      </button>
+    {/if}
   </div>
 
   <aside
@@ -94,9 +147,9 @@
     and to be recorded.
   </p>
   <p>
-    Part or all of the recordings may be shared in a readout presentation. If
-    you do not wish to continue, please close this tab and contact {hostName} to
-    let them know you wish not to participate.
+    Part or all of the recordings may be shared in a readout presentation with
+    the stakeholders of this application. If you do not wish to continue, please
+    close this tab and contact {hostName} to let them know you wish not to participate.
   </p>
   <p>
     If you agree to the above, please type: <strong>{name}</strong> in the field
