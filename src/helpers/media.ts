@@ -104,79 +104,70 @@ export async function combineCameraStreams(
   return canvas.captureStream();
 }
 
-export async function combineAllStreams(
-  stream1: MediaStream,
-  stream2: MediaStream,
-  stream3: MediaStream
-): Promise<MediaStream> {
-  const videos = await Promise.all(
-    [stream1, stream2, stream3].map(async (stream, index) => {
-      const video = document.createElement("video");
-      video.srcObject = stream;
-      video.muted = true;
-      video.play();
-      await new Promise<void>((resolve) => {
-        video.onloadedmetadata = () => resolve();
+export async function combineMediaStreams(
+  screen: MediaStream,
+  participant: MediaStream,
+  host: MediaStream
+) {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d")!;
+  const videoElements = [screen, participant, host].map((stream) => {
+    const video = document.createElement("video");
+    video.srcObject = stream;
+    video.play();
+    return video;
+  });
+
+  // Wait for all video metadata to load
+  await Promise.all(
+    videoElements.map((video) => {
+      return new Promise((resolve) => {
+        video.onloadedmetadata = () => resolve(true);
       });
-      // For the third stream, we need to load data to get the height
-      if (index === 2) {
-        await new Promise<void>((resolve) => {
-          video.onloadeddata = () => resolve();
-        });
-      }
-      return video;
     })
   );
 
-  const targetHeight = videos[2].videoHeight * 2;
-  const canvas = document.createElement("canvas");
-  const context = canvas.getContext("2d")!;
+  // Calculate sizes and positions
+  const targetHeight = 720;
+  const targetWidth1 =
+    videoElements[0].videoWidth / (videoElements[0].videoHeight / targetHeight);
+  const halfHeight = targetHeight / 2;
+  const aspectRatio2 =
+    videoElements[1].videoWidth / videoElements[1].videoHeight;
+  const aspectRatio3 =
+    videoElements[2].videoWidth / videoElements[2].videoHeight;
+  const targetWidth2 = halfHeight * aspectRatio2;
+  const targetWidth3 = halfHeight * aspectRatio3;
 
-  // Calculate scaled dimensions
-  const scaledWidth1 =
-    videos[0].videoWidth * (targetHeight / videos[0].videoHeight);
-  const scaledWidth23 = videos[2].videoWidth; // Second and third video widths will be the same
-
-  // Set canvas dimensions
-  canvas.width = scaledWidth1 + scaledWidth23;
+  // Set canvas size
+  canvas.width = targetWidth1 + Math.max(targetWidth2, targetWidth3);
   canvas.height = targetHeight;
 
+  // Start the rendering loop
   function draw() {
     // Clear the canvas
-    context.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw the first video
-    context.drawImage(videos[0], 0, 0, scaledWidth1, targetHeight);
+    // Draw the streams on the canvas
+    ctx.drawImage(videoElements[0], 0, 0, targetWidth1, targetHeight); // Left side
+    ctx.drawImage(videoElements[1], targetWidth1, 0, targetWidth2, halfHeight); // Right top
+    ctx.drawImage(
+      videoElements[2],
+      targetWidth1,
+      halfHeight,
+      targetWidth3,
+      halfHeight
+    ); // Right bottom
 
-    // Draw the second video (scaled to the size of the third video)
-    context.drawImage(
-      videos[1],
-      scaledWidth1,
-      0,
-      scaledWidth23,
-      videos[2].videoHeight
-    );
-
-    // Draw the third video below the second
-    context.drawImage(
-      videos[2],
-      scaledWidth1,
-      videos[2].videoHeight,
-      scaledWidth23,
-      videos[2].videoHeight
-    );
-
-    // Continue drawing frames
     requestAnimationFrame(draw);
   }
 
-  // Start rendering the canvas
   draw();
 
   // Return the canvas's stream
-  const combinedStream = canvas.captureStream();
-  stream2.getAudioTracks().forEach((t) => combinedStream.addTrack(t));
-  stream3.getAudioTracks().forEach((t) => combinedStream.addTrack(t));
+  const combinedStream = canvas.captureStream(30);
+  participant.getAudioTracks().forEach((t) => combinedStream.addTrack(t));
+  // host.getAudioTracks().forEach((t) => combinedStream.addTrack(t));
   return combinedStream;
 }
 
@@ -223,10 +214,13 @@ export async function downloadSessionVideos(recordings: SessionRecording[]) {
     zip.file(recording.file.name, recording.file);
   });
 
-  const finalZip = await zip.generateAsync({ type: "blob" });
+  const file =
+    recordings.length === 1 && recordings[0].file
+      ? recordings[0].file
+      : await zip.generateAsync({ type: "blob" });
 
   // Create an object URL for the file
-  const url = URL.createObjectURL(finalZip);
+  const url = URL.createObjectURL(file);
 
   // Create a temporary anchor element and trigger a download
   const a = document.createElement("a");

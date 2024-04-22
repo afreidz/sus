@@ -1,11 +1,7 @@
 <script lang="ts">
   import session, { connect, callHost } from "@/stores/session";
+  import { initLocalCamera, initScreenShare } from "@/helpers/media";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
-  import {
-    initLocalCamera,
-    combineCameraStreams,
-    initScreenShare,
-  } from "@/helpers/media";
 
   let id: string;
   let name: string;
@@ -13,28 +9,15 @@
   let title: string;
   let hostName: string;
   let confirmed = false;
-  let camsReady = false;
   let camsEnabled = false;
   let cameras: HTMLVideoElement;
   let confirmation: HTMLDialogElement;
 
   $: if (confirmed) initSession();
 
-  $: if (
-    $session.media.remote?.camera &&
-    $session.media.local?.camera?.muted &&
-    cameras &&
-    !camsEnabled
-  ) {
-    combineCameraStreams(
-      $session.media.remote.camera,
-      $session.media.local.camera.muted,
-      400
-    ).then((stream) => {
-      camsEnabled = true;
-      cameras.srcObject = stream;
-      cameras.onloadedmetadata = () => (camsReady = true);
-    });
+  $: if ($session.cameras.composite && cameras && !camsEnabled) {
+    cameras.srcObject = $session.cameras.composite;
+    camsEnabled = true;
   }
 
   async function initSession() {
@@ -44,11 +27,11 @@
 
     if (cameraFeeds.muted && cameras) {
       cameras.srcObject = cameraFeeds.muted;
-      session.setKey("media.local.camera.muted", cameraFeeds.muted);
+      session.setKey("cameras.muted", cameraFeeds.muted);
     }
 
     if (cameraFeeds.unmuted)
-      session.setKey("media.local.camera.unmuted", cameraFeeds.unmuted);
+      session.setKey("cameras.unmuted", cameraFeeds.unmuted);
 
     if (cameraFeeds.unmuted) callHost("camera", cameraFeeds.unmuted);
     if (screenShare) callHost("screen", screenShare);
@@ -66,7 +49,7 @@
   <div class="flex-1 mockup-browser border bg-neutral relative z-10">
     <div class="mockup-browser-toolbar relative">
       <div class="input">{title}: {name}</div>
-      {#if camsReady}
+      {#if camsEnabled}
         <button
           on:click={() => cameras.requestPictureInPicture()}
           class="btn btn-sm btn-ghost"
@@ -79,7 +62,7 @@
   </div>
 
   <aside
-    class:hidden={!$session.media.local?.camera?.muted}
+    class:hidden={!$session.cameras.muted}
     class="absolute right-4 top-4 height-50 rounded-box overflow-clip shadow"
   >
     <!-- svelte-ignore a11y-media-has-caption -->
