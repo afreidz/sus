@@ -1,6 +1,6 @@
 <script lang="ts">
+  import SessionTime from "@/components/sessions/Time.svelte";
   import session, { connect, callHost } from "@/stores/session";
-  import SessionTime from "@/components/common/SessionTime.svelte";
   import { initLocalCamera, initScreenShare } from "@/helpers/media";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
 
@@ -107,7 +107,7 @@
     {#if camsEnabled}
       <button
         on:click={() => cameras.requestPictureInPicture()}
-        class="btn rounded-full glass opacity-30 transition-opacity ease-in-out hover:opacity-75 btn-outline absolute right-3 bottom-3 aspect-square p-0"
+        class="btn rounded-full shadow-md glass opacity-30 transition-opacity ease-in-out hover:opacity-75 btn-outline absolute right-3 bottom-3 aspect-square p-0"
       >
         <iconify-icon class="text-2xl" icon="mdi:video-outline"></iconify-icon>
       </button>

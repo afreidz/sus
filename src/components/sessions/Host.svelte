@@ -2,8 +2,9 @@
   import { onMount } from "svelte";
   import type { APIResponses } from "@/helpers/api";
   import { downloadSessionVideos } from "@/helpers/media";
+  import SessionTime from "@/components/sessions/Time.svelte";
+  import KeyMoments from "@/components/sessions/Moments.svelte";
   import CardHeader from "@/components/common/CardHeader.svelte";
-  import SessionTime from "@/components/common/SessionTime.svelte";
 
   import session, {
     connect,
@@ -15,16 +16,13 @@
   let push: string =
     "https://www.figma.com/embed?embed_host=share&url=https%3A%2F%2Fwww.figma.com%2Fproto%2FAwLTIxmcDcwZVSQcs17uut%2FSafeMe%3Ftype%3Ddesign%26node-id%3D800-7332%26t%3DFms1LfDhexjAWirT-1%26scaling%3Dscale-down%26page-id%3D502%253A96%26starting-point-node-id%3D800%253A7332%26mode%3Ddesign";
   let name: string;
-  let recording: string;
   let downloading = false;
   let camsEnabled = false;
   let shareEnabled = false;
-  let recordingReady = false;
   let participantName: string;
   let localCamera: HTMLVideoElement;
   let screenshare: HTMLVideoElement;
   let remoteCamera: HTMLVideoElement;
-  let recordedVideo: HTMLVideoElement;
 
   let revision: APIResponses["revisionId"]["GET"];
   let respondent: APIResponses["respondentId"]["GET"];
@@ -101,7 +99,7 @@
       </div>
       <div class="aspect-square relative h-full">
         <!-- svelte-ignore a11y-media-has-caption -->
-        <video autoplay bind:this={localCamera} class="size-full" />
+        <video autoplay muted bind:this={localCamera} class="size-full" />
         <div
           class="badge glass badge-xs text-neutral absolute bottom-3 right-3"
         >
@@ -123,30 +121,9 @@
       <div slot="pull">
         <SessionTime start={$session.recorder.status === "recording"} />
       </div>
-      <!-- <button
-        slot="pull"
-        on:click={toggleRecording}
-        disabled={!recordingReady}
-        class="btn flex items-center justify-center gap-1"
-      >
-        {#if $session.recorder.status === "recording"}
-          <div class="badge badge-error badge-sm aspect-square">
-            <iconify-icon class="text-neutral" icon="mdi:stop"></iconify-icon>
-          </div>
-          <span>Timestamp</span>
-        {:else}
-          <div
-            class:opacity-50={!$session.recorder.status ||
-              $session.recorder.status === "inactive"}
-            class="badge badge-error badge-sm aspect-square"
-          >
-            <iconify-icon class="text-neutral" icon="mdi:record"></iconify-icon>
-          </div>
-          <span>Start Recording</span>
-        {/if}
-      </button> -->
     </CardHeader>
-    <div class="p-4 flex-1 flex flex-col gap-4">
+    <div class="p-4 flex-1 flex flex-col gap-4 bg-sus-surface-10">
+      <KeyMoments start={$session.recorder.current?.start} />
       {#if $session.recorder.recordings?.length}
         <button
           on:click={download}
@@ -193,15 +170,6 @@
       </strong>
     {/if}
     <!-- svelte-ignore a11y-media-has-caption -->
-    {#if !recording}
-      <video bind:this={screenshare} autoplay class="size-full"></video>
-    {:else}
-      <video
-        controls
-        bind:this={recordedVideo}
-        src={recording}
-        class="size-full"
-      ></video>
-    {/if}
+    <video bind:this={screenshare} autoplay class="size-full"></video>
   </section>
 </div>

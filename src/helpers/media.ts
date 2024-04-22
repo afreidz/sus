@@ -166,8 +166,8 @@ export async function combineMediaStreams(
 
   // Return the canvas's stream
   const combinedStream = canvas.captureStream(30);
-  participant.getAudioTracks().forEach((t) => combinedStream.addTrack(t));
   host.getAudioTracks().forEach((t) => combinedStream.addTrack(t));
+  participant.getAudioTracks().forEach((t) => combinedStream.addTrack(t));
   return combinedStream;
 }
 

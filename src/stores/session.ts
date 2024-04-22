@@ -53,6 +53,7 @@ type Session = {
   screen?: MediaStream;
 
   recorder: {
+    current?: SessionRecording;
     mediaRecorder?: MediaRecorder;
     status?: MediaRecorder["state"];
     recordings?: SessionRecording[];
@@ -242,6 +243,7 @@ export async function startRecording() {
   });
 
   recorder.start(500);
+  session.setKey("recorder.current", recording);
   session.setKey("recorder.status", recorder.state);
 }
 
@@ -251,6 +253,7 @@ export function stopRecording() {
   if (!recorder.mediaRecorder) throw new Error("Unable to locate recorder");
 
   recorder.mediaRecorder?.stop();
+  session.setKey("recorder.current", undefined);
   session.setKey("recorder.status", recorder.mediaRecorder.state);
 }
 
