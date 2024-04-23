@@ -1,8 +1,8 @@
 <script lang="ts">
   import SessionTime from "@/components/sessions/Time.svelte";
   import session, { connect, callHost } from "@/stores/session";
-  import { initLocalCamera, initScreenShare } from "@/helpers/media";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
+  import { initLocalCamera, initScreenShare, mute } from "@/helpers/media";
 
   type PushURLMessage = {
     type: "push-url";
@@ -34,27 +34,24 @@
 
   $: if (confirmed) initSession();
 
-  $: if ($session.cameras.composite && cameras && !camsEnabled) {
-    cameras.srcObject = $session.cameras.composite;
+  $: if ($session.streams.cameras?.composite && cameras && !camsEnabled) {
+    cameras.srcObject = $session.streams.cameras.composite;
     camsEnabled = true;
   }
 
   async function initSession() {
     await connect(id, host);
     const screenShare = await initScreenShare();
-    const cameraFeeds = await initLocalCamera(500);
+    const cameraStream = await initLocalCamera(500);
 
     callHost("data");
 
-    if (cameraFeeds.muted && cameras) {
-      cameras.srcObject = cameraFeeds.muted;
-      session.setKey("cameras.muted", cameraFeeds.muted);
+    if (cameraStream && cameras) {
+      cameras.srcObject = mute(cameraStream);
+      session.setKey("streams.cameras.local", cameraStream);
     }
 
-    if (cameraFeeds.unmuted)
-      session.setKey("cameras.unmuted", cameraFeeds.unmuted);
-
-    if (cameraFeeds.unmuted) callHost("camera", cameraFeeds.unmuted);
+    if (cameraStream) callHost("camera", cameraStream);
     if (screenShare) callHost("screen", screenShare);
   }
 
@@ -115,7 +112,7 @@
   </div>
 
   <aside
-    class:hidden={!$session.cameras.muted}
+    class:hidden={!$session.streams.cameras?.composite}
     class="absolute right-4 top-4 height-50 rounded-box overflow-clip shadow"
   >
     <!-- svelte-ignore a11y-media-has-caption -->

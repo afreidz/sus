@@ -114,6 +114,7 @@ export async function combineMediaStreams(
   const videoElements = [screen, participant, host].map((stream) => {
     const video = document.createElement("video");
     video.srcObject = stream;
+    video.muted = true;
     video.play();
     return video;
   });
@@ -164,11 +165,24 @@ export async function combineMediaStreams(
 
   draw();
 
-  // Return the canvas's stream
-  const combinedStream = canvas.captureStream(30);
-  host.getAudioTracks().forEach((t) => combinedStream.addTrack(t));
-  participant.getAudioTracks().forEach((t) => combinedStream.addTrack(t));
-  return combinedStream;
+  const audioContext = new AudioContext();
+  const dest = audioContext.createMediaStreamDestination();
+
+  [host, participant].forEach((stream) => {
+    const source = audioContext.createMediaStreamSource(stream);
+    source.connect(dest);
+  });
+
+  // Combine the video from the canvas with the audio from the destinations
+  const videoStream = (canvas.captureStream(30) as any).getVideoTracks();
+  const outputStream = new MediaStream([
+    ...videoStream,
+    ...dest.stream.getAudioTracks(),
+  ]);
+
+  // To ensure no audio plays in the output, we can avoid linking the audio to any element,
+  // or explicitly set the video element to muted if necessary.
+  return outputStream;
 }
 
 export async function initLocalCamera(size: number) {
@@ -179,17 +193,17 @@ export async function initLocalCamera(size: number) {
     height: { ideal: size },
   };
 
-  const muted = await navigator.mediaDevices.getUserMedia({
-    audio: false,
+  const audio: MediaStreamConstraints["audio"] = {
+    sampleRate: 128000,
+    channelCount: 2,
+  };
+
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio,
     video,
   });
 
-  const unmuted = await navigator.mediaDevices.getUserMedia({
-    audio: true,
-    video,
-  });
-
-  return { muted, unmuted };
+  return stream;
 }
 
 export async function initScreenShare() {
@@ -235,4 +249,10 @@ export async function downloadSessionVideos(recordings: SessionRecording[]) {
   // Clean up by removing the element and revoking the object URL
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+export function mute(s: MediaStream) {
+  const clone = s.clone();
+  clone.getAudioTracks().forEach((t) => t.stop());
+  return clone;
 }

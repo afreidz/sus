@@ -41,16 +41,14 @@ type Session = {
   host?: string;
   timestamp: Date;
 
-  composite?: MediaStream;
-
-  cameras: {
-    muted?: MediaStream;
-    remote?: MediaStream;
-    unmuted?: MediaStream;
-    composite?: MediaStream;
+  streams: {
+    cameras?: {
+      local?: MediaStream;
+      remote?: MediaStream;
+      composite?: MediaStream;
+    };
+    screen?: MediaStream;
   };
-
-  screen?: MediaStream;
 
   recorder: {
     current?: SessionRecording;
@@ -69,7 +67,7 @@ type Session = {
 const session = deepMap<Session>({
   timestamp: new Date(),
   connections: {},
-  cameras: {},
+  streams: {},
   recorder: {},
 });
 
@@ -107,7 +105,7 @@ export async function connect(id: string, host: string) {
     existing.id = pid;
   }
 
-  const { peer, cameras } = session.get();
+  const { peer, streams } = session.get();
   const isHost = !!existing.id && existing.id === existing.host;
 
   if (!peer) throw new Error(`Unable to connect to session`);
@@ -124,19 +122,18 @@ export async function connect(id: string, host: string) {
     });
     peer.on("call", (connection) => {
       if (connection.metadata.type === "camera") {
-        if (!!cameras?.unmuted) {
-          connection.answer(cameras.unmuted);
+        if (!!streams.cameras?.local) {
+          connection.answer(streams.cameras.local);
         } else {
-          initLocalCamera(500).then((streams) => {
-            session.setKey("cameras.muted", streams.muted);
-            session.setKey("cameras.unmuted", streams.unmuted);
-            connection.answer(streams.unmuted);
+          initLocalCamera(500).then((stream) => {
+            session.setKey("streams.cameras.local", stream);
+            connection.answer(stream);
           });
         }
         session.setKey(`connections.camera`, connection);
         console.log(`Camera connection established`);
         connection.once("stream", async (media) => {
-          session.setKey("cameras.remote", media);
+          session.setKey("streams.cameras.remote", media);
         });
       }
       if (connection.metadata.type === "screen") {
@@ -144,7 +141,7 @@ export async function connect(id: string, host: string) {
         session.setKey(`connections.screen`, connection);
         console.log(`Screen connection established`);
         connection.once("stream", (media) => {
-          session.setKey("screen", media);
+          session.setKey("streams.screen", media);
         });
       }
     });
@@ -160,7 +157,7 @@ export async function callHost(
   if (type !== "data" && !media)
     throw new Error(`Cannot call host with ${type} media`);
 
-  const { peer, host, cameras } = session.get();
+  const { peer, host, streams } = session.get();
 
   if (!peer?.open || !host) throw new Error("Unable to connect to session");
 
@@ -177,20 +174,24 @@ export async function callHost(
       const call = peer.call(host, media, { metadata: { type } });
       session.setKey(`connections.${type}`, call);
       call.on("stream", (media) => {
-        if (cameras.muted)
-          combineCameraStreams(cameras.muted, media, 500).then((composite) => {
-            session.setKey("cameras.composite", composite);
+        if (streams.cameras?.local) {
+          const clone = streams.cameras.local.clone();
+          clone.getAudioTracks().forEach((t) => t.stop());
+          combineCameraStreams(clone, media, 500).then((composite) => {
+            session.setKey("streams.cameras.composite", composite);
           });
-        r(true);
+          r(true);
+        }
       });
     });
     console.log(`Camera connection established`);
   } else if (type === "screen" && media) {
     await new Promise(async (r) => {
+      media.getAudioTracks().forEach((t) => t.stop());
       const call = peer.call(host, media, { metadata: { type } });
       session.setKey(`connections.${type}`, call);
       call.on("stream", async (media) => {
-        session.setKey("screen", media);
+        session.setKey("streams.screen", media);
         r(true);
       });
     });
@@ -206,13 +207,21 @@ export async function startRecording() {
 
   if (s.id !== s.host) throw new Error("Only the host is able to record");
 
-  if (!s.screen || !s.cameras.remote || !s.cameras.unmuted)
+  if (
+    !s.streams.screen ||
+    !s.streams.cameras?.remote ||
+    !s.streams.cameras?.local
+  )
     throw new Error(`All media is not ready to record`);
 
   const recorder =
     s.recorder.mediaRecorder ||
     new MediaRecorder(
-      await combineMediaStreams(s.screen, s.cameras.remote, s.cameras.unmuted),
+      await combineMediaStreams(
+        s.streams.screen,
+        s.streams.cameras.remote,
+        s.streams.cameras.local
+      ),
       opts
     );
 

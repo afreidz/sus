@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { APIResponses } from "@/helpers/api";
-  import { downloadSessionVideos } from "@/helpers/media";
   import SessionTime from "@/components/sessions/Time.svelte";
+  import { downloadSessionVideos, mute } from "@/helpers/media";
   import KeyMoments from "@/components/sessions/Moments.svelte";
   import CardHeader from "@/components/common/CardHeader.svelte";
 
@@ -33,20 +33,24 @@
   $: id = `host${revision.id}host`;
   $: participantName = respondent.email;
 
-  $: if ($session.cameras.muted && localCamera) {
-    localCamera.srcObject = $session.cameras.muted;
+  $: if ($session.streams.cameras?.local && localCamera) {
+    localCamera.srcObject = mute($session.streams.cameras.local);
   }
 
-  $: if ($session.cameras.remote && remoteCamera) {
-    remoteCamera.srcObject = $session.cameras.remote;
+  $: if ($session.streams.cameras?.remote && remoteCamera) {
+    remoteCamera.srcObject = $session.streams.cameras.remote;
   }
 
-  $: if ($session.cameras.remote && $session.cameras.muted && !camsEnabled) {
+  $: if (
+    $session.streams.cameras?.remote &&
+    $session.streams.cameras?.local &&
+    !camsEnabled
+  ) {
     camsEnabled = true;
   }
 
-  $: if ($session.screen && screenshare && !shareEnabled) {
-    screenshare.srcObject = $session.screen;
+  $: if ($session.streams.screen && screenshare && !shareEnabled) {
+    screenshare.srcObject = $session.streams.screen;
     shareEnabled = true;
   }
 
@@ -90,7 +94,12 @@
     >
       <div class="aspect-square relative h-full">
         <!-- svelte-ignore a11y-media-has-caption -->
-        <video autoplay bind:this={remoteCamera} class="size-full" />
+        <video
+          autoplay
+          playsinline
+          bind:this={remoteCamera}
+          class="size-full"
+        />
         <div
           class="badge glass badge-xs text-neutral absolute bottom-3 right-3"
         >
@@ -99,7 +108,13 @@
       </div>
       <div class="aspect-square relative h-full">
         <!-- svelte-ignore a11y-media-has-caption -->
-        <video autoplay muted bind:this={localCamera} class="size-full" />
+        <video
+          muted
+          autoplay
+          playsinline
+          bind:this={localCamera}
+          class="size-full"
+        />
         <div
           class="badge glass badge-xs text-neutral absolute bottom-3 right-3"
         >
@@ -170,6 +185,7 @@
       </strong>
     {/if}
     <!-- svelte-ignore a11y-media-has-caption -->
-    <video bind:this={screenshare} autoplay class="size-full"></video>
+    <video bind:this={screenshare} muted autoplay playsinline class="size-full"
+    ></video>
   </section>
 </div>
