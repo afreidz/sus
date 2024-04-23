@@ -2,15 +2,16 @@
   import { onMount } from "svelte";
   import type { APIResponses } from "@/helpers/api";
   import SessionTime from "@/components/sessions/Time.svelte";
-  import { downloadSessionVideos, extractAudio, mute } from "@/helpers/media";
   import KeyMoments from "@/components/sessions/Moments.svelte";
   import CardHeader from "@/components/common/CardHeader.svelte";
+  import { downloadSessionVideos, extractAudio, mute } from "@/helpers/media";
 
   import session, {
     connect,
     stopRecording,
     startRecording,
   } from "@/stores/session";
+  import api from "@/helpers/api";
 
   let id: string;
   let push: string =
@@ -90,23 +91,15 @@
     const audio = await extractAudio($session.recorder.recordings[0].file);
 
     const body = new FormData();
-    body.append(
-      "file",
-      new File([audio], `audio.webm`, { type: "audio/webm" })
-    );
-    body.append("model", "whisper-1");
-    body.append("response_format", "verbose_json");
+    body.append("audio", new File([audio], "audio.webm", { type: audio.type }));
 
-    const resp = await fetch(`https://api.openai.com/v1/audio/transcriptions`, {
+    const resp = await api({
       body,
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${import.meta.env.OPENAI_API_KEY}`,
-      },
+      endpoint: "transcription",
     });
 
     console.log(resp);
-    console.log(await resp.json());
 
     working = false;
   }

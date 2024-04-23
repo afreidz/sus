@@ -9,6 +9,7 @@ import type { systemId } from "@/api/systems/[id].json";
 import type { types } from "@/api/public/types/all.json";
 import type { revisions } from "@/api/revisions/all.json";
 import type { type } from "@/api/public/types/[type].json";
+import type { transcription } from "@/pages/api/transcribe";
 import type { revisionId } from "@/api/revisions/[id].json";
 import type { respondents } from "@/api/respondents/all.json";
 import type { response } from "@/api/public/responses/all.json";
@@ -38,6 +39,7 @@ export type APIResponses = {
   revisionId: revisionId;
   respondents: respondents;
   respondentId: respondentId;
+  transcription: transcription;
   publicRespondentId: publicRespondentId;
   revisionSurveyType: revisionSurveyType;
   respondentBySurveyId: respondentBySurveyId;
@@ -92,8 +94,8 @@ type CustomSubstitutions = {
 type APIProps<E, M> = {
   method?: M;
   endpoint: E;
-  body?: string;
   base?: string | URL;
+  body?: string | FormData;
   searchParams?: SearchParams;
   substitutions?: Substitutions<E>;
   headers?: RequestInit["headers"];
@@ -105,6 +107,7 @@ export const endpoints = {
   clients: "/api/clients/all.json",
   systems: "/api/systems/all.json",
   surveys: "/api/surveys/all.json",
+  transcription: "/api/transcribe",
   types: "/api/public/types/all.json",
   revisions: "/api/revisions/all.json",
   respondents: "/api/respondents/all.json",
@@ -143,7 +146,8 @@ export default async function api<
   let endpoint = `${endpoints[e]}`;
 
   const headers = new Headers(h) ?? new Headers({});
-  headers.set("Content-Type", "application/json");
+  if (!headers.get("Content-Type") && typeof body === "string")
+    headers.set("Content-Type", "application/json");
 
   Object.entries(substitutions || {}).forEach((sub) => {
     if (typeof sub[1] === "string")
@@ -160,7 +164,7 @@ export default async function api<
     }
   });
 
-  if (method === "POST" && body) {
+  if (method === "POST" && typeof body === "string") {
     const account = await refreshMe().catch(() => null);
     if (account?.user?.email) {
       const bodyData = JSON.parse(body);
