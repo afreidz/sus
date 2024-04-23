@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import type { APIResponses } from "@/helpers/api";
   import SessionTime from "@/components/sessions/Time.svelte";
-  import { downloadSessionVideos, mute } from "@/helpers/media";
+  import { downloadSessionVideos, extractAudio, mute } from "@/helpers/media";
   import KeyMoments from "@/components/sessions/Moments.svelte";
   import CardHeader from "@/components/common/CardHeader.svelte";
 
@@ -16,7 +16,7 @@
   let push: string =
     "https://www.figma.com/embed?embed_host=share&url=https%3A%2F%2Fwww.figma.com%2Fproto%2FAwLTIxmcDcwZVSQcs17uut%2FSafeMe%3Ftype%3Ddesign%26node-id%3D800-7332%26t%3DFms1LfDhexjAWirT-1%26scaling%3Dscale-down%26page-id%3D502%253A96%26starting-point-node-id%3D800%253A7332%26mode%3Ddesign";
   let name: string;
-  let downloading = false;
+  let working = false;
   let camsEnabled = false;
   let shareEnabled = false;
   let participantName: string;
@@ -69,9 +69,9 @@
   async function download() {
     if (!$session.recorder.recordings?.length)
       throw new Error("No recordings to download");
-    downloading = true;
+    working = true;
     await downloadSessionVideos($session.recorder.recordings);
-    downloading = false;
+    working = false;
   }
 
   function pushToParticipant() {
@@ -79,6 +79,36 @@
       type: "push-url",
       url: push,
     });
+  }
+
+  async function transcribe() {
+    if (!$session.recorder.recordings?.[0].file)
+      throw new Error("No recordings to transcribe");
+
+    working = true;
+
+    const audio = await extractAudio($session.recorder.recordings[0].file);
+
+    const body = new FormData();
+    body.append(
+      "file",
+      new File([audio], `audio.webm`, { type: "audio/webm" })
+    );
+    body.append("model", "whisper-1");
+    body.append("response_format", "verbose_json");
+
+    const resp = await fetch(`https://api.openai.com/v1/audio/transcriptions`, {
+      body,
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${import.meta.env.OPENAI_API_KEY}`,
+      },
+    });
+
+    console.log(resp);
+    console.log(await resp.json());
+
+    working = false;
   }
 
   export { revision, respondent };
@@ -140,12 +170,15 @@
     <div class="p-4 flex-1 flex flex-col gap-4 bg-sus-surface-10">
       <KeyMoments start={$session.recorder.current?.start} />
       {#if $session.recorder.recordings?.length}
+        <button on:click={download} disabled={working} class="btn btn-primary">
+          Download Session Videos
+        </button>
         <button
-          on:click={download}
-          disabled={downloading}
+          on:click={transcribe}
+          disabled={working}
           class="btn btn-primary"
         >
-          Download Session Videos
+          Transcribe
         </button>
       {/if}
       {#if $session.recorder.status === "recording"}

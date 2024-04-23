@@ -4,6 +4,7 @@ import PrivateLayout from "@/layouts/private.astro";
 import SystemRevisionContent from "@/components/private/SystemRevision.svelte";
 
 const id = Astro.params.id as string;
+
 const system = await api({
   method: "GET",
   endpoint: "systemId",
@@ -12,23 +13,19 @@ const system = await api({
   substitutions: { systemId: id },
 });
 
-const sus = (
-  await api({
-    endpoint: "typesType",
-    base: Astro.url.origin,
-    headers: Astro.request.headers,
-    substitutions: { typesType: "sus" },
-  })
-);
+const sus = await api({
+  endpoint: "typesType",
+  base: Astro.url.origin,
+  headers: Astro.request.headers,
+  substitutions: { typesType: "sus" },
+});
 
-const task = (
-  await api({
-    endpoint: "typesType",
-    base: Astro.url.origin,
-    headers: Astro.request.headers,
-    substitutions: { typesType: "tasks" },
-  })
-);
+const task = await api({
+  endpoint: "typesType",
+  base: Astro.url.origin,
+  headers: Astro.request.headers,
+  substitutions: { typesType: "tasks" },
+});
 ---
 
 <PrivateLayout class="flex-1 flex flex-col items-center">
@@ -48,6 +45,12 @@ const task = (
   </div>
 
   <div class="p-4 flex w-full">
-    <SystemRevisionContent active={system.revisions[0].id} {system} {sus} {task} client:load />
+    <SystemRevisionContent
+      active={system.revisions[0].id}
+      {system}
+      {sus}
+      {task}
+      client:load
+    />
   </div>
 </PrivateLayout>

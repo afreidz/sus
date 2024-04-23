@@ -256,3 +256,31 @@ export function mute(s: MediaStream) {
   clone.getAudioTracks().forEach((t) => t.stop());
   return clone;
 }
+
+export async function extractAudio(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    let video = document.createElement("video");
+    video.src = URL.createObjectURL(file);
+
+    let context = new AudioContext();
+    let source = context.createMediaElementSource(video);
+    let destination = context.createMediaStreamDestination();
+    source.connect(destination);
+
+    let recorder = new MediaRecorder(destination.stream);
+    let chunks: BlobPart[] = [];
+
+    recorder.ondataavailable = (e) => chunks.push(e.data);
+    recorder.onerror = reject;
+    recorder.onstop = () => resolve(new Blob(chunks, { type: "audio/webm" }));
+
+    video.oncanplaythrough = () => {
+      recorder.start();
+      video.play();
+    };
+
+    video.onended = () => {
+      recorder.stop();
+    };
+  });
+}

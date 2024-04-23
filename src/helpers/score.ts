@@ -11,32 +11,29 @@ type SurveyRespondents =
   | APIResponses["revisionId"]["GET"]["respondents"]
   | APIResponses["systemId"]["GET"]["revisions"][number]["respondents"];
 
-export function calculateAverageSUSScore(
-  respondents: SurveyRespondents,
-) {
+export function calculateAverageSUSScore(respondents: SurveyRespondents) {
+  console.log("Calculating score for respondents: ", respondents);
   const scores = calculateSUSScoreFromRespondents(respondents);
+  console.log("All scores", scores);
   return scores.reduce((a, b) => a + b, 0) / scores.length || 0;
 }
 
 export function calculateSUSScoreFromRespondents(
-  respondents: SurveyRespondents,
+  respondents: SurveyRespondents
 ) {
-  const scores = respondents.map((r) =>
-    calculateSUSScoreFromRespondent(r)
-  );
+  const scores = respondents.map((r) => calculateSUSScoreFromRespondent(r));
   return scores;
 }
 
 export function calculateSUSScoreFromRespondent(
-  respondent: SurveyRespondents[number],
+  respondent: SurveyRespondents[number]
 ) {
-  const score = respondent.responses
-    .reduce((score, response) => {
-      if (!response.curratedResponse?.numericalValue) return score;
-      return (score += response.question.positive
-        ? response.curratedResponse.numericalValue - 1
-        : 5 - response.curratedResponse.numericalValue);
-    }, 0);
+  const score = respondent.responses.reduce((score, response) => {
+    if (!response.curratedResponse?.numericalValue) return score;
+    return (score += response.question.positive
+      ? response.curratedResponse.numericalValue - 1
+      : 5 - response.curratedResponse.numericalValue);
+  }, 0);
 
   return score * 2.5;
 }
