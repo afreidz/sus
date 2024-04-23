@@ -12,9 +12,7 @@ type SurveyRespondents =
   | APIResponses["systemId"]["GET"]["revisions"][number]["respondents"];
 
 export function calculateAverageSUSScore(respondents: SurveyRespondents) {
-  console.log("Calculating score for respondents: ", respondents);
   const scores = calculateSUSScoreFromRespondents(respondents);
-  console.log("All scores", scores);
   return scores.reduce((a, b) => a + b, 0) / scores.length || 0;
 }
 

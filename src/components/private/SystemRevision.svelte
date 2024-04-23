@@ -95,7 +95,9 @@
           </CardHeader>
           <div class="flex-1 flex items-center justify-center">
             {#if revision.respondents.filter((r) => r.complete).length}
-              {@const average = calculateAverageSUSScore(susSurvey.respondents)}
+              {@const average = calculateAverageSUSScore(
+                revision.respondents.filter((r) => r.complete)
+              )}
               <Gauge
                 class="flex-1"
                 differential={average - 50}
