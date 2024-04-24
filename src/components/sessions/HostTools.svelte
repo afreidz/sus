@@ -17,7 +17,10 @@
   let active: "transcription" | "checklist" | "downloads" = "checklist";
 </script>
 
-<div role="tablist" class="tabs tabs-boxed bg-neutral p-3 shadow">
+<div
+  role="tablist"
+  class="tabs tabs-boxed bg-neutral p-3 shadow sticky top-0 z-10"
+>
   <a
     role="tab"
     href="#transcription"

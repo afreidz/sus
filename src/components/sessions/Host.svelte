@@ -63,7 +63,7 @@
 </script>
 
 <div
-  class="flex-1 size-full grid grid-row-2 grid-cols-[auto,600px] gap-4 p-4 items-end"
+  class="flex-1 size-full grid grid-row-2 max-h-full grid-cols-[auto,600px] gap-4 p-4 items-end"
 >
   <header class="max-h-max">
     <div class="rounded-box overflow-clip shadow aspect-[2/1] h-[19rem] flex">
@@ -107,7 +107,7 @@
     </div>
   </header>
   <aside
-    class="w-[600px] card row-span-2 bg-neutral rounded-box shadow-sm h-full flex flex-col"
+    class="w-[600px] h-[calc(100vh_-_3rem)] card row-span-2 bg-neutral rounded-box shadow-sm flex flex-col"
   >
     <CardHeader class="p-4 flex-none">
       {revision.system.title}: {revision.title}
@@ -120,7 +120,7 @@
         <SessionTime start={$session.recorder.status === "recording"} />
       </div>
     </CardHeader>
-    <div class="flex-1 flex flex-col">
+    <div class="flex-1 flex flex-col overflow-auto">
       <HostTools />
     </div>
     <footer class="flex-none p-4">

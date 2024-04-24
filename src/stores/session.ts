@@ -150,11 +150,13 @@ export async function initTranscriber() {
   const sess = session.get();
   if (sess.host === sess.id) {
     transcriber.on("speech", (transcription) => {
-      if (!sess.recorder.current) return;
-
-      const transcript = sess.recorder.current.transcript ?? [];
+      const {
+        recorder: { current },
+      } = session.get();
       transcription.speaker = "host";
       transcription.timestamp = new Date(transcription.timestamp);
+
+      const transcript = current?.transcript ?? [];
 
       if (transcription.text) transcript.push(transcription);
       session.setKey("recorder.current.transcript", [...transcript]);
