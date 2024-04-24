@@ -6,13 +6,13 @@ import {
 } from "peerjs";
 
 import { deepMap } from "nanostores";
-import {
-  combineCameraStreams,
-  combineMediaStreams,
-  initLocalCamera,
-} from "@/helpers/media";
 
-const opts: MediaRecorderOptions = { mimeType: "video/webm;codecs=vp9" };
+import {
+  SessionTranscriber,
+  combineMediaStreams,
+  recordSessionStream,
+  combineCameraStreams,
+} from "@/helpers/media";
 
 const PEER_OPTS: PeerOptions = import.meta.env.DEV
   ? {
@@ -29,10 +29,41 @@ export const RECORDING_OPTS: MediaRecorderOptions = {
   mimeType: "video/webm",
 };
 
+type PushURLMessage = {
+  type: "push-url";
+  url: string;
+};
+
+type RecordingStartMessage = {
+  type: "recording-start";
+};
+
+type RecordingStopMessage = {
+  type: "recording-stop";
+};
+
+type TranscriptionMessage = {
+  type: "transcription";
+  transcription: Transcription;
+};
+
+export type DataMessage =
+  | PushURLMessage
+  | RecordingStartMessage
+  | RecordingStopMessage
+  | TranscriptionMessage;
+
+export type Transcription = {
+  text: string;
+  timestamp: Date;
+  speaker?: "host" | "participant";
+};
+
 export type SessionRecording = {
   end?: Date;
   start: Date;
-  file?: File;
+  video?: File;
+  transcript?: Transcription[];
 };
 
 type Session = {
@@ -53,9 +84,11 @@ type Session = {
   recorder: {
     current?: SessionRecording;
     mediaRecorder?: MediaRecorder;
-    status?: MediaRecorder["state"];
+    status?: "recording" | "idle";
     recordings?: SessionRecording[];
   };
+
+  transcriber?: SessionTranscriber;
 
   connections: {
     data?: DataConnection;
@@ -70,6 +103,86 @@ const session = deepMap<Session>({
   streams: {},
   recorder: {},
 });
+
+export async function initLocalCamera(size: number) {
+  const video: MediaStreamConstraints["video"] = {
+    frameRate: 30,
+    aspectRatio: 1,
+    facingMode: "user",
+    height: { ideal: size },
+  };
+
+  const audio: MediaStreamConstraints["audio"] = {
+    sampleRate: 128000,
+    channelCount: 2,
+  };
+
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio,
+    video,
+  });
+
+  session.setKey("streams.cameras.local", stream);
+  return stream;
+}
+
+export async function initScreenShare() {
+  const video: MediaStreamConstraints["video"] = {
+    frameRate: 30,
+    aspectRatio: 16 / 9,
+    width: { ideal: 1280 },
+  };
+
+  const stream = await navigator.mediaDevices.getDisplayMedia({
+    video,
+    audio: false,
+    preferCurrentTab: true,
+  } as any);
+
+  session.setKey("streams.screen", stream);
+  return stream;
+}
+
+export async function initTranscriber() {
+  const transcriber = new SessionTranscriber();
+  session.setKey("transcriber", transcriber);
+
+  const sess = session.get();
+  if (sess.host === sess.id) {
+    transcriber.on("speech", (transcription) => {
+      if (!sess.recorder.current) return;
+
+      const transcript = sess.recorder.current.transcript ?? [];
+      transcription.speaker = "host";
+      transcription.timestamp = new Date(transcription.timestamp);
+
+      if (transcription.text) transcript.push(transcription);
+      session.setKey("recorder.current.transcript", [...transcript]);
+    });
+
+    sess.connections.data?.on("data", (data: unknown) => {
+      const msg = data as DataMessage;
+      if (msg.type === "transcription") {
+        const sess = session.get();
+        if (!sess.recorder.current) return;
+
+        const transcript = sess.recorder.current.transcript ?? [];
+        msg.transcription.speaker = "participant";
+        msg.transcription.timestamp = new Date(msg.transcription.timestamp);
+
+        if (msg.transcription.text) transcript.push(msg.transcription);
+        session.setKey("recorder.current.transcript", [...transcript]);
+      }
+    });
+  } else {
+    transcriber.on("speech", (transcription) => {
+      sess.connections.data?.send({
+        type: "transcription",
+        transcription,
+      });
+    });
+  }
+}
 
 export async function connect(id: string, host: string) {
   console.log("Initializing Session...");
@@ -86,15 +199,9 @@ export async function connect(id: string, host: string) {
     session.setKey("peer", peer);
 
     console.log("Checking for open peer connection...");
-    let timeout;
     const pid = await new Promise<string | undefined>((r) => {
       peer.once("open", r);
-      timeout = setTimeout(() => {
-        r(undefined);
-        peer.off("open", r);
-      }, 10000);
     });
-    clearTimeout(timeout);
 
     if (!pid || id !== pid)
       throw new Error(
@@ -114,39 +221,45 @@ export async function connect(id: string, host: string) {
     console.log("Waiting on peer to establish connections...");
     peer.off("call");
     peer.off("connection");
-    peer.on("connection", (connection) => {
-      session.setKey("connections.data", connection);
-      connection.once("open", () => {
-        console.log("Data connection established.");
+
+    await new Promise((r) => {
+      peer.on("connection", (connection) => {
+        session.setKey("connections.data", connection);
+        connection.once("open", () => {
+          console.log("Data connection established.");
+          r(true);
+        });
       });
     });
-    peer.on("call", (connection) => {
-      if (connection.metadata.type === "camera") {
-        if (!!streams.cameras?.local) {
-          connection.answer(streams.cameras.local);
-        } else {
-          initLocalCamera(500).then((stream) => {
-            session.setKey("streams.cameras.local", stream);
-            connection.answer(stream);
+
+    await new Promise((r) => {
+      peer.on("call", (connection) => {
+        if (connection.metadata.type === "camera") {
+          connection.answer(streams.cameras?.local);
+          session.setKey(`connections.camera`, connection);
+          connection.once("stream", async (media) => {
+            session.setKey("streams.cameras.remote", media);
+            console.log(`Camera connection established`);
+            r(true);
           });
         }
-        session.setKey(`connections.camera`, connection);
-        console.log(`Camera connection established`);
-        connection.once("stream", async (media) => {
-          session.setKey("streams.cameras.remote", media);
-        });
-      }
-      if (connection.metadata.type === "screen") {
-        connection.answer();
-        session.setKey(`connections.screen`, connection);
-        console.log(`Screen connection established`);
-        connection.once("stream", (media) => {
-          session.setKey("streams.screen", media);
-        });
-      }
+      });
+    });
+
+    await new Promise((r) => {
+      peer.on("call", (connection) => {
+        if (connection.metadata.type === "screen") {
+          connection.answer();
+          session.setKey(`connections.screen`, connection);
+          connection.once("stream", (media) => {
+            console.log(`Screen connection established`);
+            session.setKey("streams.screen", media);
+            r(true);
+          });
+        }
+      });
     });
   }
-
   session.setKey("timestamp", new Date());
 }
 
@@ -180,30 +293,27 @@ export async function callHost(
           combineCameraStreams(clone, media, 500).then((composite) => {
             session.setKey("streams.cameras.composite", composite);
           });
+          console.log(`Camera connection established`);
           r(true);
         }
       });
     });
-    console.log(`Camera connection established`);
   } else if (type === "screen" && media) {
     await new Promise(async (r) => {
       media.getAudioTracks().forEach((t) => t.stop());
       const call = peer.call(host, media, { metadata: { type } });
       session.setKey(`connections.${type}`, call);
-      call.on("stream", async (media) => {
-        session.setKey("streams.screen", media);
-        r(true);
-      });
+      console.log(`Screen connection established`);
+      r(true);
+      call.on("stream", console.log);
     });
-    console.log(`Screen connection established`);
   }
 }
 
 export async function startRecording() {
   const s = session.get();
-  const recording: SessionRecording = {
-    start: new Date(),
-  };
+
+  if (s.recorder.status === "recording") return;
 
   if (s.id !== s.host) throw new Error("Only the host is able to record");
 
@@ -214,56 +324,51 @@ export async function startRecording() {
   )
     throw new Error(`All media is not ready to record`);
 
-  const recorder =
-    s.recorder.mediaRecorder ||
-    new MediaRecorder(
-      await combineMediaStreams(
-        s.streams.screen,
-        s.streams.cameras.remote,
-        s.streams.cameras.local
-      ),
-      opts
-    );
+  const options: MediaRecorderOptions = {
+    mimeType: "video/webm;codecs=vp9",
+    audioBitsPerSecond: 128000,
+    videoBitsPerSecond: 2500000,
+  };
 
-  if (!s.recorder.mediaRecorder) {
-    session.setKey("recorder.mediaRecorder", recorder);
-  }
+  const stream = await combineMediaStreams(
+    s.streams.screen,
+    s.streams.cameras.remote,
+    s.streams.cameras.local
+  );
 
-  let chunks: BlobPart[] = [];
-  recorder.addEventListener("dataavailable", (e) => {
-    if (e.data.size > 0) chunks.push(e.data);
-  });
+  const recorder = new MediaRecorder(stream, options);
+  const recording: SessionRecording = { start: new Date() };
 
-  recorder.addEventListener("stop", () => {
-    if (!recorder.mimeType)
-      throw new Error("Unable to save recording due to missing MIME type");
-    const blob = new Blob(chunks, { type: recorder.mimeType });
-    const file = new File([blob], `${s.host}_recording_${+Date.now()}.webm`, {
-      type: blob.type,
-      lastModified: Date.now(),
-    });
-
-    recording.file = file;
-    recording.end = new Date();
-    session.setKey("recorder.recordings", [
-      ...(s.recorder.recordings ?? []),
-      recording,
-    ]);
-  });
-
-  recorder.start(500);
   session.setKey("recorder.current", recording);
-  session.setKey("recorder.status", recorder.state);
+  session.setKey("recorder.status", "recording");
+  session.setKey("recorder.mediaRecorder", recorder);
+  s.connections.data?.send({ type: "recording-start" });
+
+  recordSessionStream(recorder, `session_recording_${+new Date()}`).then(
+    (video) => {
+      if (video) recording.video = video;
+      recording.end = new Date();
+
+      session.setKey("recorder.recordings", [
+        ...(s.recorder.recordings ?? []),
+        recording,
+      ]);
+      session.setKey("recorder.status", "idle");
+    }
+  );
 }
 
 export function stopRecording() {
-  const { recorder } = session.get();
+  const { recorder, transcriber, connections } = session.get();
 
   if (!recorder.mediaRecorder) throw new Error("Unable to locate recorder");
 
-  recorder.mediaRecorder?.stop();
+  recorder.mediaRecorder.stop();
   session.setKey("recorder.current", undefined);
-  session.setKey("recorder.status", recorder.mediaRecorder.state);
+  connections.data?.send({ type: "recording-stop" });
+
+  if (!transcriber) return;
+  transcriber.stop();
 }
 
 export default session;

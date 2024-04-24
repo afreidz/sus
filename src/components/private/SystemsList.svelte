@@ -27,7 +27,6 @@
     if (window.location.hash) {
       active = window.location.hash.replace("#", "");
     } else {
-      console.log(client.systems);
       active = client.systems[0].id;
     }
   });
@@ -74,7 +73,6 @@
       showNewSystemDialog = false;
       MessageHandler({ type: "success", message: "The system has been added" });
       active = newSystem.id;
-      console.log(active);
     } else {
       MessageHandler({ type: "error", message: "Unable to add the system" });
     }

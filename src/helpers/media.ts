@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 import { Buffer } from "buffer";
-import type { SessionRecording } from "@/stores/session";
+import type { SessionRecording, Transcription } from "@/stores/session";
+import * as audiosdk from "microsoft-cognitiveservices-speech-sdk";
 
 const maxWidth = import.meta.env.PUBLIC_IMG_MAX_WIDTH || 300;
 
@@ -185,52 +186,17 @@ export async function combineMediaStreams(
   return outputStream;
 }
 
-export async function initLocalCamera(size: number) {
-  const video: MediaStreamConstraints["video"] = {
-    frameRate: 30,
-    aspectRatio: 1,
-    facingMode: "user",
-    height: { ideal: size },
-  };
-
-  const audio: MediaStreamConstraints["audio"] = {
-    sampleRate: 128000,
-    channelCount: 2,
-  };
-
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio,
-    video,
-  });
-
-  return stream;
-}
-
-export async function initScreenShare() {
-  const video: MediaStreamConstraints["video"] = {
-    frameRate: 30,
-    aspectRatio: 16 / 9,
-    width: { ideal: 1280 },
-  };
-
-  return await navigator.mediaDevices.getDisplayMedia({
-    video,
-    audio: false,
-    preferCurrentTab: true,
-  } as any);
-}
-
 export async function downloadSessionVideos(recordings: SessionRecording[]) {
   const zip = new JSZip();
 
   recordings.forEach((recording) => {
-    if (!recording.file) return;
-    zip.file(recording.file.name, recording.file);
+    if (!recording.video) return;
+    zip.file(recording.video.name, recording.video);
   });
 
   const file =
-    recordings.length === 1 && recordings[0].file
-      ? recordings[0].file
+    recordings.length === 1 && recordings[0].video
+      ? recordings[0].video
       : await zip.generateAsync({ type: "blob" });
 
   // Create an object URL for the file
@@ -241,7 +207,7 @@ export async function downloadSessionVideos(recordings: SessionRecording[]) {
   a.href = url;
   a.download =
     recordings.length === 1
-      ? "session_recording.webm"
+      ? recordings[0].video?.name ?? "session_recording.webm"
       : "session_recordings.zip";
   document.body.appendChild(a); // Append to the body temporarily
   a.click(); // Trigger the download
@@ -257,30 +223,90 @@ export function mute(s: MediaStream) {
   return clone;
 }
 
-export async function extractAudio(file: File): Promise<Blob> {
+class EventEmitter {
+  private events: { [event: string]: Array<(arg: any) => void> } = {};
+
+  public on(event: string, listener: (arg: any) => void): void {
+    if (!this.events[event]) {
+      this.events[event] = [];
+    }
+    this.events[event].push(listener);
+  }
+
+  public emit(event: string, arg?: any): void {
+    const listeners = this.events[event];
+    if (listeners) {
+      listeners.forEach((listener) => listener(arg));
+    }
+  }
+}
+
+export class SessionTranscriber extends EventEmitter {
+  public transcribing: boolean;
+  private transcriber: audiosdk.SpeechRecognizer;
+  private config: ReturnType<typeof audiosdk.SpeechConfig.fromSubscription>;
+
+  constructor() {
+    super();
+    this.config = audiosdk.SpeechConfig.fromSubscription(
+      import.meta.env.PUBLIC_SPEECH_KEY,
+      import.meta.env.PUBLIC_SPEECH_REGION
+    );
+
+    this.config.speechRecognitionLanguage = "en-US";
+
+    const audio = audiosdk.AudioConfig.fromDefaultMicrophoneInput();
+    const transcriber = new audiosdk.SpeechRecognizer(this.config, audio);
+
+    this.transcribing = false;
+    this.transcriber = transcriber;
+    this.transcriber.recognized = (_, e) => this.handler(e);
+  }
+
+  private handler(e: audiosdk.SpeechRecognitionEventArgs) {
+    this.emit("speech", {
+      text: e.result.text,
+      timestamp: new Date(),
+    } as Transcription);
+  }
+
+  public start(): void {
+    if (!this.transcribing) this.transcriber.startContinuousRecognitionAsync();
+    console.log("Transcriber started");
+    this.emit("start");
+  }
+
+  public stop(): void {
+    this.transcriber.stopContinuousRecognitionAsync();
+    console.log("Transcriber stopped");
+    this.emit("stop", {});
+  }
+}
+
+export function recordSessionStream(
+  recorder: MediaRecorder,
+  name: string
+): Promise<File> {
   return new Promise((resolve, reject) => {
-    let video = document.createElement("video");
-    video.src = URL.createObjectURL(file);
+    const recordedChunks: BlobPart[] = [];
+    try {
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) recordedChunks.push(event.data);
+      };
 
-    let context = new AudioContext();
-    let source = context.createMediaElementSource(video);
-    let destination = context.createMediaStreamDestination();
-    source.connect(destination);
+      recorder.onstop = () => {
+        const recordedBlob = new Blob(recordedChunks, { type: "video/webm" });
+        const recordedFile = new File([recordedBlob], `${name}.webm`, {
+          type: recordedBlob.type,
+        });
+        resolve(recordedFile);
+      };
 
-    let recorder = new MediaRecorder(destination.stream);
-    let chunks: BlobPart[] = [];
+      recorder.onerror = (event) => reject(event);
 
-    recorder.ondataavailable = (e) => chunks.push(e.data);
-    recorder.onerror = reject;
-    recorder.onstop = () => resolve(new Blob(chunks, { type: "audio/webm" }));
-
-    video.oncanplaythrough = () => {
-      recorder.start();
-      video.play();
-    };
-
-    video.onended = () => {
-      recorder.stop();
-    };
+      recorder.start(500);
+    } catch (error) {
+      reject(error);
+    }
   });
 }

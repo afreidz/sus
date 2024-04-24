@@ -1,23 +1,15 @@
 <script lang="ts">
+  import session, {
+    connect,
+    callHost,
+    initLocalCamera,
+    initScreenShare,
+    initTranscriber,
+    type DataMessage,
+  } from "@/stores/session";
+  import { mute } from "@/helpers/media";
   import SessionTime from "@/components/sessions/Time.svelte";
-  import session, { connect, callHost } from "@/stores/session";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
-  import { initLocalCamera, initScreenShare, mute } from "@/helpers/media";
-
-  type PushURLMessage = {
-    type: "push-url";
-    url: string;
-  };
-
-  type RecordingStartMessage = {
-    type: "recording-start";
-  };
-
-  type RecordingStopMessage = {
-    type: "recording-stop";
-  };
-
-  type Message = PushURLMessage | RecordingStartMessage | RecordingStopMessage;
 
   let id: string;
   let url: string;
@@ -40,37 +32,50 @@
   }
 
   async function initSession() {
-    await connect(id, host);
     const screenShare = await initScreenShare();
     const cameraStream = await initLocalCamera(500);
 
-    callHost("data");
+    await connect(id, host);
+    await callHost("data");
+
+    if (cameraStream) await callHost("camera", cameraStream);
+    if (screenShare) await callHost("screen", screenShare);
+
+    await initTranscriber();
 
     if (cameraStream && cameras) {
       cameras.srcObject = mute(cameraStream);
       session.setKey("streams.cameras.local", cameraStream);
     }
 
-    if (cameraStream) callHost("camera", cameraStream);
-    if (screenShare) callHost("screen", screenShare);
-  }
+    if ($session.connections.data) {
+      $session.connections.data.on("data", (m) =>
+        handleMessage(m as DataMessage)
+      );
+    }
 
-  $: $session.connections.data?.on("data", (m) => handleMessage(m as Message));
+    if ($session.streams.cameras?.composite && cameras && !camsEnabled) {
+      cameras.srcObject = $session.streams.cameras.composite;
+      camsEnabled = true;
+    }
+  }
 
   function handleConfirm() {
     console.log(confirmation.returnValue);
     confirmed = true;
   }
 
-  function handleMessage(msg: Message) {
+  function handleMessage(msg: DataMessage) {
     if (msg.type === "push-url" && screen && msg.url) {
       console.log(`Updating stage url to ${msg.url}`);
       url = msg.url;
     } else if (msg.type === "recording-start") {
       console.log("Recording started");
+      $session.transcriber?.start();
       recording = true;
     } else if (msg.type === "recording-stop") {
       console.log("Recording stopped");
+      $session.transcriber?.stop();
       recording = false;
     }
   }

@@ -26,7 +26,7 @@
   <h4 class="p-3 font-semibold border-b border-neutral-200 flex-none">
     Key Moments
   </h4>
-  <div class="px-3 h-60 overflow-auto">
+  <div class="px-3 h-48 overflow-auto">
     {#if start}
       <ul>
         {#each moments as moment}

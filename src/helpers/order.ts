@@ -82,3 +82,11 @@ export function removeDuplicatesById<
   );
   return uniqueArray;
 }
+
+type DateOrderable = {
+  timestamp: Date;
+  [key: string]: any;
+};
+export function orderByDate<T extends DateOrderable[]>(array: T) {
+  return array.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+}

@@ -2,23 +2,21 @@
   import { onMount } from "svelte";
   import type { APIResponses } from "@/helpers/api";
   import SessionTime from "@/components/sessions/Time.svelte";
-  import KeyMoments from "@/components/sessions/Moments.svelte";
+  import { downloadSessionVideos, mute } from "@/helpers/media";
   import CardHeader from "@/components/common/CardHeader.svelte";
-  import { downloadSessionVideos, extractAudio, mute } from "@/helpers/media";
+  import HostTools from "@/components/sessions/HostTools.svelte";
 
   import session, {
     connect,
-    stopRecording,
-    startRecording,
+    initTranscriber,
+    initLocalCamera,
   } from "@/stores/session";
-  import api from "@/helpers/api";
 
   let id: string;
   let push: string =
     "https://www.figma.com/embed?embed_host=share&url=https%3A%2F%2Fwww.figma.com%2Fproto%2FAwLTIxmcDcwZVSQcs17uut%2FSafeMe%3Ftype%3Ddesign%26node-id%3D800-7332%26t%3DFms1LfDhexjAWirT-1%26scaling%3Dscale-down%26page-id%3D502%253A96%26starting-point-node-id%3D800%253A7332%26mode%3Ddesign";
   let name: string;
   let working = false;
-  let camsEnabled = false;
   let shareEnabled = false;
   let participantName: string;
   let localCamera: HTMLVideoElement;
@@ -28,44 +26,23 @@
   let revision: APIResponses["revisionId"]["GET"];
   let respondent: APIResponses["respondentId"]["GET"];
 
-  onMount(() => connect(id, id));
+  onMount(async () => {
+    await initLocalCamera(500);
+
+    localCamera.srcObject = $session.streams.cameras?.local
+      ? mute($session.streams.cameras.local)
+      : null;
+
+    await connect(id, id);
+    await initTranscriber();
+
+    remoteCamera.srcObject = $session.streams.cameras?.remote || null;
+    screenshare.srcObject = $session.streams.screen || null;
+  });
 
   $: name = revision.createdBy;
   $: id = `host${revision.id}host`;
   $: participantName = respondent.email;
-
-  $: if ($session.streams.cameras?.local && localCamera) {
-    localCamera.srcObject = mute($session.streams.cameras.local);
-  }
-
-  $: if ($session.streams.cameras?.remote && remoteCamera) {
-    remoteCamera.srcObject = $session.streams.cameras.remote;
-  }
-
-  $: if (
-    $session.streams.cameras?.remote &&
-    $session.streams.cameras?.local &&
-    !camsEnabled
-  ) {
-    camsEnabled = true;
-  }
-
-  $: if ($session.streams.screen && screenshare && !shareEnabled) {
-    screenshare.srcObject = $session.streams.screen;
-    shareEnabled = true;
-  }
-
-  $: if (shareEnabled && camsEnabled) startRecording();
-
-  $: if ($session.recorder.status === "recording")
-    $session.connections.data?.send({
-      type: "recording-start",
-    });
-
-  $: if ($session.recorder.status !== "recording")
-    $session.connections.data?.send({
-      type: "recording-stop",
-    });
 
   async function download() {
     if (!$session.recorder.recordings?.length)
@@ -82,28 +59,6 @@
     });
   }
 
-  async function transcribe() {
-    if (!$session.recorder.recordings?.[0].file)
-      throw new Error("No recordings to transcribe");
-
-    working = true;
-
-    const audio = await extractAudio($session.recorder.recordings[0].file);
-
-    const body = new FormData();
-    body.append("audio", new File([audio], "audio.webm", { type: audio.type }));
-
-    const resp = await api({
-      body,
-      method: "POST",
-      endpoint: "transcription",
-    });
-
-    console.log(resp);
-
-    working = false;
-  }
-
   export { revision, respondent };
 </script>
 
@@ -111,18 +66,23 @@
   class="flex-1 size-full grid grid-row-2 grid-cols-[auto,600px] gap-4 p-4 items-end"
 >
   <header class="max-h-max">
-    <div
-      class:hidden={!camsEnabled}
-      class="rounded-box overflow-clip shadow aspect-[2/1] h-[19rem] flex"
-    >
-      <div class="aspect-square relative h-full">
+    <div class="rounded-box overflow-clip shadow aspect-[2/1] h-[19rem] flex">
+      <div
+        class="aspect-square relative h-full flex items-center justify-center bg-neutral/5"
+      >
         <!-- svelte-ignore a11y-media-has-caption -->
         <video
           autoplay
           playsinline
-          bind:this={remoteCamera}
           class="size-full"
+          bind:this={remoteCamera}
+          class:hidden={!$session.streams.cameras?.remote}
         />
+        {#if !$session.streams.cameras?.remote}
+          <strong class="uppercase text-neutral/30 font-semibold text-xs">
+            Waiting for participant to connect...
+          </strong>
+        {/if}
         <div
           class="badge glass badge-xs text-neutral absolute bottom-3 right-3"
         >
@@ -160,25 +120,8 @@
         <SessionTime start={$session.recorder.status === "recording"} />
       </div>
     </CardHeader>
-    <div class="p-4 flex-1 flex flex-col gap-4 bg-sus-surface-10">
-      <KeyMoments start={$session.recorder.current?.start} />
-      {#if $session.recorder.recordings?.length}
-        <button on:click={download} disabled={working} class="btn btn-primary">
-          Download Session Videos
-        </button>
-        <button
-          on:click={transcribe}
-          disabled={working}
-          class="btn btn-primary"
-        >
-          Transcribe
-        </button>
-      {/if}
-      {#if $session.recorder.status === "recording"}
-        <button on:click={() => stopRecording()} class="btn btn-error"
-          >Stop Recording</button
-        >
-      {/if}
+    <div class="flex-1 flex flex-col">
+      <HostTools />
     </div>
     <footer class="flex-none p-4">
       <form
@@ -205,7 +148,8 @@
   >
     {#if !shareEnabled}
       <strong
-        class="relative z-0 m-auto w-1/4 uppercase text-neutral/30 font-semibold text-xl"
+        class:hidden={$session.streams.screen}
+        class="relative z-0 top-1/2 m-auto w-1/4 uppercase text-neutral/30 font-semibold text-xl"
       >
         Waiting for participant to connect...
       </strong>

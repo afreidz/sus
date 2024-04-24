@@ -29,6 +29,7 @@
     "canvas-confetti": "^1.9.2",
     "clipboard-copy": "^4.0.1",
     "jszip": "^3.10.1",
+    "microsoft-cognitiveservices-speech-sdk": "^1.36.0",
     "nanoid": "^5.0.7",
     "openai": "^4.38.3",
     "svelte": "^4.2.12",
