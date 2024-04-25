@@ -7,14 +7,15 @@
 
   import api from "@/helpers/api";
   import { onMount } from "svelte";
-  import session, { stopRecording } from "@/stores/session";
+  import session, { startRecording, stopRecording } from "@/stores/session";
   import type { APIResponses } from "@/helpers/api";
   import CardHeader from "@/components/common/CardHeader.svelte";
 
-  type Response = { response: string; notes?: string };
   const responses: { [key: string]: Response } = {};
+  type Response = { response: string; notes?: string; section: string | null };
 
   let loading = false;
+  let sectionElms: HTMLElement[] = [];
   let sectionActiveTaskIndices: number[] = [];
   let sections: ReturnType<typeof groupTaskListSection> = [];
   let respondent: APIResponses["respondentBySurveyId"]["GET"];
@@ -28,21 +29,21 @@
     loading = true;
     sections = groupTaskListSection(survey.questions);
 
-    // const existingResponses = await api({
-    //   method: "GET",
-    //   endpoint: "respondentSurveyResponses",
-    //   substitutions: {
-    //     respondentId: respondent.id,
-    //     surveyId: survey.id,
-    //   },
-    // });
+    const existingResponses = await api({
+      method: "GET",
+      endpoint: "respondentSurveyResponses",
+      substitutions: {
+        respondentId: respondent.id,
+        surveyId: survey.id,
+      },
+    });
 
-    // survey.questions.forEach((q) => {
-    //   const existing = existingResponses.find((r) => r.questionId === q.id);
-    //   const response = existing ? existing.curratedResponseId ?? "" : "";
-    //   const notes = existing ? existing.freeformResponse ?? "" : "";
-    //   responses[q.id] = { response, notes };
-    // });
+    survey.questions.forEach((q) => {
+      const existing = existingResponses.find((r) => r.questionId === q.id);
+      const response = existing ? existing.curratedResponseId ?? "" : "";
+      const notes = existing ? existing.freeformResponse ?? "" : "";
+      responses[q.id] = { response, notes, section: q.group };
+    });
 
     loading = false;
   });
@@ -55,11 +56,37 @@
     });
   }
 
-  async function saveSection() {
+  async function endSection(id: string | null, i: number) {
+    loading = true;
+
+    // convert responses to an array to filter out any not part of the
+    // section.  then convert back to an object;
+    const responsesToSave = id
+      ? Object.entries(responses)
+          .filter(([_, { section }]) => section === id)
+          .reduce(
+            (o, [k, v]) => {
+              o[k] = v;
+              return o;
+            },
+            {} as typeof responses
+          )
+      : responses;
+
+    await saveSection(responsesToSave);
+    stopRecording();
+    if (sectionElms[i + 1])
+      sectionElms[i + 1].scrollIntoView({ behavior: "smooth" });
+    startRecording();
+
+    loading = false;
+  }
+
+  async function saveSection(r: typeof responses) {
     if (!survey?.id) throw new Error("Unable to save answers to survey");
 
     await Promise.all(
-      Object.entries(responses).map(([questionId, { response, notes }]) => {
+      Object.entries(r).map(([questionId, { response, notes }]) => {
         return api({
           method: "POST",
           endpoint: "responses",
@@ -100,6 +127,7 @@
 <div class="flex overflow-auto flex-nowrap flex-1">
   {#each sections as section, s (section.group)}
     <div
+      bind:this={sectionElms[s]}
       id={`section_${section.group}`}
       class="rounded-lg bg-sus-surface-0 shadow-md flex flex-col gap-4 min-w-full"
     >
@@ -136,21 +164,24 @@
                       <li
                         class="p-0 join-item btn btn-outline border-neutral-300 bg-neutral btn-lg"
                       >
-                        <label
-                          class="group flex flex-1 h-full items-center gap-4 px-4"
-                        >
-                          <input
-                            required
-                            type="radio"
-                            value={response.id}
-                            name={`section_${s}_task_${t}`}
-                            class="radio flex-none radio-sm group-hover:radio-accent"
-                          />
-                          <strong
-                            class="flex-1 text-left font-light group-has-[:checked]:font-semibold"
-                            >{response.label}</strong
+                        {#if task.id && responses[task.id]}
+                          <label
+                            class="group flex flex-1 h-full items-center gap-4 px-4"
                           >
-                        </label>
+                            <input
+                              required
+                              type="radio"
+                              value={response.id}
+                              name={`section_${s}_task_${t}`}
+                              bind:group={responses[task.id].response}
+                              class="radio flex-none radio-sm group-hover:radio-accent"
+                            />
+                            <strong
+                              class="flex-1 text-left font-light group-has-[:checked]:font-semibold"
+                              >{response.label}</strong
+                            >
+                          </label>
+                        {/if}
                       </li>
                     {/each}
                   {/if}
@@ -159,8 +190,13 @@
                   <div class="label">
                     <span class="label-text">Moderator notes</span>
                   </div>
-                  <textarea class="textarea textarea-bordered h-40 bg-neutral"
-                  ></textarea>
+                  {#if task.id && responses[task.id]}
+                    <textarea
+                      class="textarea textarea-bordered h-40 bg-neutral"
+                      bind:value={responses[task.id].notes}
+                      name={`section_${s}_task_${t}_notes`}
+                    ></textarea>
+                  {/if}
                 </label>
                 {#if section.tasks.length > 1}
                   <footer class="join flex-none justify-self-end my-4 mx-auto">
@@ -184,7 +220,7 @@
       {#if $session.recorder.status === "recording"}
         <footer class="join flex-none p-4 flex">
           <button
-            on:click={stopRecording}
+            on:click={() => endSection(section.group ?? null, s)}
             class="btn btn-error text-neutral flex-1">End Section</button
           >
         </footer>

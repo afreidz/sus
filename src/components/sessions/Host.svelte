@@ -128,7 +128,7 @@
       </div>
     </CardHeader>
     <div class="flex-1 flex flex-col overflow-auto">
-      <HostTools survey={revision?.surveys[0]} />
+      <HostTools survey={revision?.surveys[0]} {respondent} />
     </div>
     <footer class="flex-none p-4">
       <form

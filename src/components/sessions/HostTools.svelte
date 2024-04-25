@@ -6,12 +6,13 @@
   import KeyMoments from "@/components/sessions/Moments.svelte";
   import Downloads from "@/components/sessions/Downloads.svelte";
 
+  let respondent: APIResponses["respondentBySurveyId"]["GET"];
   let active: "transcription" | "checklist" | "downloads" = "checklist";
   let survey:
     | APIResponses["revisionSurveyType"]["GET"]["surveys"][number]
     | undefined = undefined;
 
-  export { survey };
+  export { survey, respondent };
 </script>
 
 <div
@@ -63,7 +64,7 @@
   class:hidden={active !== "checklist"}
 >
   <KeyMoments class="flex-none h-60" />
-  <TaskList {survey} />
+  <TaskList {survey} {respondent} />
 </div>
 <div
   id="downloads"

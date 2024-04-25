@@ -92,7 +92,6 @@ export function orderByDate<T extends DateOrderable[]>(array: T) {
 }
 
 export function reorderArray<T>(array: T[], index: number) {
-  console.log(index, array);
   if (index < 0 || index >= array.length) {
     throw new Error("Index out of bounds");
   }
