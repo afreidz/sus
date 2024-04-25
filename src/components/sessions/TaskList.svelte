@@ -7,7 +7,7 @@
 
   import api from "@/helpers/api";
   import { onMount } from "svelte";
-  import session from "@/stores/session";
+  import session, { stopRecording } from "@/stores/session";
   import type { APIResponses } from "@/helpers/api";
   import CardHeader from "@/components/common/CardHeader.svelte";
 
@@ -183,7 +183,10 @@
       </div>
       {#if $session.recorder.status === "recording"}
         <footer class="join flex-none p-4 flex">
-          <button class="btn btn-error text-neutral flex-1">End Section</button>
+          <button
+            on:click={stopRecording}
+            class="btn btn-error text-neutral flex-1">End Section</button
+          >
         </footer>
       {/if}
     </div>
