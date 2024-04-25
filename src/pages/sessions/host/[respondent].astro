@@ -13,15 +13,28 @@ const respondent = await api({
   substitutions: { respondentId: id ?? "" },
 });
 
-const revision = await api({
-  method: "GET",
-  base: Astro.url.origin,
-  endpoint: "revisionId",
-  headers: Astro.request.headers,
-  substitutions: {
-    revisionId: respondent.revisionId ?? "",
-  },
-});
+const typeId = (
+  await api({
+    endpoint: "typesType",
+    base: Astro.url.origin,
+    headers: Astro.request.headers,
+    substitutions: { typesType: "tasks" },
+  })
+)?.id;
+
+const revision =
+  typeId === ""
+    ? null
+    : await api({
+        method: "GET",
+        base: Astro.url.origin,
+        endpoint: "revisionSurveyType",
+        headers: Astro.request.headers,
+        substitutions: {
+          typeId,
+          revisionId: respondent.revisionId ?? "",
+        },
+      });
 ---
 
 {

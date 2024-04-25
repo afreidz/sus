@@ -90,3 +90,19 @@ type DateOrderable = {
 export function orderByDate<T extends DateOrderable[]>(array: T) {
   return array.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 }
+
+export function reorderArray<T>(array: T[], index: number) {
+  console.log(index, array);
+  if (index < 0 || index >= array.length) {
+    throw new Error("Index out of bounds");
+  }
+
+  // If the index is already the first element, return a copy of the array.
+  if (index === 0) {
+    return array.slice();
+  }
+
+  // Create a new array with the item at `index` at the first position,
+  // followed by the items before and after it.
+  return [array[index], ...array.slice(0, index), ...array.slice(index + 1)];
+}

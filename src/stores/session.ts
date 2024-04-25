@@ -59,10 +59,16 @@ export type Transcription = {
   speaker?: "host" | "participant";
 };
 
+export type Moment = {
+  time: Date;
+  note: string;
+};
+
 export type SessionRecording = {
   end?: Date;
   start: Date;
   video?: File;
+  moments?: Moment[];
   transcript?: Transcription[];
 };
 

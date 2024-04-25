@@ -1,6 +1,6 @@
 <script lang="ts">
   import { orderByDate } from "@/helpers/order";
-  import { type SessionRecording } from "@/stores/session";
+  import session, { type SessionRecording } from "@/stores/session";
 
   let bubbles: HTMLElement[] = [];
   let transcript: SessionRecording["transcript"] = [];
@@ -17,7 +17,13 @@
   export { transcript };
 </script>
 
-{#if orderedTranscriptions}
+{#if $session.recorder.status !== "recording"}
+  <div
+    class="size-full flex items-center justify-center uppercase text-neutral-400 font-semibold text-xl"
+  >
+    Transcriptions will appear when recording is started
+  </div>
+{:else if orderedTranscriptions}
   {#each orderedTranscriptions as chat, i}
     <div
       class="chat"

@@ -1,14 +1,16 @@
 <script lang="ts">
   import { getTimeBetween } from "@/helpers/time";
-
-  type Moment = {
-    time: Date;
-    note: string;
-  };
+  import session, { type Moment } from "@/stores/session";
 
   let moments: Moment[] = [];
+  let className: string = "";
   let momentNote: string = "";
-  let start: Date | undefined = new Date();
+  let start: Date | undefined;
+
+  $: if ($session.recorder.current?.start) {
+    start = $session.recorder.current.start;
+    moments = $session.recorder.current.moments ?? [];
+  }
 
   function makeMoment() {
     const moment = {
@@ -17,16 +19,27 @@
     };
     moments = [...moments, moment];
     momentNote = "";
+
+    if ($session.recorder.current) {
+      session.setKey("recorder.current.moments", moments);
+    }
   }
 
-  export { start };
+  export { className as class };
 </script>
 
-<div class="rounded-lg bg-sus-surface-0 shadow-md flex flex-col gap-4">
-  <h4 class="p-3 font-semibold border-b border-neutral-200 flex-none">
+<div
+  class="rounded-lg bg-sus-surface-0 shadow-md flex flex-col gap-4 {className ??
+    ''}"
+>
+  <h4
+    class:tooltip={$session.recorder.status !== "recording"}
+    data-tip="Key moments will be enabled when recording is started"
+    class="text-left p-3 font-semibold border-b border-neutral-200 flex-none tooltip-secondary tooltip-bottom tooltip-open"
+  >
     Key Moments
   </h4>
-  <div class="px-3 h-48 overflow-auto">
+  <div class="px-3 overflow-auto flex-1">
     {#if start}
       <ul>
         {#each moments as moment}
@@ -42,7 +55,7 @@
       </ul>
     {/if}
   </div>
-  <footer class="p-3">
+  <footer class="p-3 flex-none">
     <form
       action="/"
       class="flex justify-center gap-4"

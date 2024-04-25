@@ -1,20 +1,17 @@
 <script lang="ts">
+  import session from "@/stores/session";
+  import type { APIResponses } from "@/helpers/api";
   import Transcription from "./Transcription.svelte";
+  import TaskList from "@/components/sessions/TaskList.svelte";
   import KeyMoments from "@/components/sessions/Moments.svelte";
   import Downloads from "@/components/sessions/Downloads.svelte";
-  import session, { startRecording, stopRecording } from "@/stores/session";
-
-  function toggleRecording() {
-    if ($session.recorder.status === "recording") {
-      stopRecording();
-      $session.transcriber?.stop();
-    } else {
-      startRecording();
-      $session.transcriber?.start();
-    }
-  }
 
   let active: "transcription" | "checklist" | "downloads" = "checklist";
+  let survey:
+    | APIResponses["revisionSurveyType"]["GET"]["surveys"][number]
+    | undefined = undefined;
+
+  export { survey };
 </script>
 
 <div
@@ -65,10 +62,8 @@
   class="bg-sus-surface-10 flex-1 p-4 flex flex-col gap-4"
   class:hidden={active !== "checklist"}
 >
-  <KeyMoments />
-  <button on:click={toggleRecording} class="btn btn-error"
-    >{$session.recorder.status === "recording" ? "Stop" : "Start"} Recording</button
-  >
+  <KeyMoments class="flex-none h-60" />
+  <TaskList {survey} />
 </div>
 <div
   id="downloads"

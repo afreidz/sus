@@ -15,8 +15,14 @@
   export { downloads };
 </script>
 
-<ul class:skeleton={working} class="w-full h-full">
-  {#if downloads}
+{#if !downloads?.length}
+  <div
+    class="size-full flex items-center justify-center uppercase text-neutral-400 font-semibold text-xl"
+  >
+    There are no downloads available.
+  </div>
+{:else}
+  <ul class:skeleton={working} class="w-full h-full">
     {#each downloads as sessionDownload}
       <li class="border-b border-b-neutral-300 p-3 flex items-center gap-2">
         <span class="flex-1">{sessionDownload.video?.name}</span>
@@ -28,5 +34,5 @@
         </button>
       </li>
     {/each}
-  {/if}
-</ul>
+  </ul>
+{/if}

@@ -22,6 +22,7 @@
   let camsEnabled = false;
   let screen: HTMLIFrameElement;
   let cameras: HTMLVideoElement;
+  let cameraToolTipDismissed = false;
   let confirmation: HTMLDialogElement;
 
   $: if (confirmed) initSession();
@@ -108,8 +109,14 @@
     </div>
     {#if camsEnabled}
       <button
-        on:click={() => cameras.requestPictureInPicture()}
-        class="btn rounded-full shadow-md glass opacity-30 transition-opacity ease-in-out hover:opacity-75 btn-outline absolute right-3 bottom-3 aspect-square p-0"
+        on:click={() => {
+          cameras.requestPictureInPicture();
+          cameraToolTipDismissed = true;
+        }}
+        class:tooltip={!cameraToolTipDismissed}
+        class:opacity-30={cameraToolTipDismissed}
+        data-tip="The host has enabled cameras. Click here to show the camera feeds."
+        class="btn rounded-full tooltip-primary tooltip-left tooltip-open shadow-md glass transition-opacity ease-in-out hover:opacity-75 btn-outline absolute right-3 bottom-3 aspect-square p-0"
       >
         <iconify-icon class="text-2xl" icon="mdi:video-outline"></iconify-icon>
       </button>
