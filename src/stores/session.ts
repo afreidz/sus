@@ -67,8 +67,8 @@ export type Moment = {
 export type SessionRecording = {
   end?: Date;
   start: Date;
-  video?: File;
   moments?: Moment[];
+  video?: File | Promise<File>;
   transcript?: Transcription[];
 };
 
@@ -77,6 +77,9 @@ type Session = {
   peer?: Peer;
   host?: string;
   timestamp: Date;
+
+  hostname?: string;
+  participantName?: string;
 
   streams: {
     cameras?: {
@@ -88,10 +91,9 @@ type Session = {
   };
 
   recorder: {
-    current?: SessionRecording;
+    recording?: SessionRecording;
     mediaRecorder?: MediaRecorder;
     status?: "recording" | "idle";
-    recordings?: SessionRecording[];
   };
 
   transcriber?: SessionTranscriber;
@@ -157,7 +159,7 @@ export async function initTranscriber() {
   if (sess.host === sess.id) {
     transcriber.on("speech", (transcription) => {
       const {
-        recorder: { current },
+        recorder: { recording: current },
       } = session.get();
       transcription.speaker = "host";
       transcription.timestamp = new Date(transcription.timestamp);
@@ -165,21 +167,21 @@ export async function initTranscriber() {
       const transcript = current?.transcript ?? [];
 
       if (transcription.text) transcript.push(transcription);
-      session.setKey("recorder.current.transcript", [...transcript]);
+      session.setKey("recorder.recording.transcript", [...transcript]);
     });
 
     sess.connections.data?.on("data", (data: unknown) => {
       const msg = data as DataMessage;
       if (msg.type === "transcription") {
         const sess = session.get();
-        if (!sess.recorder.current) return;
+        if (!sess.recorder.recording) return;
 
-        const transcript = sess.recorder.current.transcript ?? [];
+        const transcript = sess.recorder.recording.transcript ?? [];
         msg.transcription.speaker = "participant";
         msg.transcription.timestamp = new Date(msg.transcription.timestamp);
 
         if (msg.transcription.text) transcript.push(msg.transcription);
-        session.setKey("recorder.current.transcript", [...transcript]);
+        session.setKey("recorder.recording.transcript", [...transcript]);
       }
     });
   } else {
@@ -192,12 +194,19 @@ export async function initTranscriber() {
   }
 }
 
-export async function connect(id: string, host: string) {
+export async function connect(
+  id: string,
+  host: string,
+  hostname?: string,
+  participantName?: string
+) {
   console.log("Initializing Session...");
   const existing = session.get();
 
   session.setKey("id", id);
   session.setKey("host", host);
+  session.setKey("hostname", hostname);
+  session.setKey("participantName", participantName);
 
   existing.id = id;
   existing.host = host;
@@ -347,36 +356,38 @@ export async function startRecording() {
   const recorder = new MediaRecorder(stream, options);
   const recording: SessionRecording = { start: new Date() };
 
-  session.setKey("recorder.current", recording);
+  s.transcriber?.start();
   session.setKey("recorder.status", "recording");
+  session.setKey("recorder.recording", recording);
   session.setKey("recorder.mediaRecorder", recorder);
   s.connections.data?.send({ type: "recording-start" });
 
-  recordSessionStream(recorder, `session_recording_${+new Date()}`).then(
-    (video) => {
-      if (video) recording.video = video;
-      recording.end = new Date();
-
-      session.setKey("recorder.recordings", [
-        ...(s.recorder.recordings ?? []),
-        recording,
-      ]);
-      session.setKey("recorder.status", "idle");
-    }
+  const recordingPromise = recordSessionStream(
+    recorder,
+    `session-recording-${+new Date()}`
   );
+
+  session.setKey("recorder.recording.video", recordingPromise);
 }
 
-export function stopRecording() {
+export async function stopRecording() {
   const { recorder, transcriber, connections } = session.get();
 
   if (!recorder.mediaRecorder) throw new Error("Unable to locate recorder");
+  if (!recorder.recording) throw new Error("Unable to locate recording");
 
   recorder.mediaRecorder.stop();
-  session.setKey("recorder.current", undefined);
-  connections.data?.send({ type: "recording-stop" });
+  transcriber?.stop();
 
-  if (!transcriber) return;
-  transcriber.stop();
+  const video = await recorder.recording?.video;
+  recorder.recording.end = new Date();
+  recorder.recording.video = video;
+
+  connections.data?.send({ type: "recording-stop" });
+  session.setKey("recorder.recording", undefined);
+  session.setKey("recorder.status", "idle");
+
+  return recorder.recording;
 }
 
 export default session;

@@ -33,7 +33,7 @@
       ? mute($session.streams.cameras.local)
       : null;
 
-    await connect(id, id);
+    await connect(id, id, revision?.createdBy, respondent.email);
     await initTranscriber();
 
     remoteCamera.srcObject = $session.streams.cameras?.remote || null;
@@ -57,7 +57,8 @@
 </script>
 
 <div
-  class="flex-1 size-full grid grid-row-2 max-h-full grid-cols-[auto,{sidebar}px] p-4 gap-4 items-start"
+  style="grid-template-columns: auto {sidebar}px;"
+  class="flex-1 size-full grid grid-row-2 max-h-full p-4 gap-4 items-start"
 >
   <header class="max-h-max flex items-center gap-4 h-[19rem]">
     <div class="rounded-box overflow-clip shadow aspect-[2/1] h-full flex">

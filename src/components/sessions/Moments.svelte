@@ -7,9 +7,9 @@
   let momentNote: string = "";
   let start: Date | undefined;
 
-  $: if ($session.recorder.current?.start) {
-    start = $session.recorder.current.start;
-    moments = $session.recorder.current.moments ?? [];
+  $: if ($session.recorder.recording?.start) {
+    start = $session.recorder.recording.start;
+    moments = $session.recorder.recording.moments ?? [];
   }
 
   function makeMoment() {
@@ -20,8 +20,8 @@
     moments = [...moments, moment];
     momentNote = "";
 
-    if ($session.recorder.current) {
-      session.setKey("recorder.current.moments", moments);
+    if ($session.recorder.recording) {
+      session.setKey("recorder.recording.moments", moments);
     }
   }
 

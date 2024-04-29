@@ -56,7 +56,7 @@
   class="bg-sus-surface-10 flex-1"
   class:hidden={active !== "transcription"}
 >
-  <Transcription transcript={$session.recorder.current?.transcript} />
+  <Transcription transcript={$session.recorder.recording?.transcript} />
 </div>
 <div
   id="checklist"
