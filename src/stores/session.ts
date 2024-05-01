@@ -13,9 +13,9 @@ import {
   mute,
 } from "@/helpers/media";
 
+import api from "@/helpers/api";
 import { deepMap } from "nanostores";
 import type { APIResponses } from "@/helpers/api";
-import api from "@/helpers/api";
 import type { SessionSchema } from "@/pages/api/sessions/schema";
 
 const PEER_OPTS: PeerOptions = import.meta.env.DEV
@@ -277,16 +277,10 @@ export async function connectAsHost(
     session.setKey("status.initialized", true);
   }
 
-  const slug = participant.email
-    .replaceAll("_", "-")
-    .replaceAll("@", "-at-")
-    .replaceAll(".", "-dot-");
-
   const body: Partial<SessionSchema> = {
     clips: [],
     moments: [],
     transcript: [],
-    id: `${slug}-${+new Date()}`,
     respondentId: participant.id,
   };
 

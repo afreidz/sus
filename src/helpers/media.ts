@@ -272,7 +272,7 @@ export async function recordSessionStream(
     const name = `${session}-${+new Date()}.webm`;
     const uri = `https://${import.meta.env.PUBLIC_STORAGE_ACCOUNT}.blob.core.windows.net?${token}`;
     const serviceClient = new BlobServiceClient(uri);
-    const container = serviceClient.getContainerClient(session);
+    const container = serviceClient.getContainerClient("participant-videos");
 
     await container.createIfNotExists({ access: "blob" });
     const block = container.getBlockBlobClient(name);
