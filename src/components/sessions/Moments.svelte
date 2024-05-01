@@ -1,31 +1,28 @@
 <script lang="ts">
+  import { createEventDispatcher } from "svelte";
   import { getTimeBetween } from "@/helpers/time";
-  import session, { type Moment } from "@/stores/session";
 
-  let moments: Moment[] = [];
+  let enabled = true;
   let className: string = "";
   let momentNote: string = "";
-  let start: Date | undefined;
+  let start: Date | undefined = new Date();
+  let current: Date | undefined = undefined;
+  let moments: { time: Date; text: string; [key: string]: any }[] = [];
 
-  $: if ($session.recorder.recording?.start) {
-    start = $session.recorder.recording.start;
-    moments = $session.recorder.recording.moments ?? [];
-  }
+  const dispatch = createEventDispatcher();
 
   function makeMoment() {
     const moment = {
-      time: new Date(),
-      note: momentNote,
+      text: momentNote,
+      time: current ?? new Date(),
     };
     moments = [...moments, moment];
     momentNote = "";
 
-    if ($session.recorder.recording) {
-      session.setKey("recorder.recording.moments", moments);
-    }
+    dispatch("update", moments);
   }
 
-  export { className as class };
+  export { className as class, moments, enabled, start, current };
 </script>
 
 <div
@@ -33,14 +30,14 @@
     ''}"
 >
   <h4
-    class:tooltip={$session.recorder.status !== "recording"}
+    class:tooltip={!enabled}
     data-tip="Key moments will be enabled when recording is started"
     class="text-left p-3 font-semibold border-b border-neutral-200 flex-none tooltip-secondary tooltip-bottom tooltip-open"
   >
     Key Moments
   </h4>
   <div class="px-3 overflow-auto flex-1">
-    {#if start}
+    {#if enabled && start}
       <ul>
         {#each moments as moment}
           <li class="flex gap-8 items-center p-2">
@@ -49,7 +46,7 @@
               datetime={getTimeBetween(start, moment.time)}
               >{getTimeBetween(start, moment.time)}</time
             >
-            <span class="flex-1">{moment.note}</span>
+            <span class="flex-1">{moment.text}</span>
           </li>
         {/each}
       </ul>
@@ -59,7 +56,7 @@
     <form
       action="/"
       class="flex justify-center gap-4"
-      on:submit|preventDefault={makeMoment}
+      on:submit|preventDefault={() => makeMoment()}
     >
       <input
         type="text"

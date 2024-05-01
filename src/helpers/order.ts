@@ -84,11 +84,16 @@ export function removeDuplicatesById<
 }
 
 type DateOrderable = {
-  timestamp: Date;
+  time: Date;
   [key: string]: any;
 };
+
 export function orderByDate<T extends DateOrderable[]>(array: T) {
-  return array.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+  return array.sort((a, b) => {
+    const atime = new Date(a.time);
+    const btime = new Date(b.time);
+    return atime.getTime() - btime.getTime();
+  });
 }
 
 export function reorderArray<T>(array: T[], index: number) {

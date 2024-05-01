@@ -3,6 +3,7 @@ import type { me as Me } from "@/api/me.json";
 import type { surveys } from "@/api/surveys/all.json";
 import type { clients } from "@/api/clients/all.json";
 import type { systems } from "@/api/systems/all.json";
+import type { blob } from "@/pages/api/token/blob.json";
 import type { clientId } from "@/api/clients/[id].json";
 import type { surveyId } from "@/api/surveys/[id].json";
 import type { systemId } from "@/api/systems/[id].json";
@@ -13,6 +14,7 @@ import type { transcription } from "@/pages/api/transcribe";
 import type { revisionId } from "@/api/revisions/[id].json";
 import type { sessions } from "@/pages/api/sessions/all.json";
 import type { respondents } from "@/api/respondents/all.json";
+import type { sessionId } from "@/pages/api/sessions/[id].json";
 import type { response } from "@/api/public/responses/all.json";
 import type { surveyType } from "@/api/surveys/type/[type].json";
 import type { respondentId } from "@/api/public/respondents/[id].json";
@@ -27,6 +29,7 @@ import type { respondentSurveyResponses } from "@/pages/api/public/responses/sur
 export type APIResponses = {
   me: Me;
   types: types;
+  blobToken: blob;
   typesType: type;
   surveys: surveys;
   systems: systems;
@@ -36,6 +39,7 @@ export type APIResponses = {
   clientId: clientId;
   systemId: systemId;
   responses: response;
+  sessionId: sessionId;
   revisions: revisions;
   surveyType: surveyType;
   revisionId: revisionId;
@@ -110,6 +114,7 @@ export const endpoints = {
   systems: "/api/systems/all.json",
   surveys: "/api/surveys/all.json",
   transcription: "/api/transcribe",
+  blobToken: "/api/token/blob.json",
   sessions: "/api/sessions/all.json",
   types: "/api/public/types/all.json",
   revisions: "/api/revisions/all.json",
@@ -118,6 +123,7 @@ export const endpoints = {
   systemId: "/api/systems/{systemId}.json",
   surveyId: "/api/surveys/{surveyId}.json",
   responses: "/api/public/responses/all.json",
+  sessionId: "/api/sessions/{sessionId}.json",
   revisionId: "/api/revisions/{revisionId}.json",
   typesType: "/api/public/types/{typesType}.json",
   surveyType: "/api/surveys/type/{surveyType}.json",

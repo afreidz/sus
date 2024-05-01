@@ -15,12 +15,5 @@ const respondent = await api({
 ---
 
 <SessionLayout class="p-2">
-  <ParticipantComponent
-    client:only="svelte"
-    name={respondent.email}
-    id={`par${respondent.id}par`}
-    title={respondent.revision.system.title}
-    host={`host${respondent.revisionId}host`}
-    hostName={respondent.revision.system.createdBy}
-  />
+  <ParticipantComponent client:only="svelte" {respondent} />
 </SessionLayout>

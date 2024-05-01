@@ -4,13 +4,17 @@
   import Transcription from "./Transcription.svelte";
   import TaskList from "@/components/sessions/TaskList.svelte";
   import KeyMoments from "@/components/sessions/Moments.svelte";
-  import Downloads from "@/components/sessions/Downloads.svelte";
 
   let respondent: APIResponses["respondentBySurveyId"]["GET"];
-  let active: "transcription" | "checklist" | "downloads" = "checklist";
+  let active: "transcription" | "checklist" | "moments" = "checklist";
+
   let survey:
     | APIResponses["revisionSurveyType"]["GET"]["surveys"][number]
     | undefined = undefined;
+
+  function updateMoments(e: CustomEvent) {
+    session.setKey("moments", e.detail);
+  }
 
   export { survey, respondent };
 </script>
@@ -42,34 +46,45 @@
   <a
     role="tab"
     class="tab flex items-center gap-2"
-    href="#downloads"
-    on:click|preventDefault={() => (active = "downloads")}
-    class:tab-active={active === "downloads"}
+    href="#moments"
+    on:click|preventDefault={() => (active = "moments")}
+    class:tab-active={active === "moments"}
   >
-    <iconify-icon class="text-xl" icon="mdi:download"></iconify-icon>
-    <span>Downloads</span>
+    <iconify-icon class="text-xl" icon="mdi:lightbulb-on-outline"
+    ></iconify-icon>
+    <span>Key Moments</span>
   </a>
 </div>
 
 <div
   id="transcription"
-  class="bg-sus-surface-10 flex-1"
+  class="bg-sus-surface-10 flex-1 p-4 flex flex-col"
   class:hidden={active !== "transcription"}
 >
-  <Transcription transcript={$session.recorder.recording?.transcript} />
+  <Transcription
+    live={true}
+    class="flex-1"
+    transcript={$session.transcript}
+    enabled={$session.status.recording}
+  />
 </div>
 <div
   id="checklist"
-  class="bg-sus-surface-10 flex-1 p-4 flex flex-col gap-4"
+  class="bg-sus-surface-10 flex-1 p-4 flex flex-col"
   class:hidden={active !== "checklist"}
 >
-  <KeyMoments class="flex-none h-60" />
   <TaskList {survey} {respondent} />
 </div>
 <div
-  id="downloads"
-  class="bg-sus-surface-10 flex-1"
-  class:hidden={active !== "downloads"}
+  id="moments"
+  class="bg-sus-surface-10 flex-1 p-4 flex flex-col"
+  class:hidden={active !== "moments"}
 >
-  <Downloads downloads={$session.recorder.recordings} />
+  <KeyMoments
+    class="flex-1"
+    on:update={updateMoments}
+    start={$session.recordingStart}
+    moments={$session.moments ?? []}
+    enabled={$session.status.recording}
+  />
 </div>

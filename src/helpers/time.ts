@@ -1,5 +1,5 @@
 export function getTimeBetween(date1: Date, date2: Date): string {
-  const elapsed = date2.getTime() - date1.getTime(); // Difference in milliseconds
+  const elapsed = new Date(date2).getTime() - new Date(date1).getTime(); // Difference in milliseconds
 
   // Convert milliseconds to hours, minutes, and seconds
   let seconds = Math.floor(elapsed / 1000);

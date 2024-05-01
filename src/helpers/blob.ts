@@ -1,17 +1,7 @@
-import {
-  BlobServiceClient,
-  StorageSharedKeyCredential,
-} from "@azure/storage-blob";
+import { BlobServiceClient } from "@azure/storage-blob";
 
-const account = import.meta.env.AZURE_STORAGE_ACCOUNT_NAME;
-const key = import.meta.env.AZURE_STORAGE_ACCOUNT_KEY;
-
-export async function uploadToContainer(c: string, f: File) {
-  const credential = new StorageSharedKeyCredential(account, key);
-  const client = new BlobServiceClient(
-    `https://${account}.blob.core.windows.net`,
-    credential
-  );
+export async function uploadToContainer(sas: string, c: string, f: File) {
+  const client = new BlobServiceClient(sas);
   const container = client.getContainerClient(c);
 
   await container.createIfNotExists({ access: "blob" });

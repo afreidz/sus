@@ -1,9 +1,12 @@
-import JSZip from "jszip";
+import api from "./api";
+import { nanoid } from "nanoid";
 import { Buffer } from "buffer";
-import type { SessionRecording, Transcription } from "@/stores/session";
+import type { Transcription } from "@/stores/session";
 import * as audiosdk from "microsoft-cognitiveservices-speech-sdk";
+import { type BlobHTTPHeaders, BlobServiceClient } from "@azure/storage-blob";
 
 const maxWidth = import.meta.env.PUBLIC_IMG_MAX_WIDTH || 300;
+const timeslice = 5000;
 
 export function fileToResizedDataURI(imageFile: File) {
   return new Promise<string>((r, x) => {
@@ -186,37 +189,6 @@ export async function combineMediaStreams(
   return outputStream;
 }
 
-export async function downloadSessionVideos(recordings: SessionRecording[]) {
-  const zip = new JSZip();
-
-  recordings.forEach((recording) => {
-    if (!recording.video) return;
-    zip.file(recording.video.name, recording.video);
-  });
-
-  const file =
-    recordings.length === 1 && recordings[0].video
-      ? recordings[0].video
-      : await zip.generateAsync({ type: "blob" });
-
-  // Create an object URL for the file
-  const url = URL.createObjectURL(file);
-
-  // Create a temporary anchor element and trigger a download
-  const a = document.createElement("a");
-  a.href = url;
-  a.download =
-    recordings.length === 1
-      ? recordings[0].video?.name ?? "session_recording.webm"
-      : "session_recordings.zip";
-  document.body.appendChild(a); // Append to the body temporarily
-  a.click(); // Trigger the download
-
-  // Clean up by removing the element and revoking the object URL
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
 export function mute(s: MediaStream) {
   const clone = s.clone();
   clone.getAudioTracks().forEach((t) => t.stop());
@@ -265,8 +237,8 @@ export class SessionTranscriber extends EventEmitter {
 
   private handler(e: audiosdk.SpeechRecognitionEventArgs) {
     this.emit("speech", {
+      time: new Date(),
       text: e.result.text,
-      timestamp: new Date(),
     } as Transcription);
   }
 
@@ -283,30 +255,56 @@ export class SessionTranscriber extends EventEmitter {
   }
 }
 
-export function recordSessionStream(
+export async function recordSessionStream(
   recorder: MediaRecorder,
-  name: string
-): Promise<File> {
-  return new Promise((resolve, reject) => {
-    const recordedChunks: BlobPart[] = [];
-    try {
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) recordedChunks.push(event.data);
-      };
+  session: string
+): Promise<string> {
+  return new Promise(async (resolve, reject) => {
+    const blocks: {
+      id: string;
+      promise: Promise<any>;
+    }[] = [];
 
-      recorder.onstop = () => {
-        const recordedBlob = new Blob(recordedChunks, { type: "video/webm" });
-        const recordedFile = new File([recordedBlob], `${name}.webm`, {
-          type: recordedBlob.type,
+    const { token } = await api({
+      endpoint: "blobToken",
+    });
+
+    const name = `${session}-${+new Date()}.webm`;
+    const uri = `https://${import.meta.env.PUBLIC_STORAGE_ACCOUNT}.blob.core.windows.net?${token}`;
+    const serviceClient = new BlobServiceClient(uri);
+    const container = serviceClient.getContainerClient(session);
+
+    await container.createIfNotExists({ access: "blob" });
+    const block = container.getBlockBlobClient(name);
+
+    const headers: BlobHTTPHeaders = {
+      blobContentType: "video/webm",
+      blobContentDisposition: `inline; filename="${name}"`,
+    };
+
+    recorder.onerror = (event) => reject(event);
+
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        const id = window.btoa(nanoid());
+        blocks.push({
+          id,
+          promise: block.stageBlock(id, event.data, event.data.size),
         });
-        resolve(recordedFile);
-      };
+      }
+    };
 
-      recorder.onerror = (event) => reject(event);
+    recorder.onstop = async () => {
+      await Promise.all(blocks.map((b) => b.promise));
+      await block.commitBlockList(
+        blocks.map((b) => b.id),
+        {
+          blobHTTPHeaders: headers,
+        }
+      );
+      resolve(block.url);
+    };
 
-      recorder.start(500);
-    } catch (error) {
-      reject(error);
-    }
+    recorder.start(timeslice);
   });
 }

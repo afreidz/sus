@@ -1,42 +1,33 @@
 <script lang="ts">
   import session, {
-    connect,
     callHost,
     initLocalCamera,
     initScreenShare,
     initTranscriber,
     type DataMessage,
+    connectAsParticipant,
   } from "@/stores/session";
   import { mute } from "@/helpers/media";
   import SessionTime from "@/components/sessions/Time.svelte";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
+  import { type APIResponses } from "@/helpers/api";
 
-  let id: string;
   let url: string;
-  let name: string;
-  let host: string;
-  let title: string;
-  let hostName: string;
   let confirmed = false;
-  let recording = false;
   let camsEnabled = false;
   let screen: HTMLIFrameElement;
   let cameras: HTMLVideoElement;
   let cameraToolTipDismissed = false;
   let confirmation: HTMLDialogElement;
+  let respondent: APIResponses["respondentId"]["GET"];
 
   $: if (confirmed) initSession();
-
-  $: if ($session.streams.cameras?.composite && cameras && !camsEnabled) {
-    cameras.srcObject = $session.streams.cameras.composite;
-    camsEnabled = true;
-  }
 
   async function initSession() {
     const screenShare = await initScreenShare();
     const cameraStream = await initLocalCamera(500);
 
-    await connect(id, host);
+    await connectAsParticipant(respondent);
     await callHost("data");
 
     if (cameraStream) await callHost("camera", cameraStream);
@@ -46,7 +37,7 @@
 
     if (cameraStream && cameras) {
       cameras.srcObject = mute(cameraStream);
-      session.setKey("streams.cameras.local", cameraStream);
+      session.setKey("local.camera", cameraStream);
     }
 
     if ($session.connections.data) {
@@ -55,8 +46,8 @@
       );
     }
 
-    if ($session.streams.cameras?.composite && cameras && !camsEnabled) {
-      cameras.srcObject = $session.streams.cameras.composite;
+    if ($session.local.composite && cameras && !camsEnabled) {
+      cameras.srcObject = $session.local.composite;
       camsEnabled = true;
     }
   }
@@ -72,16 +63,16 @@
       url = msg.url;
     } else if (msg.type === "recording-start") {
       console.log("Recording started");
-      $session.transcriber?.start();
-      recording = true;
+      $session.connections.transcriber?.start();
+      session.setKey("status.recording", true);
     } else if (msg.type === "recording-stop") {
       console.log("Recording stopped");
-      $session.transcriber?.stop();
-      recording = false;
+      $session.connections.transcriber?.stop();
+      session.setKey("status.recording", false);
     }
   }
 
-  export { id, host, title, name, hostName };
+  export { respondent };
 </script>
 
 {#if confirmed}
@@ -89,8 +80,10 @@
     class="flex-1 flex flex-col mockup-browser border bg-neutral relative z-10"
   >
     <div class="mockup-browser-toolbar relative">
-      <div class="input">{title}: {name}</div>
-      <SessionTime bind:start={recording} />
+      <div class="input">
+        {respondent.revision.system.title}: {respondent.revision.title}
+      </div>
+      <SessionTime bind:start={$session.status.recording} />
     </div>
     <div class="flex-1 bg-neutral flex flex-col items-center justify-center">
       {#if !url}
@@ -124,13 +117,13 @@
   </div>
 
   <aside
-    class:hidden={!$session.streams.cameras?.composite}
+    class:hidden={!$session.local.composite}
     class="absolute right-4 top-4 height-50 rounded-box overflow-clip shadow"
   >
     <!-- svelte-ignore a11y-media-has-caption -->
     <video bind:this={cameras} autoplay class="size-full z-0" />
     <div class="badge glass badge-lg text-neutral absolute top-3 right-3">
-      {name}
+      {respondent.email}
     </div>
   </aside>
 {/if}
@@ -139,31 +132,32 @@
   class="w-3/4 max-w-2xl"
   error={false}
   open={!confirmed}
-  confirmText={name}
   bind:elm={confirmation}
-  title={`Welcome ${name}`}
   on:close={handleConfirm}
+  confirmText={respondent.email}
+  title={`Welcome ${respondent.email}`}
 >
   <p>
     You are being asked to participate in a moderated user test for <strong
-      >{title}</strong
+      >{respondent.revision.system.title}</strong
     >.
   </p>
   <p>
-    As part of this test you will soon be connected to a moderator ({hostName})
-    who will assist you through the test. It is important to note that this test
-    will require you to be on-camera, share the contents of your current tab,
-    and to be recorded.
+    As part of this test you will soon be connected to a moderator ({respondent
+      .revision.createdBy}) who will assist you through the test. It is
+    important to note that this test will require you to be on-camera, share the
+    contents of your current tab, and to be recorded.
   </p>
   <p>
     Part or all of the recordings may be shared in a readout presentation with
     the stakeholders of this application. If you do not wish to continue, please
-    close this tab and contact {hostName} to let them know you wish not to participate.
+    close this tab and contact {respondent.revision.createdBy} to let them know you
+    wish not to participate.
   </p>
   <p>
-    If you agree to the above, please type: <strong>{name}</strong> in the field
-    below to continue. You will be prompted by your browser to accept access to your
-    camera and your current tab for screen share.
+    If you agree to the above, please type: <strong>{respondent.email}</strong> in
+    the field below to continue. You will be prompted by your browser to accept access
+    to your camera and your current tab for screen share.
   </p>
 
   <p><strong>Thanks for your participation!</strong></p>

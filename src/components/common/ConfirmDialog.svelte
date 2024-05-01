@@ -44,7 +44,7 @@
       )}
   >
     <h3 class="font-bold text-lg">{title}</h3>
-    <div class="prose">
+    <div class="prose max-w-none">
       <p>
         <slot />
       </p>

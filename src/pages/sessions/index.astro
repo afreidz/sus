@@ -1,0 +1,31 @@
+---
+import api from "@/helpers/api";
+import PrivateLayout from "@/layouts/private.astro";
+import SessionList from "@/components/sessions/SessionList.svelte";
+
+const sessions = await api({
+  method: "GET",
+  endpoint: "sessions",
+  base: Astro.url.origin,
+  headers: Astro.request.headers,
+});
+
+type Client =
+  (typeof sessions)[number]["respondent"]["revision"]["system"]["client"];
+const clients = sessions.reduce<Client[]>((acc, session) => {
+  if (
+    !acc.some(
+      (client) => client.id === session.respondent.revision.system.client.id
+    )
+  ) {
+    acc.push(session.respondent.revision.system.client);
+  }
+  return acc;
+}, []);
+---
+
+<PrivateLayout class="flex-1">
+  <div class="max-w-5xl">
+    <SessionList sessions={sessions} client:load />
+  </div>
+</PrivateLayout>

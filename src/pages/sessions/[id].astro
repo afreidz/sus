@@ -1,0 +1,18 @@
+---
+import api from "@/helpers/api";
+import PrivateLayout from "@/layouts/private.astro";
+import SessionEdit from "@/components/sessions/Edit.svelte";
+
+const id = Astro.params.id as string;
+const session = await api({
+  method: "GET",
+  endpoint: "sessionId",
+  base: Astro.url.origin,
+  headers: Astro.request.headers,
+  substitutions: { sessionId: id },
+});
+---
+
+<PrivateLayout class="h-[calc(100vh_-_4rem)] overflow-auto flex flex-col">
+  <SessionEdit {session} client:only="svelte" />
+</PrivateLayout>
