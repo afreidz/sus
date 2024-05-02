@@ -28,11 +28,13 @@ export function groupTaskListSection(
 ): TasklistSection[] {
   return arr.reduce((current, question) => {
     const group = question.group || undefined;
+    const imageURL = question.imageURL ?? undefined;
     const exists = current.find((i) => i.group === group);
 
     if (!exists)
       current.push({
         group,
+        imageURL,
         tasks: [],
       });
 
