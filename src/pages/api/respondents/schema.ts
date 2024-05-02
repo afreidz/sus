@@ -6,6 +6,7 @@ export const RespondentCreateSchema = z.object({
   revisionId: z.string(),
   email: z.string().email(),
   complete: z.boolean().optional(),
+  imageURL: z.string().url().optional(),
 }) satisfies z.Schema<ORM.RespondentUncheckedCreateInput>;
 
 export default new Client().$extends({

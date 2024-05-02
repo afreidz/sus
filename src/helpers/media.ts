@@ -1,58 +1,57 @@
 import api from "./api";
 import { nanoid } from "nanoid";
-import { Buffer } from "buffer";
 import type { Transcription } from "@/stores/session";
 import * as audiosdk from "microsoft-cognitiveservices-speech-sdk";
 import { type BlobHTTPHeaders, BlobServiceClient } from "@azure/storage-blob";
 
-const maxWidth = import.meta.env.PUBLIC_IMG_MAX_WIDTH || 300;
+const maxDimension = import.meta.env.PUBLIC_IMG_MAX_WIDTH || 300;
 const timeslice = 5000;
 
-export function fileToResizedDataURI(imageFile: File) {
-  return new Promise<string>((r, x) => {
+export function convertImageToResizedBlob(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    // Create an image element
+    const img = new Image();
+
+    // Create a file reader to read the file into an image src
     const reader = new FileReader();
-    reader.onload = (e) => {
-      if (!e.target?.result) return x();
+    reader.onload = (e) => (img.src = e.target?.result as string);
+    reader.readAsDataURL(file);
 
-      const img = document.createElement("img");
-      img.onload = function () {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
+    // When the image is loaded, resize it
+    img.onload = () => {
+      // Get the scaling factor to preserve aspect ratio
+      const scalingFactor = Math.min(
+        maxDimension / img.width,
+        maxDimension / img.height,
+        1
+      );
 
-        if (!ctx) return x();
+      // Calculate the resized dimensions
+      const width = scalingFactor * img.width;
+      const height = scalingFactor * img.height;
 
-        const aspect =
-          img.width > img.height
-            ? img.height / img.width
-            : img.width / img.height;
-        const w = Math.min(maxWidth, img.width);
-        const h = w * aspect;
+      // Draw the resized image onto a canvas
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
 
-        canvas.width = w;
-        canvas.height = h;
-        ctx.drawImage(img, 0, 0, w, h);
-        r(canvas.toDataURL(imageFile.type));
-      };
-      img.src = e.target.result as string;
+      const ctx = canvas.getContext("2d");
+      ctx?.drawImage(img, 0, 0, width, height);
+
+      // Convert the canvas to a blob
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error("Canvas to Blob conversion failed"));
+        }
+      }, file.type);
     };
-    reader.readAsDataURL(imageFile);
+
+    // Handle any errors in reading the file
+    reader.onerror = (error) => reject(error);
+    img.onerror = () => reject(new Error("Image loading failed"));
   });
-}
-
-export function dataURItoBuffer(dataURI?: string): Buffer | null {
-  if (!dataURI) return null;
-
-  const base64 = dataURI.split(",")[1];
-  return Buffer.from(base64, "base64");
-}
-
-export function bufferToDataUri(
-  mimeType: string,
-  array: ArrayBufferLike
-): string {
-  const buffer = Buffer.from(array);
-  let base64 = buffer.toString("base64");
-  return `data:${mimeType};base64,${base64}`;
 }
 
 export async function combineCameraStreams(
@@ -302,9 +301,78 @@ export async function recordSessionStream(
           blobHTTPHeaders: headers,
         }
       );
-      resolve(block.url);
+      resolve(block.url.split("?")[0]);
     };
 
     recorder.start(timeslice);
   });
+}
+
+export async function captureImageFromStream(stream: MediaStream) {
+  // Create a video element to capture a frame
+  const video = document.createElement("video");
+  video.autoplay = true;
+  video.srcObject = stream;
+
+  await new Promise((r) => (video.onloadedmetadata = r));
+
+  video.width = video.videoWidth;
+  video.height = video.videoHeight;
+
+  // Use a canvas to capture a frame from the video stream
+  const canvas = document.createElement("canvas");
+  canvas.width = 300; // set size to 300x300
+  canvas.height = 300;
+  const ctx = canvas.getContext("2d");
+
+  // Wait to make sure video is streaming
+  await new Promise((r) => setTimeout(r, 2000));
+
+  // Draw the video frame to the canvas, scaling it down
+  ctx?.drawImage(
+    video,
+    0,
+    0,
+    video.videoWidth,
+    video.videoHeight,
+    0,
+    0,
+    300,
+    300
+  );
+
+  const blob = await new Promise<Blob | null>((r) =>
+    canvas.toBlob((blob) => r(blob), "image/jpeg")
+  );
+
+  if (!blob) throw new Error("Unable to extract image from media stream");
+
+  return blob;
+}
+
+export async function uploadImageToStorage(
+  blob: Blob,
+  container: string,
+  name: string,
+  type: string = "image/jpeg"
+) {
+  const { token } = await api({ endpoint: "blobToken" });
+
+  // Construct the full URI to the Azure Blob Service
+  const blobServiceClient = new BlobServiceClient(
+    `https://${import.meta.env.PUBLIC_STORAGE_ACCOUNT}.blob.core.windows.net?${token}`
+  );
+
+  // Get a reference to a container and the blob
+  const client = blobServiceClient.getContainerClient(container);
+  await client.createIfNotExists({ access: "blob" });
+  const block = client.getBlockBlobClient(name);
+
+  await block.uploadData(blob, {
+    blobHTTPHeaders: {
+      blobContentType: type,
+    },
+  });
+
+  return block.url.split("?")[0];
 }

@@ -6,11 +6,13 @@ import {
 } from "peerjs";
 
 import {
+  mute,
   SessionTranscriber,
   combineMediaStreams,
   recordSessionStream,
   combineCameraStreams,
-  mute,
+  uploadImageToStorage,
+  captureImageFromStream,
 } from "@/helpers/media";
 
 import api from "@/helpers/api";
@@ -277,21 +279,6 @@ export async function connectAsHost(
     session.setKey("status.initialized", true);
   }
 
-  const body: Partial<SessionSchema> = {
-    clips: [],
-    moments: [],
-    transcript: [],
-    respondentId: participant.id,
-  };
-
-  const dbSession = await api({
-    method: "POST",
-    endpoint: "sessions",
-    body: JSON.stringify(body),
-  });
-
-  session.setKey("id", dbSession.id);
-
   const {
     local,
     connections: { peer },
@@ -341,6 +328,39 @@ export async function connectAsHost(
     });
   });
 
+  const body: Partial<SessionSchema> = {
+    clips: [],
+    moments: [],
+    transcript: [],
+    respondentId: participant.id,
+  };
+
+  const dbSession = await api({
+    method: "POST",
+    endpoint: "sessions",
+    body: JSON.stringify(body),
+  });
+
+  const { remote } = session.get();
+
+  if (remote.camera) {
+    // Update respondent image
+    const imageBlob = await captureImageFromStream(remote.camera);
+    const imageURL = await uploadImageToStorage(
+      imageBlob,
+      "participant-images",
+      `image-${participant.id}.jpeg`
+    );
+
+    await api({
+      method: "PUT",
+      endpoint: "respondentId",
+      body: JSON.stringify({ imageURL }),
+      substitutions: { respondentId: participant.id },
+    });
+  }
+
+  session.setKey("id", dbSession.id);
   session.setKey("status.connected", true);
 }
 

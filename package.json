@@ -26,7 +26,6 @@
     "@prisma/client": "^5.11.0",
     "astro": "^4.6.3",
     "auth-astro": "^4.1.1",
-    "buffer": "^6.0.3",
     "canvas-confetti": "^1.9.2",
     "clipboard-copy": "^4.0.1",
     "jszip": "^3.10.1",
@@ -46,7 +45,6 @@
     "daisyui": "^4.7.2",
     "iconify-icon": "^2.0.0",
     "nanostores": "^0.10.3",
-    "peer": "^1.0.2",
     "peerjs": "^1.5.2"
   },
   "volta": {

@@ -106,10 +106,10 @@
             <th class="w-[30%] border-r border-base-200 p-0">
               <div class="mockup-window bg-sus-primary-40 m-4">
                 <div class="flex justify-center bg-sus-surface-20">
-                  {#if section.media && section.mime}
+                  {#if section.imageURL}
                     <img
                       alt="section tasklist screenshot"
-                      src={section.media}
+                      src={section.imageURL}
                     />
                   {/if}
                 </div>

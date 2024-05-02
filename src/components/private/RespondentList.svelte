@@ -75,6 +75,15 @@
 <ul class:skeleton={loading} class="w-full h-full bg-neutral">
   {#each respondents as respondent, i}
     <li class="bg-neutral-50 rounded-lg mb-1 p-3 flex items-center gap-2">
+      <div class:placeholder={!respondent.imageURL} class="avatar">
+        <div class="bg-secondary text-secondary-content rounded-full w-10">
+          {#if respondent.imageURL}
+            <img src={respondent.imageURL} alt={respondent.email} />
+          {:else}
+            <span class="text-xl">{respondent.email.charAt(0)}</span>
+          {/if}
+        </div>
+      </div>
       <span class="flex-1">{respondent.email}</span>
       {#if respondent.complete}
         <div class="badge badge-success">completed</div>

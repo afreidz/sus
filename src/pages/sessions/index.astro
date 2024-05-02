@@ -9,23 +9,10 @@ const sessions = await api({
   base: Astro.url.origin,
   headers: Astro.request.headers,
 });
-
-type Client =
-  (typeof sessions)[number]["respondent"]["revision"]["system"]["client"];
-const clients = sessions.reduce<Client[]>((acc, session) => {
-  if (
-    !acc.some(
-      (client) => client.id === session.respondent.revision.system.client.id
-    )
-  ) {
-    acc.push(session.respondent.revision.system.client);
-  }
-  return acc;
-}, []);
 ---
 
 <PrivateLayout class="flex-1">
   <div class="max-w-5xl">
-    <SessionList sessions={sessions} client:load />
+    <SessionList sessions={sessions} client:only="svelte" />
   </div>
 </PrivateLayout>

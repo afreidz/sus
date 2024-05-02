@@ -20,33 +20,57 @@ export type sessions = {
       };
     };
   }>;
-  GET: ORM.SessionGetPayload<{
-    include: {
-      respondent: {
-        include: {
-          revision: {
-            include: {
-              system: { include: { client: true } };
-            };
+  GET: (ORM.SessionGroupByOutputType & {
+    sessions: ORM.SessionGetPayload<{
+      include: {
+        clips: true;
+        moments: true;
+        summary: true;
+        transcripts: true;
+      };
+    }>[];
+    respondent: ORM.RespondentGetPayload<{
+      include: {
+        revision: {
+          include: {
+            system: { include: { client: true } };
           };
         };
       };
-    };
-  }>[];
+    }>;
+  })[];
 };
 
 export const GET: APIRoute = async () => {
-  const sessions = await orm.session.findMany({
-    include: {
-      respondent: {
+  const groups = await orm.session.groupBy({
+    by: ["respondentId"],
+    _count: true,
+  });
+
+  const sessions = await Promise.all(
+    groups.map(async (session) => {
+      const respondent = await orm.respondent.findUnique({
+        where: { id: session.respondentId },
         include: {
           revision: {
             include: { system: { include: { client: true } } },
           },
         },
-      },
-    },
-  });
+      });
+
+      const sessions = await orm.session.findMany({
+        where: { respondentId: session.respondentId },
+        include: {
+          clips: true,
+          moments: true,
+          summary: true,
+          transcripts: true,
+        },
+      });
+
+      return { ...session, respondent, sessions };
+    })
+  );
 
   return new Response(JSON.stringify(sessions), {
     status: 200,

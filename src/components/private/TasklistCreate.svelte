@@ -1,7 +1,6 @@
 <script lang="ts" context="module">
   export type TasklistSection = {
-    media?: string;
-    mime?: string;
+    imageURL?: string;
     group?: string;
     tasks: {
       id?: string;
@@ -11,6 +10,11 @@
 </script>
 
 <script lang="ts">
+  import {
+    uploadImageToStorage,
+    convertImageToResizedBlob,
+  } from "@/helpers/media";
+
   import api from "@/helpers/api";
   import { onMount } from "svelte";
   import { taskType } from "@/stores/types";
@@ -19,7 +23,6 @@
   import { safeTextRegEx } from "@/helpers/strings";
   import { MessageHandler } from "@/stores/messages";
   import { groupTaskListSection } from "@/helpers/order";
-  import { fileToResizedDataURI } from "@/helpers/media";
   import CardHeader from "@/components/common/CardHeader.svelte";
   import { orderResponseByNumericalValue } from "@/helpers/order";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
@@ -70,10 +73,22 @@
   ) {
     const imageFile = e?.currentTarget?.files?.[0];
 
-    const data = imageFile ? await fileToResizedDataURI(imageFile) : undefined;
+    if (!imageFile) {
+      section.imageURL = undefined;
+      sections = [...sections];
+      return;
+    }
 
-    section.media = data;
-    section.mime = imageFile?.type;
+    const ext = imageFile.name.split(".").slice(-1);
+    const blob = await convertImageToResizedBlob(imageFile);
+    const url = await uploadImageToStorage(
+      blob,
+      "checklist-images",
+      `checklist-image-${+new Date()}.${ext}`,
+      imageFile.type
+    );
+
+    section.imageURL = url;
 
     sections = [...sections];
   }
@@ -113,8 +128,7 @@
           id: task.id,
           text: task.text,
           group: section.group,
-          media: section.media,
-          mediaMIME: section.mime,
+          imageURL: section.imageURL,
           createdBy: $me?.user?.email,
           curratedResponses: {
             connect:
@@ -240,9 +254,25 @@
       >
         <thead>
           <tr>
+            <th colspan="5">
+              <label class="flex items-center gap-4">
+                <span class="text-lg">Section Title:</span>
+                <input
+                  required
+                  type="text"
+                  bind:value={section.group}
+                  title="Invalid section title"
+                  placeholder={`${placeholder}`}
+                  pattern={safeTextRegEx.source}
+                  class="input w-full font-normal"
+                />
+              </label>
+            </th>
+          </tr>
+          <tr>
             <th class="w-[30%] border-r border-base-200 p-0">
               <div class="mockup-window bg-sus-primary-40 m-4 relative">
-                {#if section.media}
+                {#if section.imageURL}
                   <button
                     on:click={() => handleImage(null, section)}
                     class="absolute p-0 right-2 top-3 btn btn-xs btn-ghost"
@@ -251,9 +281,9 @@
                   </button>
                 {/if}
                 <div class="flex justify-center bg-sus-surface-20">
-                  {#if section.media}
+                  {#if section.imageURL}
                     <img
-                      src={section.media}
+                      src={section.imageURL}
                       class="w-full max-w-80"
                       alt="section tasklist screenshot"
                     />
@@ -279,7 +309,7 @@
             </th>
             {#each responses as response, i}
               <th
-                class="w-[15%] last-of-type:rounded-tr-lg overflow-clip align-bottom text-center border-r border-base-200 last-of-type:border-r-0 text-base bg-sus-surface-10 p-0"
+                class="w-[15%] overflow-clip align-bottom text-center border-r border-base-200 last-of-type:border-r-0 text-base bg-sus-surface-10 p-0"
               >
                 <span class="block p-4 border-t border-base-200 bg-neutral"
                   >{response.label}</span

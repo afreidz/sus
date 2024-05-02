@@ -69,12 +69,11 @@ model Question {
   createdBy         String
   text              String
   positive          Boolean            @default(true)
-  media             Bytes?
-  mediaMIME         String?
   group             String?
   responses         Response[]
   curratedResponses CurratedResponse[]
   surveys           Survey[]
+  imageURL          String?
 }
 
 model SurveyQuestionOrder {
@@ -127,6 +126,7 @@ model Respondent {
   updatedAt  DateTime   @updatedAt
   createdBy  String
   email      String
+  imageURL   String?
   complete   Boolean    @default(false)
   surveyId   String
   survey     Survey     @relation(fields: [surveyId], references: [id], onDelete: Cascade)

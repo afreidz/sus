@@ -73,7 +73,7 @@
   class="bg-sus-surface-10 flex-1 p-4 flex flex-col"
   class:hidden={active !== "checklist"}
 >
-  <TaskList {survey} {respondent} />
+  <TaskList {survey} {respondent} enabled={$session.status.recording} />
 </div>
 <div
   id="moments"

@@ -3,6 +3,7 @@
     removeDuplicatesById,
     orderResponseByNumericalValue,
   } from "@/helpers/order";
+
   import api from "@/helpers/api";
   import { onMount } from "svelte";
   import type { APIResponses } from "@/helpers/api";
@@ -49,7 +50,7 @@
       </span>
     </CardHeader>
     {#each revision.respondents.filter((r) => r.complete) as respondent, i}
-      {@const score = calculateSUSScoreFromRespondent(respondent, $susType.id)}
+      {@const score = calculateSUSScoreFromRespondent(respondent)}
       <div class="collapse collapse-arrow bg-neutral-50 mb-1">
         <input type="checkbox" checked={i === 0} />
         <div class="collapse-title text-xl font-medium">
@@ -144,7 +145,7 @@
                           class="italic opacity-50 border-r border-l border-neutral-600"
                           >"{question.text}"</td
                         >
-                        {#each question.curratedResponses as curratedResponse}
+                        {#each orderResponseByNumericalValue(question.curratedResponses) as curratedResponse}
                           <td class="border-r border-neutral-600 text-center">
                             <input
                               readonly

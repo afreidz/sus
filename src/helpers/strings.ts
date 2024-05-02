@@ -1,10 +1,12 @@
-export const safeTextRegEx = new RegExp(`[A-Za-z0-9\x22\.\\-\\s\\{\\}\\(\\)\\[\\],_]*`);
+export const safeTextRegEx = new RegExp(
+  `[A-Za-z0-9\x22\.\\-\\s\\{\\}\\(\\)\\[\\],_']*`
+);
 
 export function getAverageResponseLabel<
   T extends { numericalValue: number | null },
 >(responses: T[], possible: { label: string; value: number }[]): string {
   // Check if the array is not empty
-  if (responses.length === 0) return "none"
+  if (responses.length === 0) return "none";
 
   const filteredResponses = responses.filter(
     (r) => r.numericalValue !== null

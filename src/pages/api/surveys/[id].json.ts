@@ -1,7 +1,6 @@
 import orm from "./schema";
 import type { APIRoute } from "astro";
 import type { ORM } from "@/helpers/orm";
-import { dataURItoBuffer } from "@/helpers/media";
 
 export type surveyId = {
   GET: ORM.SurveyGetPayload<{
@@ -35,11 +34,6 @@ export const GET: APIRoute = async ({ params }) => {
 
 export const PUT: APIRoute = async ({ params, request }) => {
   const data = await request.json();
-
-  data.questions.forEach(
-    (q: { media: string | Buffer | null }) =>
-      (q.media = dataURItoBuffer(q.media as string))
-  );
 
   const newQuestions = data.questions.filter((q: any) => !q.id);
   const existingQuestions = data.questions.filter((q: any) => !!q.id);

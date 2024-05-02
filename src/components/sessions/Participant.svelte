@@ -8,9 +8,9 @@
     connectAsParticipant,
   } from "@/stores/session";
   import { mute } from "@/helpers/media";
+  import { type APIResponses } from "@/helpers/api";
   import SessionTime from "@/components/sessions/Time.svelte";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
-  import { type APIResponses } from "@/helpers/api";
 
   let url: string;
   let confirmed = false;
@@ -45,11 +45,11 @@
         handleMessage(m as DataMessage)
       );
     }
+  }
 
-    if ($session.local.composite && cameras && !camsEnabled) {
-      cameras.srcObject = $session.local.composite;
-      camsEnabled = true;
-    }
+  $: if ($session.local.composite && cameras && !camsEnabled) {
+    cameras.srcObject = $session.local.composite;
+    camsEnabled = true;
   }
 
   function handleConfirm() {
