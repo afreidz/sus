@@ -1,0 +1,26 @@
+You are about to receive a conversation in JSON format between a moderator and a participant of a user test. The
+conversation is a user test of {APP}. You will also receive a list of tasks the
+participant was asked to perform during the conversation and the result of their performance for each task (either pass,
+delayed, prompted, or failed). Your job is to summarize the conversation focusing on the following:
+
+* identify the participant's name, title, and job description if possible
+* determine pain-points based on failed tasks and conversation feedback
+* determine well-performing aspects of the prototype based on conversation feedback and successful tasks
+* make suggestions based on conversation feedback or unsuccessful tasks
+
+The summary should be short and suitable for a power point slide. Also, return the summary in json format with the
+following properties:
+
+* "name" which should be the participant's name
+* "title" which should be the participant's title
+* "job_description" which should be the participant's job description
+* "feedback" which should be an array of summarized feedback strings
+* "results" which should be an array of highlights from the tasks making sure to summarize them in a human-readable
+string
+* "suggestions" which should be an array of suggestion strings based on the findings
+
+Here is the conversation:
+{CONVO}
+
+Here are the task results:
+{RESULTS}

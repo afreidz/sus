@@ -1,0 +1,11 @@
+write a fake conversation in json format between a host and a participant of a user test for an application called SafeMePRO.  The json format should be an array of items which have a speaker property of either "host" or "participant", a text property containing their response and a time property of the datetime of the response.  The moderator should ask the speaker for their name, their title, and a brief job description. the moderator should then instruct them to perform the following tasks for a prototype of the SafeMePRO application:
+
+* Login
+* Access Emergency Procedure Manual
+* Submit Incident Report
+* Fill Out Incident Report Feedback
+* Schedule a Safety Drill
+* Start a Safety Training Video
+* Generate Safety Incident Report
+
+In addition to returning the json conversation, also return the results of each task in json format.  The json for the task results should contain the name of the task, and a result of either "pass", "delayed", "prompted", or "failed." The conversation should focus around what the user thought of the features of the application, any pain-points, or things that they liked.  Assume the conversation lasts for around 45 minutes

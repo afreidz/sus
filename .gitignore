@@ -22,4 +22,7 @@ pnpm-debug.log*
 .DS_Store
 
 # misc
-_ai_samples
+_ai_samples/convos
+_ai_samples/results
+_ai_samples/summary
+_ai_samples/moments

@@ -1,0 +1,20 @@
+You are about to receive an array of summaries in JSON format. The
+summaries are from user tests of {APP}. Your job is to aggregate the summaries focusing on the following:
+
+* determine common pain-points based on failed tasks and feedback
+* determine common well-performing aspects of the prototype based on feedback and tasks
+* make suggestions based on feedback and tasks
+* provide a general summarization of the postive and negative aspects of the prototype
+
+The summary should be short and suitable for a power point slide. Also, return the summary in json format with the
+following properties:
+
+* "feedback" which should be an array of summarized feedback strings
+* "results" which should be an array of highlights from the tasks
+* "suggestions" which should be an array of suggestion strings based on the findings
+* "summary" which should be the general summarization string
+
+Here are the summaries:
+[
+  {SUMMARIES}
+]
