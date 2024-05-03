@@ -244,10 +244,7 @@
         </div>
       </form>
     {/if}
-    {#if rest?.length}
-      {#each rest as _}
-        <div class="bg-neutral-50 shadow-md rounded-box h-full"></div>
-      {/each}
-    {/if}
+    <div class="bg-neutral-50 shadow-md rounded-box h-full"></div>
+    <div class="bg-neutral-50 shadow-md rounded-box h-full"></div>
   {/if}
 </div>

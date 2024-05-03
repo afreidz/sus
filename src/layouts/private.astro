@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "./base.astro";
 import { getSession } from "auth-astro/server";
+import Nav from "@/components/private/Nav.svelte";
 import Logo from "@/components/private/Logo.svelte";
 import AvatarMenu from "@/components/private/AvatarMenu.svelte";
 import MessageBoundary from "@/components/common/MessageBoundary.svelte";
@@ -15,14 +16,19 @@ const { class: className } = Astro.props;
 
 <BaseLayout>
   <MessageBoundary client:load>
-    <div class="navbar bg-neutral shadow-sm z-10 !sticky top-0">
+    <div
+      class="navbar bg-neutral border-b border-neutral-200 z-10 !sticky top-0"
+    >
       <div class="flex-1">
         <Logo />
       </div>
       <AvatarMenu client:visible {fname} {lname} {image} />
     </div>
-    <div class={className ?? ""}>
-      <slot />
+    <div class="flex flex-1 pl-[5rem]">
+      <Nav class="flex-none fixed top-16 bottom-0 left-0 z-10 border-t" />
+      <div class={`flex-1 ${className ?? ""}`}>
+        <slot />
+      </div>
     </div>
   </MessageBoundary>
 </BaseLayout>
