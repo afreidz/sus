@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { APIResponses } from "@/helpers/api";
+  import api, { type APIResponses } from "@/helpers/api";
   import Moments from "@/components/sessions/Moments.svelte";
   import Transcription from "@/components/sessions/Transcription.svelte";
   import type { Transcription as TranscriptionType } from "@/stores/session";
@@ -8,6 +8,16 @@
   let session: APIResponses["sessionId"]["GET"];
 
   $: if (session) transcripts = session.transcripts as TranscriptionType[];
+
+  async function summarize() {
+    const summary = await api({
+      endpoint: "summarizeSession",
+      method: "GET",
+      substitutions: { sessionId: session.id },
+    });
+
+    console.log(summary);
+  }
 
   export { session };
 </script>
@@ -30,4 +40,8 @@
     start={new Date(session.createdAt)}
     moments={session.moments}
   />
+  <button
+    on:click={summarize}
+    class="btn btn-lg btn-outline absolute bottom-10 left-40">Summarize</button
+  >
 </div>

@@ -7,7 +7,6 @@ export type sessions = {
     include: {
       clips: true;
       moments: true;
-      summary: true;
       transcripts: true;
       respondent: {
         include: {
@@ -25,7 +24,6 @@ export type sessions = {
       include: {
         clips: true;
         moments: true;
-        summary: true;
         transcripts: true;
       };
     }>[];
@@ -63,7 +61,6 @@ export const GET: APIRoute = async () => {
         include: {
           clips: true,
           moments: true,
-          summary: true,
           transcripts: true,
         },
       });
@@ -93,7 +90,6 @@ export const POST: APIRoute = async ({ request }) => {
     include: {
       clips: true,
       moments: true,
-      summary: true,
       transcripts: true,
       respondent: {
         include: {

@@ -46,7 +46,6 @@ export const GET: APIRoute = async ({ params }) => {
     include: {
       clips: true,
       moments: true,
-      summary: true,
       transcripts: true,
       respondent: {
         include: {
@@ -76,7 +75,6 @@ export const PUT: APIRoute = async ({ params, request }) => {
     include: {
       clips: true,
       moments: true,
-      summary: true,
       transcripts: true,
       respondent: {
         include: {
@@ -89,12 +87,6 @@ export const PUT: APIRoute = async ({ params, request }) => {
     where: { id: params.id },
     data: {
       videoURL: video,
-      summary: summary && {
-        create: {
-          createdBy,
-          text: summary.text,
-        },
-      },
       transcripts: transcript?.length
         ? {
             createMany: {

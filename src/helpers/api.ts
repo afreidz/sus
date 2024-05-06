@@ -19,6 +19,7 @@ import type { response } from "@/api/public/responses/all.json";
 import type { surveyType } from "@/api/surveys/type/[type].json";
 import type { respondentId } from "@/api/public/respondents/[id].json";
 import type { publicRespondentId } from "@/api/public/respondents/[id].json";
+import type { SummarizeSession } from "@/pages/api/sessions/summarize/[id].json";
 import type { respondentBySurveyId } from "@/pages/api/respondents/[surveyId]/[id].json";
 import type { nonCurrentSUSRespondents } from "@/pages/api/respondents/noncurrent/all.json";
 import type { revisionSurveyType } from "@/api/public/surveys/[revision]/[type]/first.json";
@@ -46,6 +47,7 @@ export type APIResponses = {
   respondents: respondents;
   respondentId: respondentId;
   transcription: transcription;
+  summarizeSession: SummarizeSession;
   publicRespondentId: publicRespondentId;
   revisionSurveyType: revisionSurveyType;
   respondentBySurveyId: respondentBySurveyId;
@@ -95,6 +97,9 @@ type CustomSubstitutions = {
     surveyId: string;
     respondentId: string;
   };
+  summarizeSession: {
+    sessionId: string;
+  };
 };
 
 type APIProps<E, M> = {
@@ -128,6 +133,7 @@ export const endpoints = {
   typesType: "/api/public/types/{typesType}.json",
   surveyType: "/api/surveys/type/{surveyType}.json",
   respondentId: "/api/public/respondents/{respondentId}.json",
+  summarizeSession: "/api/sessions/summarize/{sessionId}.json",
   nonCurrentSUSRespondents: "/api/respondents/noncurrent/all.json",
   curratedResponsesByType: "/api/curratedResponses/{scoreType}/all.json",
   respondentBySurveyId: "/api/respondents/{surveyId}/{respondentId}.json",

@@ -1,0 +1,7 @@
+You are about to recieve a conversation in JSON format from a moderated user test. Your job is to create key moments that ocurred in the conversation.  The key moments should be focused on the participant.  The key moments should be returned in JSON format with the following properties:
+
+* "time" which is a datetime of when the moment ocurred in relation to the time in the conversation
+* "text" which is a really short summary of the moment
+
+Here is the conversation:
+{CONVO}

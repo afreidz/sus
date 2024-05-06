@@ -31,16 +31,19 @@ model System {
 }
 
 model Revision {
-  id          String       @id @default(nanoid())
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id          String                      @id @default(nanoid())
+  createdAt   DateTime                    @default(now())
+  updatedAt   DateTime                    @updatedAt
   createdBy   String
-  title       String       @db.VarChar(255)
+  title       String                      @db.VarChar(255)
   systemId    String
-  system      System       @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  system      System                      @relation(fields: [systemId], references: [id], onDelete: Cascade)
   surveys     Survey[]
   respondents Respondent[]
   responses   Response[]
+  feedback    SummarizedFeedbackItem[]
+  results     SummarizedChecklistResult[]
+  suggestions SummarizedSuggestion[]
   summary     Summary?
 
   @@unique([systemId, title])
@@ -164,18 +167,20 @@ model Response {
 }
 
 model Session {
-  id           String                 @id @default(nanoid())
-  createdAt    DateTime               @default(now())
-  updatedAt    DateTime               @updatedAt
+  id           String                      @id @default(nanoid())
+  createdAt    DateTime                    @default(now())
+  updatedAt    DateTime                    @updatedAt
   createdBy    String
   respondentId String
-  respondent   Respondent             @relation(fields: [respondentId], references: [id])
+  respondent   Respondent                  @relation(fields: [respondentId], references: [id])
   videoURL     String?
   moments      KeyMoment[]
   responses    Response[]
   transcripts  TranscriptionSegment[]
   clips        SessionClip[]
-  summary      Summary?
+  feedback     SummarizedFeedbackItem[]
+  results      SummarizedChecklistResult[]
+  suggestions  SummarizedSuggestion[]
 }
 
 model KeyMoment {
@@ -208,14 +213,48 @@ model SessionClip {
   videoURL  String?
 }
 
+model SummarizedFeedbackItem {
+  id         String    @id @default(nanoid())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  createdBy  String
+  revisionId String?
+  sessionId  String?
+  text       String
+  session    Session?  @relation(fields: [sessionId], references: [id])
+  revision   Revision? @relation(fields: [revisionId], references: [id])
+}
+
+model SummarizedChecklistResult {
+  id         String    @id @default(nanoid())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  createdBy  String
+  text       String
+  revisionId String?
+  sessionId  String?
+  session    Session?  @relation(fields: [sessionId], references: [id])
+  revision   Revision? @relation(fields: [revisionId], references: [id])
+}
+
+model SummarizedSuggestion {
+  id         String    @id @default(nanoid())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  createdBy  String
+  text       String
+  revisionId String?
+  sessionId  String?
+  session    Session?  @relation(fields: [sessionId], references: [id])
+  revision   Revision? @relation(fields: [revisionId], references: [id])
+}
+
 model Summary {
   id         String    @id @default(nanoid())
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   createdBy  String
-  revisionId String?   @unique
-  sessionId  String?   @unique
   text       String
-  session    Session?  @relation(fields: [sessionId], references: [id])
+  revisionId String?   @unique
   revision   Revision? @relation(fields: [revisionId], references: [id])
 }
