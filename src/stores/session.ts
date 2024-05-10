@@ -11,6 +11,7 @@ import {
   Features,
   type Call,
   CallClient,
+  type CallAgent,
   LocalAudioStream,
   LocalVideoStream,
   VideoStreamRenderer,
@@ -18,11 +19,13 @@ import {
   type RemoteParticipant,
   type RecordingCallFeature,
   type VideoStreamRendererView,
+  type DeviceManager,
 } from "@azure/communication-calling";
 
 import { v4 as uuid } from "uuid";
 import { deepMap } from "nanostores";
 import api, { type APIResponses } from "@/helpers/api";
+import { type SessionSchema } from "@/pages/api/sessions/schema";
 import Messenger, { type DataMessage } from "@/helpers/messenger";
 import { SessionTranscriber, type Transcription } from "@/helpers/transcribe";
 import { AzureCommunicationTokenCredential } from "@azure/communication-common";
@@ -32,23 +35,30 @@ export type Moment = Pick<
   "text" | "time"
 >;
 
-type Session = {
+export type Session = {
   id: string;
+  agent?: CallAgent;
   isConnected: boolean;
   respondent?: APIResponses["respondentId"]["GET"];
 
   local: {
     call?: Call;
     name?: string;
-    mic?: MediaStream;
     moments?: Moment[];
     messenger?: Messenger;
-    screen?: LocalVideoStream;
     transcript?: Transcription[];
     role?: "host" | "participant";
     camera?: VideoStreamRendererView;
     transcriber?: SessionTranscriber;
-    cameras?: MediaStream | MediaProvider;
+
+    deviceManager?: DeviceManager;
+
+    streams?: {
+      cameras?: MediaStream | MediaProvider;
+      mic?: LocalAudioStream;
+      camera?: LocalVideoStream;
+      screen?: LocalVideoStream;
+    };
   };
 
   remote: {
@@ -75,13 +85,11 @@ const session = deepMap<Session>({
 });
 export type SessionStore = typeof session;
 
-export async function connect(
-  id: string,
-  role: "host" | "participant",
+export async function init(
+  role: Session["local"]["role"],
   respondent: APIResponses["respondentId"]["GET"]
 ) {
-  console.log("Connecting to session...");
-  if (session.get().isConnected) return console.log("connected.");
+  console.log("Initializing session");
 
   //=======================================
   //
@@ -107,6 +115,7 @@ export async function connect(
   const agent = await client.createCallAgent(credential, {
     displayName: session.get().local.name,
   });
+  session.setKey("agent", agent);
   console.log("call agent initialized");
 
   //=======================================
@@ -115,6 +124,7 @@ export async function connect(
   //
   //=======================================
   const devices = await client.getDeviceManager();
+  session.setKey("local.deviceManager", devices);
   devices.askDevicePermission({ video: true, audio: true });
 
   const camera =
@@ -122,9 +132,11 @@ export async function connect(
       ? await initLocalCamera(360)
       : (await devices.getCameras())[0];
   const cameraStream = new LocalVideoStream(camera as MediaStream);
+  session.setKey("local.streams.camera", cameraStream);
 
   const mic = await initMic();
   const micStream = new LocalAudioStream(mic);
+  session.setKey("local.streams.mic", micStream);
 
   const renderer = new VideoStreamRenderer(cameraStream);
   const view = await renderer.createView({
@@ -137,9 +149,18 @@ export async function connect(
   if (role === "participant") {
     const screen = await initScreenShare();
     const screenStream = new LocalVideoStream(screen);
-    session.setKey("local.screen", screenStream);
+    session.setKey("local.streams.screen", screenStream);
   }
   console.log("devices initialized");
+}
+
+export async function connect(id: string) {
+  console.log("Connecting to session...");
+  if (session.get().isConnected) return console.log("connected.");
+
+  const { agent, local } = session.get();
+
+  if (!agent) throw new Error("Unable to connect to call. Agent not available");
 
   //=======================================
   //
@@ -148,14 +169,6 @@ export async function connect(
   //=======================================
   const call = agent.join({ groupId: id });
   await callConnected(call);
-  await call.startAudio(micStream);
-  await call.startVideo(cameraStream);
-  if (role === "participant") {
-    const screen = session.get().local.screen;
-    (call.startScreenSharing as (s?: LocalVideoStream) => Promise<void>)(
-      screen
-    );
-  }
   session.setKey("local.call", call);
   console.log("remote call initialized");
 
@@ -164,7 +177,7 @@ export async function connect(
   // Initialize call recording
   //
   //=======================================
-  if (role === "host") {
+  if (local.role === "host") {
     const recorder = call.feature(Features.Recording);
     session.setKey("recording.recorder", recorder);
 
@@ -192,7 +205,7 @@ export async function connect(
   const transcriber = new SessionTranscriber();
   session.setKey("local.transcriber", transcriber);
 
-  if (role === "host") {
+  if (local.role === "host") {
     messenger.on("message", (msg: DataMessage) => {
       if (msg?.type === "transcription") {
         const sess = session.get();
@@ -208,7 +221,7 @@ export async function connect(
   }
 
   transcriber.on("speech", (transcription: Transcription) => {
-    if (role === "host") {
+    if (local.role === "host") {
       const { local } = session.get();
       const transcript = local.transcript ?? [];
 
@@ -231,7 +244,7 @@ export async function connect(
   // Initialize handlers for session member changes
   //
   //===================================================
-  if (role === "host") {
+  if (local.role === "host") {
     if (call.remoteParticipants.length)
       await handleChangeFromHost({
         added: [call.remoteParticipants[0]],
@@ -239,7 +252,7 @@ export async function connect(
       });
 
     call.on("remoteParticipantsUpdated", handleChangeFromHost);
-  } else if (role === "participant") {
+  } else if (local.role === "participant") {
     if (call.remoteParticipants.length)
       await handleChangeFromParticipant({
         added: [call.remoteParticipants[0]],
@@ -249,6 +262,21 @@ export async function connect(
     call.on("remoteParticipantsUpdated", handleChangeFromParticipant);
   }
   console.log("session handlers registered");
+
+  //=======================================
+  //
+  // Start Media
+  //
+  //=====================================
+  if (local.streams?.mic) await call.startAudio(local.streams.mic);
+  if (local.streams?.camera) await call.startVideo(local.streams.camera);
+
+  if (local.role === "participant") {
+    const screen = session.get().local.streams?.screen;
+    (call.startScreenSharing as (s?: LocalVideoStream) => Promise<void>)(
+      screen
+    );
+  }
 
   //=======================================
   //
@@ -335,49 +363,9 @@ async function handleChangeFromHost({
   if (remoteMic) session.setKey("remote.mic", await remoteMic.getMediaStream());
 
   const {
-    id,
-    respondent,
     local: { messenger },
   } = session.get();
-
   messenger?.send({ type: "ping" });
-
-  if (id && respondent) {
-    const body = {
-      id,
-      clips: [],
-      moments: [],
-      transcript: [],
-      respondentId: respondent.id,
-    };
-
-    const dbSession = await api({
-      method: "POST",
-      endpoint: "sessions",
-      body: JSON.stringify(body),
-    });
-
-    session.setKey("id", dbSession.id);
-  }
-
-  if (remoteCamera && respondent) {
-    // Update respondent image
-    const imageBlob = await captureImageFromStream(
-      await remoteCamera.getMediaStream()
-    );
-    const imageURL = await uploadImageToStorage(
-      imageBlob,
-      "participant-images",
-      `image-${respondent.id}.jpeg`
-    );
-
-    await api({
-      method: "PUT",
-      endpoint: "respondentId",
-      body: JSON.stringify({ imageURL }),
-      substitutions: { respondentId: respondent.id },
-    });
-  }
 }
 
 async function handleChangeFromParticipant({
@@ -395,7 +383,15 @@ async function handleChangeFromParticipant({
   const remoteCamera = await mediaAvailable(
     host.videoStreams.find((s) => s.mediaStreamType === "Video")
   );
-  if (!remoteCamera?.isAvailable) return;
+  if (!remoteCamera?.isAvailable)
+    throw new Error("Could not get remote camera");
+
+  const camRenderer = new VideoStreamRenderer(remoteCamera);
+  const camView = await camRenderer.createView({
+    scalingMode: "Crop",
+    isMirrored: false,
+  });
+  session.setKey("remote.camera", camView);
 
   const { local } = session.get();
   const localCameraStream =
@@ -409,7 +405,51 @@ async function handleChangeFromParticipant({
     remoteCameraStream,
     500
   );
-  session.setKey("local.cameras", combinedCameras);
+  session.setKey("local.streams.cameras", combinedCameras);
+}
+
+export async function startSession() {
+  const { id, local, remote, respondent } = session.get();
+
+  if (local.role !== "host")
+    throw new Error("Only the host can start the session");
+
+  if (id && respondent) {
+    const body: Partial<SessionSchema> = {
+      id,
+      clips: [],
+      moments: [],
+      transcript: [],
+      respondentId: respondent.id,
+    };
+    const dbSession = await api({
+      method: "POST",
+      endpoint: "sessions",
+      body: JSON.stringify(body),
+    });
+    session.setKey("id", dbSession.id);
+  }
+
+  const remoteCameraStream =
+    remote.camera?.target.querySelector("video")?.srcObject;
+
+  if (remoteCameraStream && respondent) {
+    const imageBlob = await captureImageFromStream(remoteCameraStream);
+    const imageURL = await uploadImageToStorage(
+      imageBlob,
+      "participant-images",
+      `image-${respondent.id}.jpeg`
+    );
+    await api({
+      method: "PUT",
+      endpoint: "respondentId",
+      body: JSON.stringify({ imageURL }),
+      substitutions: { respondentId: respondent.id },
+    });
+  }
+
+  await startRecording();
+  local.messenger?.send({ type: "session-start" });
 }
 
 export async function startRecording() {
@@ -461,7 +501,7 @@ export async function stopRecording() {
   if (!id || !respondent)
     throw new Error("Unable to update the session in the database");
 
-  const updateBody = {
+  const updateBody: SessionSchema = {
     respondentId: respondent.id,
     createdBy: respondent.revision.createdBy,
     moments: local.moments?.map((m) => ({

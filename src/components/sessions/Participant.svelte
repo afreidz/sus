@@ -1,12 +1,14 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import session from "@/stores/session";
   import { type APIResponses } from "@/helpers/api";
-  import session, { connect } from "@/stores/session";
+  import Lobby from "@/components/sessions/Lobby.svelte";
   import { type DataMessage } from "@/helpers/messenger";
   import SessionTime from "@/components/sessions/Time.svelte";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
 
   let url: string;
+  let lobby = true;
   let confirmed = false;
   let camsEnabled = false;
   let screen: HTMLIFrameElement;
@@ -21,11 +23,8 @@
     sessionId = params.get("session");
   });
 
-  $: if (confirmed && sessionId)
-    connect(sessionId, "participant", respondent).then(initMessenger);
-
-  $: if ($session.local.cameras && cameras && !camsEnabled) {
-    const src = session.get().local.cameras;
+  $: if ($session.local.streams?.cameras && cameras && !camsEnabled) {
+    const src = session.get().local.streams?.cameras;
     if (src) cameras.srcObject = src;
     camsEnabled = true;
   }
@@ -35,9 +34,11 @@
   }
 
   function initMessenger() {
+    console.log("Messenger init");
     const {
       local: { messenger },
     } = session.get();
+    console.log(messenger);
 
     messenger?.on("message", (msg: DataMessage) => {
       if (msg.type === "push-url" && screen && msg.url) {
@@ -51,6 +52,12 @@
         console.log("Recording stopped");
         $session.local.transcriber?.stop();
         session.setKey("recording.isRecording", false);
+      } else if (msg.type === "session-start") {
+        console.log("Starting session");
+        lobby = false;
+      } else if (msg.type === "session-stop") {
+        console.log("Ending session");
+        lobby = true;
       }
     });
   }
@@ -58,7 +65,14 @@
   export { respondent };
 </script>
 
-{#if confirmed}
+{#if confirmed && lobby}
+  <Lobby
+    role="participant"
+    {respondent}
+    {sessionId}
+    on:connected={initMessenger}
+  />
+{:else if confirmed && !lobby}
   <div
     class="flex-1 flex flex-col mockup-browser border bg-neutral relative z-10"
   >
@@ -100,7 +114,7 @@
   </div>
 
   <aside
-    class:hidden={!$session.local.cameras}
+    class:hidden={!$session.local.streams?.cameras}
     class="absolute right-4 top-4 height-50 rounded-box overflow-clip shadow"
   >
     <!-- svelte-ignore a11y-media-has-caption -->
@@ -109,39 +123,39 @@
       {respondent.email}
     </div>
   </aside>
+{:else}
+  <ConfirmDialog
+    open={true}
+    error={false}
+    class="w-3/4 max-w-2xl"
+    bind:elm={confirmation}
+    on:close={handleConfirm}
+    confirmText={respondent.email}
+    title={`Welcome ${respondent.email}`}
+  >
+    <p>
+      You are being asked to participate in a moderated user test for <strong
+        >{respondent.revision.system.title}</strong
+      >.
+    </p>
+    <p>
+      As part of this test you will soon be connected to a moderator ({respondent
+        .revision.createdBy}) who will assist you through the test. It is
+      important to note that this test will require you to be on-camera, share
+      the contents of your current tab, and to be recorded.
+    </p>
+    <p>
+      Part or all of the recordings may be shared in a readout presentation with
+      the stakeholders of this application. If you do not wish to continue,
+      please close this tab and contact {respondent.revision.createdBy} to let them
+      know you wish not to participate.
+    </p>
+    <p>
+      If you agree to the above, please type: <strong>{respondent.email}</strong
+      > in the field below to continue. You will be prompted by your browser to accept
+      access to your camera and your current tab for screen share.
+    </p>
+
+    <p><strong>Thanks for your participation!</strong></p>
+  </ConfirmDialog>
 {/if}
-
-<ConfirmDialog
-  class="w-3/4 max-w-2xl"
-  error={false}
-  open={!confirmed}
-  bind:elm={confirmation}
-  on:close={handleConfirm}
-  confirmText={respondent.email}
-  title={`Welcome ${respondent.email}`}
->
-  <p>
-    You are being asked to participate in a moderated user test for <strong
-      >{respondent.revision.system.title}</strong
-    >.
-  </p>
-  <p>
-    As part of this test you will soon be connected to a moderator ({respondent
-      .revision.createdBy}) who will assist you through the test. It is
-    important to note that this test will require you to be on-camera, share the
-    contents of your current tab, and to be recorded.
-  </p>
-  <p>
-    Part or all of the recordings may be shared in a readout presentation with
-    the stakeholders of this application. If you do not wish to continue, please
-    close this tab and contact {respondent.revision.createdBy} to let them know you
-    wish not to participate.
-  </p>
-  <p>
-    If you agree to the above, please type: <strong>{respondent.email}</strong> in
-    the field below to continue. You will be prompted by your browser to accept access
-    to your camera and your current tab for screen share.
-  </p>
-
-  <p><strong>Thanks for your participation!</strong></p>
-</ConfirmDialog>

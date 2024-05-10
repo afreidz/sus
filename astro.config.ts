@@ -14,6 +14,12 @@ export default defineConfig({
   },
   vite: {
     envPrefix: "PUBLIC_",
+    resolve: {
+      alias: {
+        ".prisma/client/index-browser":
+          "./node_modules/.prisma/client/index-browser.js",
+      },
+    },
   },
   output: "server",
   adapter: vercel(),

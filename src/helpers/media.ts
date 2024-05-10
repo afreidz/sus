@@ -120,7 +120,9 @@ export async function combineCameraStreams(
   return canvas.captureStream();
 }
 
-export async function captureImageFromStream(stream: MediaStream) {
+export async function captureImageFromStream(
+  stream: MediaStream | MediaProvider
+) {
   // Create a video element to capture a frame
   const video = document.createElement("video");
   video.autoplay = true;
