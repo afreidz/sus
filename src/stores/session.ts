@@ -1,485 +1,475 @@
 import {
-  Peer,
-  type PeerOptions,
-  type DataConnection,
-  type MediaConnection,
-} from "peerjs";
-
-import {
-  mute,
-  SessionTranscriber,
-  combineMediaStreams,
-  recordSessionStream,
+  initMic,
+  initScreenShare,
+  initLocalCamera,
   combineCameraStreams,
   uploadImageToStorage,
   captureImageFromStream,
 } from "@/helpers/media";
 
-import api from "@/helpers/api";
+import {
+  Features,
+  type Call,
+  CallClient,
+  LocalAudioStream,
+  LocalVideoStream,
+  VideoStreamRenderer,
+  type RemoteVideoStream,
+  type RemoteParticipant,
+  type RecordingCallFeature,
+  type VideoStreamRendererView,
+} from "@azure/communication-calling";
+
+import { v4 as uuid } from "uuid";
 import { deepMap } from "nanostores";
-import type { APIResponses } from "@/helpers/api";
-import type { SessionSchema } from "@/pages/api/sessions/schema";
-
-const PEER_OPTS: PeerOptions = import.meta.env.DEV
-  ? {
-      host: "localhost",
-      port: 1999,
-      path: "/sessions",
-    }
-  : {};
-
-export const RECORDING_OPTS: MediaRecorderOptions = {
-  mimeType: "video/webm;codecs=vp9",
-  audioBitsPerSecond: 128000,
-  videoBitsPerSecond: 2500000,
-};
-
-type PushURLMessage = {
-  type: "push-url";
-  url: string;
-};
-
-type RecordingStartMessage = {
-  type: "recording-start";
-};
-
-type RecordingStopMessage = {
-  type: "recording-stop";
-};
-
-type TranscriptionMessage = {
-  type: "transcription";
-  transcription: Transcription;
-};
-
-export type DataMessage =
-  | PushURLMessage
-  | RecordingStartMessage
-  | RecordingStopMessage
-  | TranscriptionMessage;
-
-export type Transcription = Pick<
-  APIResponses["sessionId"]["GET"]["transcripts"][number],
-  "text" | "time"
-> & {
-  speaker?: "host" | "participant";
-};
+import api, { type APIResponses } from "@/helpers/api";
+import { type SessionSchema } from "@/pages/api/sessions/schema";
+import Messenger, { type DataMessage } from "@/helpers/messenger";
+import { SessionTranscriber, type Transcription } from "@/helpers/transcribe";
+import { AzureCommunicationTokenCredential } from "@azure/communication-common";
 
 export type Moment = Pick<
   APIResponses["sessionId"]["GET"]["moments"][number],
   "text" | "time"
 >;
 
-export type SessionRecording = {
-  end?: Date;
-  start: Date;
-  moments?: Moment[];
-  videoURL?: string;
-  transcript?: Transcription[];
-  videoPromise?: Promise<string>;
-};
-
 type Session = {
-  id?: string;
-  host?: boolean;
-
-  connections: {
-    peer?: Peer;
-    data?: DataConnection;
-    camera?: MediaConnection;
-    screen?: MediaConnection;
-    recorder?: MediaRecorder;
-    transcriber?: SessionTranscriber;
-  };
+  id: string;
+  isConnected: boolean;
+  respondent?: APIResponses["respondentId"]["GET"];
 
   local: {
-    id?: string;
+    call?: Call;
     name?: string;
-    camera?: MediaStream;
-    screen?: MediaStream;
-    composite?: MediaStream;
+    mic?: MediaStream;
+    moments?: Moment[];
+    messenger?: Messenger;
+    screen?: LocalVideoStream;
+    transcript?: Transcription[];
+    role?: "host" | "participant";
+    camera?: VideoStreamRendererView;
+    transcriber?: SessionTranscriber;
+    cameras?: MediaStream | MediaProvider;
   };
 
   remote: {
-    id?: string;
     name?: string;
-    camera?: MediaStream;
-    screen?: MediaStream;
-    composite?: MediaStream;
+    mic?: MediaStream;
+    camera?: VideoStreamRendererView;
+    screen?: VideoStreamRendererView;
   };
 
-  status: {
-    connected: boolean;
-    recording: boolean;
-    initialized: boolean;
+  recording: {
+    id?: String;
+    start?: Date;
+    isRecording?: boolean;
+    recorder?: RecordingCallFeature;
   };
-
-  moments: Moment[];
-  recordingStart?: Date;
-  video?: Promise<string>;
-  transcript: Transcription[];
 };
 
 const session = deepMap<Session>({
+  id: uuid(),
   local: {},
   remote: {},
-  moments: [],
-  transcript: [],
-  connections: {},
-  status: {
-    connected: false,
-    recording: false,
-    initialized: false,
-  },
+  recording: {},
+  isConnected: false,
 });
+export type SessionStore = typeof session;
 
-export async function initLocalCamera(size: number) {
-  const video: MediaStreamConstraints["video"] = {
-    frameRate: 30,
-    aspectRatio: 1,
-    facingMode: "user",
-    height: { ideal: size },
-  };
+export async function connect(
+  id: string,
+  role: "host" | "participant",
+  respondent: APIResponses["respondentId"]["GET"]
+) {
+  console.log("Connecting to session...");
+  if (session.get().isConnected) return console.log("connected.");
 
-  const audio: MediaStreamConstraints["audio"] = {
-    sampleRate: 128000,
-    channelCount: 2,
-  };
+  //=======================================
+  //
+  // Set the metadata of the user
+  //
+  //=======================================
+  session.setKey("local.role", role);
+  session.setKey("respondent", respondent);
+  session.setKey(
+    "local.name",
+    role === "host" ? respondent.revision.createdBy : respondent.email
+  );
+  console.log("session metadata set");
 
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio,
-    video,
+  //=======================================
+  //
+  // Initialize the call agent
+  //
+  //=======================================
+  const { token } = await api({ endpoint: "comsToken", method: "GET" });
+  const client = new CallClient();
+  const credential = new AzureCommunicationTokenCredential(token);
+  const agent = await client.createCallAgent(credential, {
+    displayName: session.get().local.name,
+  });
+  console.log("call agent initialized");
+
+  //=======================================
+  //
+  // Initialize devices (camera/mic)
+  //
+  //=======================================
+  const devices = await client.getDeviceManager();
+  devices.askDevicePermission({ video: true, audio: true });
+
+  const camera =
+    role === "host"
+      ? await initLocalCamera(360)
+      : (await devices.getCameras())[0];
+  const cameraStream = new LocalVideoStream(camera as MediaStream);
+
+  const mic = await initMic();
+  const micStream = new LocalAudioStream(mic);
+
+  const renderer = new VideoStreamRenderer(cameraStream);
+  const view = await renderer.createView({
+    scalingMode: "Fit",
+    isMirrored: false,
   });
 
-  session.setKey("local.camera", stream);
-  return stream;
-}
+  session.setKey("local.camera", view);
 
-export async function initScreenShare() {
-  const video: MediaStreamConstraints["video"] = {
-    frameRate: 30,
-    aspectRatio: 16 / 9,
-    width: { ideal: 1280 },
-  };
+  if (role === "participant") {
+    const screen = await initScreenShare();
+    const screenStream = new LocalVideoStream(screen);
+    session.setKey("local.screen", screenStream);
+  }
+  console.log("devices initialized");
 
-  const stream = await navigator.mediaDevices.getDisplayMedia({
-    video,
-    audio: false,
-    preferCurrentTab: true,
-  } as any);
+  //=======================================
+  //
+  // Join the call
+  //
+  //=======================================
+  const call = agent.join({ groupId: id });
+  await callConnected(call);
+  await call.startAudio(micStream);
+  await call.startVideo(cameraStream);
+  if (role === "participant") {
+    const screen = session.get().local.screen;
+    (call.startScreenSharing as (s?: LocalVideoStream) => Promise<void>)(
+      screen
+    );
+  }
+  session.setKey("local.call", call);
+  console.log("remote call initialized");
 
-  session.setKey("local.screen", stream);
-  return stream;
-}
+  //=======================================
+  //
+  // Initialize call recording
+  //
+  //=======================================
+  if (role === "host") {
+    const recorder = call.feature(Features.Recording);
+    session.setKey("recording.recorder", recorder);
 
-export async function initTranscriber() {
-  const transcriber = new SessionTranscriber();
-  session.setKey("connections.transcriber", transcriber);
-
-  const sess = session.get();
-  if (sess.host) {
-    transcriber.on("speech", (transcription: Transcription) => {
-      const { transcript } = session.get();
-      transcription.speaker = "host";
-      transcription.time = new Date(transcription.time);
-
-      if (transcription.text) transcript.push(transcription);
-      session.setKey("transcript", [...transcript]);
+    recorder.on("isRecordingActiveChanged", () => {
+      const active = recorder.isRecordingActive;
+      messenger?.send({ type: active ? "recording-start" : "recording-stop" });
+      session.setKey("recording.isRecording", active);
     });
+  }
 
-    sess.connections.data?.on("data", (data: unknown) => {
-      const msg = data as DataMessage;
-      if (msg.type === "transcription") {
+  //=======================================
+  //
+  // Initialize data messaging channel
+  //
+  //=======================================
+  const messenger = new Messenger(call);
+  console.log("data messenger initialized");
+  session.setKey("local.messenger", messenger);
+
+  //=======================================
+  //
+  // Initialize transcription
+  //
+  //=======================================
+  const transcriber = new SessionTranscriber();
+  session.setKey("local.transcriber", transcriber);
+
+  if (role === "host") {
+    messenger.on("message", (msg: DataMessage) => {
+      if (msg?.type === "transcription") {
         const sess = session.get();
+        const transcript = sess.local.transcript ?? [];
 
-        const transcript = sess.transcript ?? [];
         msg.transcription.speaker = "participant";
         msg.transcription.time = new Date(msg.transcription.time);
 
         if (msg.transcription.text) transcript.push(msg.transcription);
-        session.setKey("transcript", [...transcript]);
+        session.setKey("local.transcript", [...transcript]);
       }
     });
-  } else {
-    transcriber.on("speech", (transcription) => {
-      sess.connections.data?.send({
+  }
+
+  transcriber.on("speech", (transcription: Transcription) => {
+    if (role === "host") {
+      const { local } = session.get();
+      const transcript = local.transcript ?? [];
+
+      transcription.speaker = "host";
+      transcription.time = new Date(transcription.time);
+
+      if (transcription.text) transcript.push(transcription);
+      session.setKey("local.transcript", [...transcript]);
+    } else {
+      messenger.send({
         type: "transcription",
         transcription,
       });
-    });
+    }
+  });
+  console.log("session transcription initialized");
+
+  //===================================================
+  //
+  // Initialize handlers for session member changes
+  //
+  //===================================================
+  if (role === "host") {
+    if (call.remoteParticipants.length)
+      await handleChangeFromHost({
+        added: [call.remoteParticipants[0]],
+        removed: [],
+      });
+
+    call.on("remoteParticipantsUpdated", handleChangeFromHost);
+  } else if (role === "participant") {
+    if (call.remoteParticipants.length)
+      await handleChangeFromParticipant({
+        added: [call.remoteParticipants[0]],
+        removed: [],
+      });
+
+    call.on("remoteParticipantsUpdated", handleChangeFromParticipant);
   }
+  console.log("session handlers registered");
+
+  //=======================================
+  //
+  // Set connected status
+  //
+  //=======================================
+  session.setKey("isConnected", true);
+  console.log("connected.");
 }
 
-export async function connectAsParticipant(
-  participant: APIResponses["respondentId"]["GET"]
-) {
-  console.log("Initializing Participant Session...");
-
-  const hostId = `host${participant.revisionId}host`;
-  const participantId = `participant${participant.id}participant`;
-
-  session.setKey("host", false);
-  session.setKey("remote.id", hostId);
-  session.setKey("local.name", participant.email);
-  session.setKey("remote.name", participant.revision.createdBy);
-
-  const existing = session.get();
-
-  if (!existing.connections.peer?.open) {
-    const peer = new Peer(`participant${participant.id}participant`, PEER_OPTS);
-    session.setKey("connections.peer", peer);
-
-    console.log("Waiting for connection to open...");
-    const pid = await new Promise<string | undefined>((r) => {
-      peer.once("open", r);
+function callConnected(call: Call) {
+  return new Promise((r) => {
+    if (call.state === "Connected") r(true);
+    call.on("stateChanged", () => {
+      if (call.state === "Connected") r(true);
     });
-
-    if (!pid || participantId !== pid)
-      throw new Error(
-        `Expected session id to be: ${participantId}. Recieved session id: ${pid}`
-      );
-
-    console.log("Connected:", pid);
-    session.setKey("local.id", pid);
-  }
-  session.setKey("status.initialized", true);
+  });
 }
 
-export async function connectAsHost(
-  participant: APIResponses["respondentId"]["GET"]
-) {
-  console.log("Initializing Host Session...");
-
-  const peerId = `host${participant.revision.id}host`;
-
-  session.setKey("host", true);
-  session.setKey("local.id", peerId);
-  session.setKey("remote.id", participant.id);
-  session.setKey("remote.name", participant.email);
-  session.setKey("local.name", participant.revision.createdBy);
-
-  const existing = session.get();
-
-  if (!existing.connections.peer?.open) {
-    const peer = new Peer(peerId, PEER_OPTS);
-    session.setKey("connections.peer", peer);
-
-    console.log("Waiting for connection to open...");
-    const pid = await new Promise<string | undefined>((r) => {
-      peer.once("open", r);
+function mediaAvailable(
+  stream?: RemoteVideoStream,
+  timeout = 10000
+): Promise<RemoteVideoStream | undefined> {
+  let timer: ReturnType<typeof setTimeout>;
+  return new Promise((r) => {
+    if (!stream) return r(undefined);
+    if (stream.isAvailable) {
+      clearTimeout(timer);
+      return r(stream);
+    }
+    timer = setTimeout(() => r(undefined), timeout);
+    stream.on("isAvailableChanged", () => {
+      if (stream.isAvailable) {
+        clearTimeout(timer);
+        r(stream);
+      }
     });
+  });
+}
 
-    if (!pid || peerId !== pid)
-      throw new Error(
-        `Expected session id to be: ${peerId}. Recieved session id: ${pid}`
-      );
+async function handleChangeFromHost({
+  added,
+  removed,
+}: {
+  added: RemoteParticipant[];
+  removed: RemoteParticipant[];
+}) {
+  if (removed.length) session.setKey("remote", {});
 
-    console.log("Connected:", pid);
-    session.setKey("local.id", pid);
-    session.setKey("status.initialized", true);
-  }
+  const participant = added[0];
+  if (!participant || participant.state !== "Connected") return;
+
+  session.setKey("remote.name", participant.displayName);
+
+  const remoteCamera = await mediaAvailable(
+    participant.videoStreams.find((s) => s.mediaStreamType === "Video")
+  );
+  if (!remoteCamera?.isAvailable) return;
+
+  const camRenderer = new VideoStreamRenderer(remoteCamera);
+  const camView = await camRenderer.createView({
+    scalingMode: "Crop",
+    isMirrored: false,
+  });
+  session.setKey("remote.camera", camView);
+
+  const remoteScreen = await mediaAvailable(
+    participant.videoStreams.find((s) => s.mediaStreamType === "ScreenSharing")
+  );
+  if (!remoteScreen?.isAvailable)
+    throw new Error("Could not connect to screen share");
+
+  const screenRenderer = new VideoStreamRenderer(remoteScreen);
+  const screenView = await screenRenderer.createView({
+    scalingMode: "Fit",
+    isMirrored: false,
+  });
+
+  session.setKey("remote.screen", screenView);
+
+  const remoteMic = await mediaAvailable(
+    participant.videoStreams.find((s) => s.mediaStreamType === "Audio")
+  );
+  if (remoteMic) session.setKey("remote.mic", await remoteMic.getMediaStream());
 
   const {
-    local,
-    connections: { peer },
+    id,
+    respondent,
+    local: { messenger },
   } = session.get();
 
-  if (!peer) throw new Error(`Unable to connect to session`);
+  messenger?.send({ type: "ping" });
 
-  console.log("Waiting on peer to establish connections...");
-  peer.off("call");
-  peer.off("connection");
+  if (id && respondent) {
+    const body: Partial<SessionSchema> = {
+      id,
+      clips: [],
+      moments: [],
+      transcript: [],
+      respondentId: respondent.id,
+    };
 
-  await new Promise((r) => {
-    peer.on("connection", (connection) => {
-      session.setKey("connections.data", connection);
-      connection.once("open", () => {
-        console.log("Data connection established.");
-        r(true);
-      });
+    const dbSession = await api({
+      method: "POST",
+      endpoint: "sessions",
+      body: JSON.stringify(body),
     });
-  });
 
-  await new Promise((r) => {
-    peer.on("call", (connection) => {
-      if (connection.metadata.type === "camera") {
-        connection.answer(local.camera);
-        session.setKey(`connections.camera`, connection);
-        connection.once("stream", async (media) => {
-          session.setKey("remote.camera", media);
-          console.log(`Camera connection established`);
-          r(true);
-        });
-      }
-    });
-  });
+    session.setKey("id", dbSession.id);
+  }
 
-  await new Promise((r) => {
-    peer.on("call", (connection) => {
-      if (connection.metadata.type === "screen") {
-        connection.answer();
-        session.setKey(`connections.screen`, connection);
-        connection.once("stream", (media) => {
-          console.log(`Screen connection established`);
-          session.setKey("remote.screen", media);
-          r(true);
-        });
-      }
-    });
-  });
-
-  const body: Partial<SessionSchema> = {
-    clips: [],
-    moments: [],
-    transcript: [],
-    respondentId: participant.id,
-  };
-
-  const dbSession = await api({
-    method: "POST",
-    endpoint: "sessions",
-    body: JSON.stringify(body),
-  });
-
-  const { remote } = session.get();
-
-  if (remote.camera) {
+  if (remoteCamera && respondent) {
     // Update respondent image
-    const imageBlob = await captureImageFromStream(remote.camera);
+    const imageBlob = await captureImageFromStream(
+      await remoteCamera.getMediaStream()
+    );
     const imageURL = await uploadImageToStorage(
       imageBlob,
       "participant-images",
-      `image-${participant.id}.jpeg`
+      `image-${respondent.id}.jpeg`
     );
 
     await api({
       method: "PUT",
       endpoint: "respondentId",
       body: JSON.stringify({ imageURL }),
-      substitutions: { respondentId: participant.id },
+      substitutions: { respondentId: respondent.id },
     });
   }
-
-  session.setKey("id", dbSession.id);
-  session.setKey("status.connected", true);
 }
 
-export async function callHost(
-  type: "data" | "camera" | "screen",
-  media?: MediaStream
-) {
-  if (type !== "data" && !media)
-    throw new Error(`Cannot call host with ${type} media`);
+async function handleChangeFromParticipant({
+  added,
+  removed,
+}: {
+  added: RemoteParticipant[];
+  removed: RemoteParticipant[];
+}) {
+  if (removed.length) session.setKey("remote", {});
+  const host = added[0];
 
-  const { connections, remote, local } = session.get();
-  const { peer } = connections;
+  session.setKey("remote.name", host.displayName);
 
-  if (!peer?.open || !remote.id)
-    throw new Error("Unable to connect to session");
+  const remoteCamera = await mediaAvailable(
+    host.videoStreams.find((s) => s.mediaStreamType === "Video")
+  );
+  if (!remoteCamera?.isAvailable) return;
 
-  console.log(`Calling host for ${type} connection...`);
-  if (type === "data") {
-    await new Promise((r) => {
-      const call = peer.connect(remote.id as string);
-      session.setKey("connections.data", call);
-      call.once("open", () => r(true));
-    });
-    console.log(`Data connection established`);
-  } else if (type === "camera" && media) {
-    await new Promise(async (r) => {
-      const call = peer.call(remote.id as string, media, {
-        metadata: { type },
-      });
-      session.setKey(`connections.${type}`, call);
-      call.on("stream", (media) => {
-        if (local.camera) {
-          const clone = mute(local.camera);
-          combineCameraStreams(clone, media, 500).then((composite) => {
-            session.setKey("local.composite", composite);
-          });
-          console.log(`Camera connection established`);
-          r(true);
-        }
-      });
-    });
-  } else if (type === "screen" && media) {
-    await new Promise(async (r) => {
-      const call = peer.call(remote.id as string, mute(media), {
-        metadata: { type },
-      });
-      session.setKey(`connections.${type}`, call);
-      console.log(`Screen connection established`);
-      r(true);
-      call.on("stream", console.log);
-    });
-  }
+  const { local } = session.get();
+  const localCameraStream =
+    local.camera?.target.querySelector("video")?.srcObject;
+  const remoteCameraStream = await remoteCamera.getMediaStream();
 
-  if (
-    connections.camera &&
-    connections.data &&
-    connections.screen &&
-    connections.transcriber
-  ) {
-    session.setKey("status.connected", true);
-  }
+  if (!localCameraStream) throw new Error("Could not get local camera");
+
+  const combinedCameras = await combineCameraStreams(
+    localCameraStream,
+    remoteCameraStream,
+    500
+  );
+  session.setKey("local.cameras", combinedCameras);
 }
 
 export async function startRecording() {
-  const { id, local, remote, status, host, connections } = session.get();
+  const { id, local, recording } = session.get();
 
-  if (status.recording) return;
+  if (recording.isRecording) return;
 
-  if (!host) throw new Error("Only the host is able to record");
+  if (local.role !== "host") throw new Error("Only the host is able to record");
+  if (!local.call?.id) throw new Error("Call ID not found");
 
-  if (!local.camera || !remote.camera || !remote.screen)
-    throw new Error(`All media is not ready to record`);
+  const serverCallId = await (local.call as any).info.getServerCallId();
 
-  const stream = await combineMediaStreams(
-    remote.screen,
-    remote.camera,
-    local.camera
-  );
+  const resp = await api({
+    method: "POST",
+    endpoint: "recordSession",
+    body: JSON.stringify({
+      action: "start",
+      serverCallId,
+      sessionId: id,
+    }),
+  });
 
-  const recorder = new MediaRecorder(stream, RECORDING_OPTS);
-
-  connections.transcriber?.start();
-  connections.data?.send({ type: "recording-start" });
-
-  session.setKey("status.recording", true);
-  session.setKey("recordingStart", new Date());
-  session.setKey("connections.recorder", recorder);
-
-  const promise = recordSessionStream(recorder, `session-${id}`);
-  session.setKey("video", promise);
+  local.transcriber?.start();
+  session.setKey("recording.start", new Date());
+  session.setKey("recording.id", resp.recordingId);
 }
 
 export async function stopRecording() {
-  const { connections, video, remote, transcript, moments, id, local } =
-    session.get();
+  const { id, local, recording, respondent } = session.get();
 
-  if (!connections.recorder) throw new Error("Unable to locate recorder");
+  if (!recording.recorder || !recording.id)
+    throw new Error("Unable to locate recorder/call");
 
-  connections.recorder.stop();
-  connections.transcriber?.stop();
+  await api({
+    method: "POST",
+    endpoint: "recordSession",
+    body: JSON.stringify({
+      action: "stop",
+      recordingId: recording.id,
+    }),
+  });
 
-  session.setKey("status.recording", false);
-  session.setKey("recordingStart", undefined);
-  connections.data?.send({ type: "recording-stop" });
+  local.transcriber?.stop();
 
-  const url = await video;
+  session.setKey("recording.start", undefined);
+  session.setKey("recording.isRecording", false);
+  local.messenger?.send({ type: "recording-stop" });
 
-  if (!id || !remote.id || !local.name)
+  if (!id || !respondent)
     throw new Error("Unable to update the session in the database");
 
   const updateBody: SessionSchema = {
-    video: url,
-    createdBy: local.name,
-    respondentId: remote.id,
-    moments: moments.map((m) => ({
+    respondentId: respondent.id,
+    createdBy: respondent.revision.createdBy,
+    moments: local.moments?.map((m) => ({
       text: m.text,
       time: m.time.toISOString(),
     })),
-    transcript: transcript.map((t) => ({
+    transcript: local.transcript?.map((t) => ({
       text: t.text,
       time: t.time.toISOString(),
       speaker: t.speaker ?? "participant",

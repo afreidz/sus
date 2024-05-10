@@ -68,7 +68,7 @@ export const GET: APIRoute = async ({ params }) => {
 export const PUT: APIRoute = async ({ params, request }) => {
   const body = await request.json();
 
-  const { clips, moments, summary, transcript, createdBy, video } =
+  const { clips, moments, transcript, createdBy } =
     await SessionSchema.parseAsync(body);
 
   const session = await orm.session.update({
@@ -86,7 +86,6 @@ export const PUT: APIRoute = async ({ params, request }) => {
     },
     where: { id: params.id },
     data: {
-      videoURL: video,
       transcripts: transcript?.length
         ? {
             createMany: {

@@ -1,13 +1,11 @@
 <script lang="ts">
   import session, {
-    connectAsHost,
+    connect,
     stopRecording,
     startRecording,
-    initTranscriber,
-    initLocalCamera,
   } from "@/stores/session";
+
   import copy from "clipboard-copy";
-  import { mute } from "@/helpers/media";
   import type { APIResponses } from "@/helpers/api";
   import SessionTime from "@/components/sessions/Time.svelte";
   import CardHeader from "@/components/common/CardHeader.svelte";
@@ -19,40 +17,68 @@
     "https://www.figma.com/embed?embed_host=share&url=https%3A%2F%2Fwww.figma.com%2Fproto%2FAwLTIxmcDcwZVSQcs17uut%2FSafeMe%3Ftype%3Ddesign%26node-id%3D800-7332%26t%3DFms1LfDhexjAWirT-1%26scaling%3Dscale-down%26page-id%3D502%253A96%26starting-point-node-id%3D800%253A7332%26mode%3Ddesign";
   let copied = false;
   let confirmed = false;
-  let shareEnabled = false;
-  let localCamera: HTMLVideoElement;
-  let screenshare: HTMLVideoElement;
-  let remoteCamera: HTMLVideoElement;
+  let participantURL: URL;
+  let localCamera: HTMLElement;
+  let screenshare: HTMLElement;
+  let remoteCamera: HTMLElement;
   let confirmation: HTMLDialogElement;
+
+  let localCamInitialized = false;
+  let remoteCamInitialized = false;
+  let remoteScreenInitialized = false;
 
   let respondent: APIResponses["respondentId"]["GET"];
   let revision: APIResponses["revisionSurveyType"]["GET"] | null = null;
 
-  $: if (confirmed) initSession();
+  $: if (confirmed) connect(session.get().id, "host", respondent);
 
-  async function initSession() {
-    await initLocalCamera(500);
+  $: if (localCamera && $session.local.camera && !localCamInitialized) {
+    const camera = session.get().local.camera?.target;
+    if (camera) {
+      localCamera.appendChild(camera);
+      const video = camera.querySelector("video");
+      if (video) video.muted = true;
+      localCamInitialized = true;
+    }
+  }
 
-    localCamera.srcObject = $session.local.camera
-      ? mute($session.local.camera)
-      : null;
+  $: if (remoteCamera && $session.remote.camera && !remoteCamInitialized) {
+    const camera = session.get().remote.camera?.target;
+    if (camera) {
+      remoteCamera.appendChild(camera);
+      remoteCamInitialized = true;
+    }
+  }
 
-    await connectAsHost(respondent);
-    await initTranscriber();
+  $: if (screenshare && $session.remote.screen && !remoteScreenInitialized) {
+    const screen = session.get().remote.screen?.target;
+    if (screen) {
+      screenshare.appendChild(screen);
+      remoteScreenInitialized = true;
+    }
+  }
 
-    remoteCamera.srcObject = $session.remote.camera || null;
-    screenshare.srcObject = $session.remote.screen || null;
+  $: if ($session.id) {
+    const { id } = session.get();
+    participantURL = new URL(
+      `/sessions/participant/${respondent.id}`,
+      window.location.origin
+    );
+    participantURL.searchParams.set("session", id);
   }
 
   function pushToParticipant() {
-    $session.connections.data?.send({
+    const messenger = session.get().local.messenger;
+
+    if (!messenger) throw new Error("Unable to send message");
+
+    messenger.send({
       type: "push-url",
       url: push,
     });
   }
 
   function handleConfirm() {
-    console.log(confirmation.returnValue);
     confirmed = true;
   }
 
@@ -75,14 +101,11 @@
         <div
           class="aspect-square relative h-full flex items-center justify-center bg-neutral/5"
         >
-          <!-- svelte-ignore a11y-media-has-caption -->
-          <video
-            autoplay
-            playsinline
+          <div
             class="size-full"
             bind:this={remoteCamera}
             class:hidden={!$session.remote.camera}
-          />
+          ></div>
           {#if !$session.remote.camera}
             <strong class="uppercase text-neutral/30 font-semibold text-xs">
               Waiting for participant to connect...
@@ -97,14 +120,7 @@
         <div
           class="aspect-square relative h-full flex items-center justify-center bg-neutral/5 border-l-2 border-neutral-950"
         >
-          <!-- svelte-ignore a11y-media-has-caption -->
-          <video
-            muted
-            autoplay
-            playsinline
-            bind:this={localCamera}
-            class="size-full"
-          />
+          <div bind:this={localCamera} class="size-full"></div>
           <div
             class="badge glass badge-xs text-neutral absolute bottom-3 right-3"
           >
@@ -124,7 +140,7 @@
           ></span
         >
         <div slot="pull">
-          <SessionTime start={$session.status.recording} />
+          <SessionTime start={$session.recording.isRecording} />
         </div>
       </CardHeader>
       <div class="flex-1 flex flex-col overflow-auto">
@@ -142,38 +158,25 @@
             placeholder="Push url to participant..."
             class="input input-bordered flex-1"
           />
-          <button
-            disabled={!$session.connections.data}
-            type="submit"
-            class="btn btn-primary">Push</button
-          >
+          <button type="submit" class="btn btn-primary">Push</button>
         </form>
       </footer>
     </aside>
     <section
       class="w-full max-h-[70vh] min-h-[30vh] aspect-video relative text-center"
     >
-      {#if !shareEnabled}
-        <strong
-          class:hidden={$session.remote.screen}
-          class="relative z-0 top-1/2 m-auto w-1/4 uppercase text-neutral/30 font-semibold text-xl"
-        >
-          Waiting for participant to connect...
-        </strong>
-      {/if}
-      <!-- svelte-ignore a11y-media-has-caption -->
-      <video
-        bind:this={screenshare}
-        muted
-        autoplay
-        playsinline
-        class="size-full"
-      ></video>
+      <strong
+        class:hidden={$session.remote.screen}
+        class="relative z-0 top-1/2 m-auto w-1/4 uppercase text-neutral/30 font-semibold text-xl"
+      >
+        Waiting for participant to connect...
+      </strong>
+      <div bind:this={screenshare} class="size-full"></div>
 
       <div class="absolute bottom-0 left-4">
-        {#if $session.status.recording}
+        {#if $session.recording.isRecording}
           <button
-            on:click={stopRecording}
+            on:click|preventDefault={() => stopRecording()}
             class="btn btn-sm btn-error text-neutral flex items-center"
           >
             <iconify-icon class="text-neutral text-xl" icon="mdi:record"
@@ -182,7 +185,7 @@
           </button>
         {:else}
           <button
-            on:click={startRecording}
+            on:click|preventDefault={() => startRecording()}
             class="btn btn-sm btn-error text-neutral flex items-center"
           >
             <iconify-icon class="text-neutral text-xl" icon="mdi:record"
@@ -227,8 +230,7 @@
       <form
         action="/"
         class="flex justify-center items-center gap-4"
-        on:submit|preventDefault={() =>
-          copy(window.location.href.replace("/host", "/participant"))}
+        on:submit|preventDefault={() => copy(participantURL.href)}
       >
         <span>Participant URL</span>
         <input
@@ -236,7 +238,7 @@
           type="text"
           placeholder="Make a note.."
           class="input input-bordered flex-1"
-          value={window.location.href.replace("/host", "/participant")}
+          value={participantURL.href}
         />
         <button
           data-tip="copied!"

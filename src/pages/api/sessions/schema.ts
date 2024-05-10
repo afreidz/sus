@@ -27,20 +27,28 @@ export const TranscriptSchema = z.array(
   })
 );
 
-export const SummarySchema = z.object({
-  text: z.string(),
-  id: z.string().optional(),
-});
-
 export const SessionSchema = z.object({
   createdBy: z.string(),
   respondentId: z.string(),
   id: z.string().optional(),
   clips: ClipsSchema.optional(),
-  summary: SummarySchema.optional(),
   moments: MomentsSchema.optional(),
-  video: z.string().url().optional(),
   transcript: TranscriptSchema.optional(),
+  serverRecordingId: z.string().optional(),
 });
+
+export const RecordActionSchema = z
+  .object({
+    sessionId: z.string(),
+    serverCallId: z.string(),
+    action: z.literal("start"),
+  })
+  .or(
+    z.object({
+      recordingId: z.string(),
+      sessionId: z.string().optional(),
+      action: z.enum(["stop", "status"]),
+    })
+  );
 
 export type SessionSchema = z.infer<typeof SessionSchema>;

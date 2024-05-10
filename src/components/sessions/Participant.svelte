@@ -1,14 +1,8 @@
 <script lang="ts">
-  import session, {
-    callHost,
-    initLocalCamera,
-    initScreenShare,
-    initTranscriber,
-    type DataMessage,
-    connectAsParticipant,
-  } from "@/stores/session";
-  import { mute } from "@/helpers/media";
+  import { onMount } from "svelte";
   import { type APIResponses } from "@/helpers/api";
+  import session, { connect } from "@/stores/session";
+  import { type DataMessage } from "@/helpers/messenger";
   import SessionTime from "@/components/sessions/Time.svelte";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
 
@@ -18,58 +12,47 @@
   let screen: HTMLIFrameElement;
   let cameras: HTMLVideoElement;
   let cameraToolTipDismissed = false;
+  let sessionId: string | null = null;
   let confirmation: HTMLDialogElement;
   let respondent: APIResponses["respondentId"]["GET"];
 
-  $: if (confirmed) initSession();
+  onMount(async () => {
+    const params = new URLSearchParams(window.location.search);
+    sessionId = params.get("session");
+  });
 
-  async function initSession() {
-    const screenShare = await initScreenShare();
-    const cameraStream = await initLocalCamera(500);
+  $: if (confirmed && sessionId)
+    connect(sessionId, "participant", respondent).then(initMessenger);
 
-    await connectAsParticipant(respondent);
-    await callHost("data");
-
-    if (cameraStream) await callHost("camera", cameraStream);
-    if (screenShare) await callHost("screen", screenShare);
-
-    await initTranscriber();
-
-    if (cameraStream && cameras) {
-      cameras.srcObject = mute(cameraStream);
-      session.setKey("local.camera", cameraStream);
-    }
-
-    if ($session.connections.data) {
-      $session.connections.data.on("data", (m) =>
-        handleMessage(m as DataMessage)
-      );
-    }
-  }
-
-  $: if ($session.local.composite && cameras && !camsEnabled) {
-    cameras.srcObject = $session.local.composite;
+  $: if ($session.local.cameras && cameras && !camsEnabled) {
+    const src = session.get().local.cameras;
+    if (src) cameras.srcObject = src;
     camsEnabled = true;
   }
 
   function handleConfirm() {
-    console.log(confirmation.returnValue);
     confirmed = true;
   }
 
-  function handleMessage(msg: DataMessage) {
-    if (msg.type === "push-url" && screen && msg.url) {
-      console.log(`Updating stage url to ${msg.url}`);
-      url = msg.url;
-    } else if (msg.type === "recording-start") {
-      console.log("Recording started");
-      $session.connections.transcriber?.start();
-      session.setKey("status.recording", true);
-    } else if (msg.type === "recording-stop") {
-      console.log("Recording stopped");
-      $session.connections.transcriber?.stop();
-      session.setKey("status.recording", false);
-    }
+  function initMessenger() {
+    const {
+      local: { messenger },
+    } = session.get();
+
+    messenger?.on("message", (msg: DataMessage) => {
+      if (msg.type === "push-url" && screen && msg.url) {
+        console.log(`Updating stage url to ${msg.url}`);
+        url = msg.url;
+      } else if (msg.type === "recording-start") {
+        console.log("Recording started");
+        $session.local.transcriber?.start();
+        session.setKey("recording.isRecording", true);
+      } else if (msg.type === "recording-stop") {
+        console.log("Recording stopped");
+        $session.local.transcriber?.stop();
+        session.setKey("recording.isRecording", false);
+      }
+    });
   }
 
   export { respondent };
@@ -83,7 +66,7 @@
       <div class="input">
         {respondent.revision.system.title}: {respondent.revision.title}
       </div>
-      <SessionTime bind:start={$session.status.recording} />
+      <SessionTime bind:start={$session.recording.isRecording} />
     </div>
     <div class="flex-1 bg-neutral flex flex-col items-center justify-center">
       {#if !url}
@@ -117,7 +100,7 @@
   </div>
 
   <aside
-    class:hidden={!$session.local.composite}
+    class:hidden={!$session.local.cameras}
     class="absolute right-4 top-4 height-50 rounded-box overflow-clip shadow"
   >
     <!-- svelte-ignore a11y-media-has-caption -->

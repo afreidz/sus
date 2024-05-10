@@ -1,9 +1,9 @@
 <script lang="ts">
   import session from "@/stores/session";
   import type { APIResponses } from "@/helpers/api";
-  import Transcription from "./Transcription.svelte";
   import TaskList from "@/components/sessions/TaskList.svelte";
   import KeyMoments from "@/components/sessions/Moments.svelte";
+  import Transcription from "@/components/sessions/Transcription.svelte";
 
   let respondent: APIResponses["respondentBySurveyId"]["GET"];
   let active: "transcription" | "checklist" | "moments" = "checklist";
@@ -13,7 +13,7 @@
     | undefined = undefined;
 
   function updateMoments(e: CustomEvent) {
-    session.setKey("moments", e.detail);
+    session.setKey("local.moments", e.detail);
   }
 
   export { survey, respondent };
@@ -64,8 +64,8 @@
   <Transcription
     live={true}
     class="flex-1"
-    transcript={$session.transcript}
-    enabled={$session.status.recording}
+    transcript={$session.local.transcript}
+    enabled={$session.recording.isRecording}
   />
 </div>
 <div
@@ -73,7 +73,7 @@
   class="bg-sus-surface-10 flex-1 p-4 flex flex-col"
   class:hidden={active !== "checklist"}
 >
-  <TaskList {survey} {respondent} enabled={$session.status.recording} />
+  <TaskList {survey} {respondent} enabled={$session.recording.isRecording} />
 </div>
 <div
   id="moments"
@@ -83,8 +83,8 @@
   <KeyMoments
     class="flex-1"
     on:update={updateMoments}
-    start={$session.recordingStart}
-    moments={$session.moments ?? []}
-    enabled={$session.status.recording}
+    start={$session.recording.start}
+    moments={$session.local.moments ?? []}
+    enabled={$session.recording.isRecording}
   />
 </div>
