@@ -23,7 +23,6 @@ import {
 import { v4 as uuid } from "uuid";
 import { deepMap } from "nanostores";
 import api, { type APIResponses } from "@/helpers/api";
-import { type SessionSchema } from "@/pages/api/sessions/schema";
 import Messenger, { type DataMessage } from "@/helpers/messenger";
 import { SessionTranscriber, type Transcription } from "@/helpers/transcribe";
 import { AzureCommunicationTokenCredential } from "@azure/communication-common";
@@ -344,7 +343,7 @@ async function handleChangeFromHost({
   messenger?.send({ type: "ping" });
 
   if (id && respondent) {
-    const body: Partial<SessionSchema> = {
+    const body = {
       id,
       clips: [],
       moments: [],
@@ -462,7 +461,7 @@ export async function stopRecording() {
   if (!id || !respondent)
     throw new Error("Unable to update the session in the database");
 
-  const updateBody: SessionSchema = {
+  const updateBody = {
     respondentId: respondent.id,
     createdBy: respondent.revision.createdBy,
     moments: local.moments?.map((m) => ({
