@@ -3,6 +3,7 @@ import type { me as Me } from "@/api/me.json";
 import type { surveys } from "@/api/surveys/all.json";
 import type { clients } from "@/api/clients/all.json";
 import type { systems } from "@/api/systems/all.json";
+import type { coms } from "@/pages/api/token/coms.json";
 import type { blob } from "@/pages/api/token/blob.json";
 import type { clientId } from "@/api/clients/[id].json";
 import type { surveyId } from "@/api/surveys/[id].json";
@@ -14,6 +15,7 @@ import type { transcription } from "@/pages/api/transcribe";
 import type { revisionId } from "@/api/revisions/[id].json";
 import type { sessions } from "@/pages/api/sessions/all.json";
 import type { respondents } from "@/api/respondents/all.json";
+import type { Recordings } from "@/pages/api/sessions/record";
 import type { sessionId } from "@/pages/api/sessions/[id].json";
 import type { response } from "@/api/public/responses/all.json";
 import type { surveyType } from "@/api/surveys/type/[type].json";
@@ -30,6 +32,7 @@ import type { respondentSurveyResponses } from "@/pages/api/public/responses/sur
 export type APIResponses = {
   me: Me;
   types: types;
+  comsToken: coms;
   blobToken: blob;
   typesType: type;
   surveys: surveys;
@@ -45,6 +48,7 @@ export type APIResponses = {
   surveyType: surveyType;
   revisionId: revisionId;
   respondents: respondents;
+  recordSession: Recordings;
   respondentId: respondentId;
   transcription: transcription;
   summarizeSession: SummarizeSession;
@@ -119,10 +123,12 @@ export const endpoints = {
   systems: "/api/systems/all.json",
   surveys: "/api/surveys/all.json",
   transcription: "/api/transcribe",
+  comsToken: "/api/token/coms.json",
   blobToken: "/api/token/blob.json",
   sessions: "/api/sessions/all.json",
   types: "/api/public/types/all.json",
   revisions: "/api/revisions/all.json",
+  recordSession: "/api/sessions/record",
   respondents: "/api/respondents/all.json",
   clientId: "/api/clients/{clientId}.json",
   systemId: "/api/systems/{systemId}.json",

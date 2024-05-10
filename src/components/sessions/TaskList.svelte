@@ -1,11 +1,10 @@
 <script lang="ts">
-  import { orderResponseByNumericalValue } from "@/helpers/order";
-
   import api from "@/helpers/api";
   import { onMount } from "svelte";
   import copy from "clipboard-copy";
   import confetti from "@/helpers/confetti";
   import type { APIResponses } from "@/helpers/api";
+  import { orderResponseByNumericalValue } from "@/helpers/order";
 
   const responses: { [key: string]: Response } = {};
   type Response = { response: string; notes?: string; section: string | null };

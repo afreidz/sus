@@ -2,7 +2,7 @@
   import api, { type APIResponses } from "@/helpers/api";
   import Moments from "@/components/sessions/Moments.svelte";
   import Transcription from "@/components/sessions/Transcription.svelte";
-  import type { Transcription as TranscriptionType } from "@/stores/session";
+  import type { Transcription as TranscriptionType } from "@/helpers/transcribe";
 
   let transcripts: TranscriptionType[] = [];
   let session: APIResponses["sessionId"]["GET"];

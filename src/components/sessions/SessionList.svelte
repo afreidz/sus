@@ -173,7 +173,7 @@
                         {s.clips.length} clips
                       </div>
                       <div class="badge badge-accent text-xs">
-                        {s.summary ? "" : "not"} summarized
+                        TODO: summarized
                       </div>
                       {#if s.videoURL}
                         <div class="badge badge-ghost text-xs">

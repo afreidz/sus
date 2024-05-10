@@ -5,8 +5,6 @@ import HostComponent from "@/components/sessions/Host.svelte";
 
 const { respondent: id } = Astro.params;
 
-console.log("ANDY ID", id);
-
 const respondent = await api({
   method: "GET",
   base: Astro.url.origin,

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { orderByDate } from "@/helpers/order";
-  import { type Transcription } from "@/stores/session";
+  import { type Transcription } from "@/helpers/transcribe";
 
   let live = false;
   let enabled = true;
