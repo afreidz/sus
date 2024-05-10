@@ -4,12 +4,12 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
+    "preview": "astro preview",
     "studio": "npm run studio -w prisma",
     "build": "astro check && astro build",
     "migrate": "npm run migrate -w prisma",
     "generate": "npm run generate -w prisma",
     "migrate-dev": "npm run migrate-dev -w prisma",
-    "session-server": "peerjs --port 1999 --key --path /sessions",
     "postinstall": "npm run generate -w prisma && npm run migrate -w prisma",
     "astro": "astro"
   },
@@ -33,8 +33,11 @@
     "auth-astro": "^4.1.1",
     "canvas-confetti": "^1.9.2",
     "clipboard-copy": "^4.0.1",
+    "daisyui": "^4.7.2",
+    "iconify-icon": "^2.0.0",
     "jszip": "^3.10.1",
     "microsoft-cognitiveservices-speech-sdk": "^1.36.0",
+    "nanostores": "^0.10.3",
     "nanoid": "^5.0.7",
     "openai": "^4.38.3",
     "prettier": "^3.2.5",
@@ -48,11 +51,7 @@
     "@tailwindcss/typography": "^0.5.10",
     "@types/canvas-confetti": "^1.6.4",
     "@types/uuid": "^9.0.8",
-    "concurrently": "^8.2.2",
-    "daisyui": "^4.7.2",
-    "iconify-icon": "^2.0.0",
-    "nanostores": "^0.10.3",
-    "peerjs": "^1.5.2"
+    "concurrently": "^8.2.2"
   },
   "volta": {
     "node": "20.12.2"

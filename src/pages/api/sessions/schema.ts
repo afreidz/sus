@@ -47,7 +47,14 @@ export const RecordActionSchema = z
     z.object({
       recordingId: z.string(),
       sessionId: z.string().optional(),
-      action: z.enum(["stop", "status"]),
+      action: z.literal("stop"),
+    })
+  )
+  .or(
+    z.object({
+      recordingId: z.string(),
+      sessionId: z.string().optional(),
+      action: z.literal("status"),
     })
   );
 
