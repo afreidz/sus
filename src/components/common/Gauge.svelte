@@ -9,10 +9,11 @@
   let thickness = 800;
   let hideLabels = false;
   let fullscreen = false;
-  let gauge: HTMLDivElement;
   let hideFullscreen = false;
   let fullscreenContent: HTMLDivElement;
   let fullscreenDialog: HTMLDialogElement;
+  let svg: SVGSVGElement | undefined = undefined;
+  let gauge: HTMLElement | undefined = undefined;
   let differential: number | undefined = undefined;
   let differentialSubtitle: string | undefined = undefined;
 
@@ -50,10 +51,12 @@
   }
 
   export {
+    svg,
     vbh,
     vbw,
     gap,
     keys,
+    gauge,
     radius,
     scores,
     thickness,
@@ -84,7 +87,11 @@
       {/each}
     </ul>
   {/if}
-  <svg class="w-full !rotate-180" viewBox="0 0 {vbw} {vbh}">
+  <svg
+    bind:this={svg}
+    style="width: 100%; transform: rotate(180deg);"
+    viewBox="0 0 {vbw} {vbh}"
+  >
     {#each scores as scoreset, i}
       {#if scoreset}
         {@const sorted = [...scoreset]
@@ -99,15 +106,30 @@
             fill="none"
             stroke-dasharray={`${circumference(radius - (thickness + gap) * i) / 2}, ${circumference(radius - (thickness + gap) * i)}`}
             class="stroke-sus-primary-20"
+            style="stroke: #d0effb;"
             stroke-width={thickness}
           ></circle>
           {#each sorted as score, z}
             {#if score !== undefined}
+              {@const strokeHex = ["#95C4CB", "#67ACB6", "#0A506A"]}
+              {@const positive = "#43C478"}
+              {@const negative = "#f04259"}
               <circle
                 r={radius - (thickness + gap) * i}
                 cx="50%"
                 cy="0%"
                 fill="none"
+                style={`stroke: ${
+                  z === 0 &&
+                  scoreset[1] !== undefined &&
+                  scoreset[1] > scoreset[0]
+                    ? positive
+                    : z === 0 &&
+                        scoreset[1] !== undefined &&
+                        scoreset[1] < scoreset[0]
+                      ? negative
+                      : strokeHex[i]
+                }`}
                 class={strokes[i]}
                 class:!stroke-sus-positive-40={z === 0 &&
                   scoreset[1] !== undefined &&

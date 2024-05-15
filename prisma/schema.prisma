@@ -45,6 +45,7 @@ model Revision {
   results     SummarizedChecklistResult[]
   suggestions SummarizedSuggestion[]
   summary     Summary?
+  summarized  Boolean                     @default(false)
 
   @@unique([systemId, title])
 }
@@ -182,6 +183,7 @@ model Session {
   results           SummarizedChecklistResult[]
   suggestions       SummarizedSuggestion[]
   serverRecordingId String?                     @unique
+  summarized        Boolean                     @default(false)
 }
 
 model KeyMoment {

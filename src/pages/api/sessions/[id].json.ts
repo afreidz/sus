@@ -7,10 +7,18 @@ export type sessionId = {
     include: {
       clips: true;
       moments: true;
-      summary: true;
+      results: true;
+      feedback: true;
+      suggestions: true;
       transcripts: true;
       respondent: {
         include: {
+          responses: {
+            include: {
+              question: true;
+              curratedResponse: true;
+            };
+          };
           revision: {
             include: {
               system: { include: { client: true } };
@@ -24,10 +32,18 @@ export type sessionId = {
     include: {
       clips: true;
       moments: true;
-      summary: true;
+      results: true;
+      feedback: true;
+      suggestions: true;
       transcripts: true;
       respondent: {
         include: {
+          responses: {
+            include: {
+              question: true;
+              curratedResponse: true;
+            };
+          };
           revision: {
             include: {
               system: { include: { client: true } };
@@ -41,14 +57,27 @@ export type sessionId = {
 };
 
 export const GET: APIRoute = async ({ params }) => {
+  const checklistType = await orm.scoreType.findFirst({
+    where: { type: "tasks" },
+  });
+
+  if (!checklistType) throw new Error("unable to get responses for session");
+
   const session = await orm.session.findFirst({
     where: { id: params.id },
     include: {
       clips: true,
       moments: true,
+      results: true,
+      feedback: true,
+      suggestions: true,
       transcripts: true,
       respondent: {
         include: {
+          responses: {
+            where: { survey: { scoreTypeId: checklistType.id } },
+            include: { question: true, curratedResponse: true },
+          },
           revision: {
             include: { system: { include: { client: true } } },
           },

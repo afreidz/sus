@@ -237,3 +237,18 @@ export function convertImageToResizedBlob(file: File): Promise<Blob> {
     img.onerror = () => reject(new Error("Image loading failed"));
   });
 }
+
+export function generateBase64FromSVG(svgElement: SVGSVGElement): {
+  aspect: number;
+  data: string;
+} {
+  const box = svgElement.getBoundingClientRect();
+  const serializer = new XMLSerializer();
+  const svgString = serializer.serializeToString(svgElement);
+  const base64 = window.btoa(unescape(encodeURIComponent(svgString)));
+
+  return {
+    aspect: box.height / box.width,
+    data: `data:image/svg+xml;base64,${base64}`,
+  };
+}

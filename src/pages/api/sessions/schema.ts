@@ -58,4 +58,13 @@ export const RecordActionSchema = z
     })
   );
 
+export const SummarySchema = z.object({
+  name: z.string().optional(),
+  title: z.string().optional(),
+  results: z.array(z.string()),
+  feedback: z.array(z.string()),
+  profile: z.string().optional(),
+  suggestions: z.array(z.string()),
+});
+
 export type SessionSchema = z.infer<typeof SessionSchema>;
