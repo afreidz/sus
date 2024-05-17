@@ -9,7 +9,7 @@
   import type { APIResponses } from "@/helpers/api";
   import Gauge from "@/components/common/Gauge.svelte";
   import CardHeader from "@/components/common/CardHeader.svelte";
-  import { susType, taskType, refreshTypes } from "@/stores/types";
+  import { susType, checklistType, refreshTypes } from "@/stores/types";
   import { calculateSUSScoreFromRespondent } from "@/helpers/score";
 
   let loading = false;
@@ -30,12 +30,12 @@
   export { revisionId as revision };
 </script>
 
-{#if revision && $susType}
+{#if revision && $susType && $checklistType?.id}
   {@const susSurvey = revision.surveys.find(
     (survey) => survey.scoreTypeId === $susType?.id
   )}
-  {@const taskList = revision.surveys.find(
-    (survey) => survey.scoreTypeId === $taskType?.id
+  {@const checklist = revision.surveys.find(
+    (survey) => survey.scoreTypeId === $checklistType?.id
   )}
   <div
     class:skeleton={loading}
@@ -46,11 +46,14 @@
       <span slot="sub">
         An individualized SUS score for each respondent along with their
         responses to the survey. It also contains the results of the user test
-        task list when applicable.
+        checklist when applicable.
       </span>
     </CardHeader>
     {#each revision.respondents.filter((r) => r.complete) as respondent, i}
-      {@const score = calculateSUSScoreFromRespondent(respondent)}
+      {@const survey = revision.surveys.find(
+        (s) => s.scoreTypeId === $susType.id
+      )}
+      {@const score = calculateSUSScoreFromRespondent(respondent, survey?.id)}
       <div class="collapse collapse-arrow bg-neutral-50 mb-1">
         <input type="checkbox" checked={i === 0} />
         <div class="collapse-title text-xl font-medium">
@@ -107,10 +110,10 @@
                 </div>
               </div>
             </div>
-            {#if taskList}
+            {#if checklist}
               {@const responses = orderResponseByNumericalValue(
                 removeDuplicatesById(
-                  taskList.questions.map((q) => q.curratedResponses).flat(2)
+                  checklist.questions.map((q) => q.curratedResponses).flat(2)
                 )
               )}
               <input
@@ -134,7 +137,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    {#each taskList.questions as question}
+                    {#each checklist.questions as question}
                       {@const answer = respondent.responses.find(
                         (r) => r.questionId === question.id
                       )}

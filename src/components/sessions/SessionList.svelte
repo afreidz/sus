@@ -172,9 +172,9 @@
                       <div class="badge badge-secondary text-xs">
                         {s.clips.length} clips
                       </div>
-                      <div class="badge badge-accent text-xs">
-                        TODO: summarized
-                      </div>
+                      {#if s.summarized}
+                        <div class="badge badge-accent text-xs">summarized</div>
+                      {/if}
                       {#if s.videoURL}
                         <div class="badge badge-ghost text-xs">
                           <iconify-icon icon="carbon:video-filled"

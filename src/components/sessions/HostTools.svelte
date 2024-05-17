@@ -1,8 +1,8 @@
 <script lang="ts">
   import session from "@/stores/session";
   import type { APIResponses } from "@/helpers/api";
-  import TaskList from "@/components/sessions/TaskList.svelte";
   import KeyMoments from "@/components/sessions/Moments.svelte";
+  import Checklist from "@/components/sessions/Checklist.svelte";
   import Transcription from "@/components/sessions/Transcription.svelte";
 
   let respondent: APIResponses["respondentBySurveyId"]["GET"];
@@ -73,7 +73,7 @@
   class="bg-sus-surface-10 flex-1 p-4 flex flex-col"
   class:hidden={active !== "checklist"}
 >
-  <TaskList {survey} {respondent} enabled={$session.recording.isRecording} />
+  <Checklist {survey} {respondent} enabled={$session.recording.isRecording} />
 </div>
 <div
   id="moments"

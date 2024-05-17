@@ -8,6 +8,13 @@ export const RevisionCreateSchema = z.object({
   title: z.string().min(3).max(100).regex(safeTextRegEx),
 }) satisfies z.Schema<ORM.RevisionUncheckedCreateInput>;
 
+export const RevisionSummarySchema = z.object({
+  summary: z.string(),
+  results: z.array(z.string()),
+  feedback: z.array(z.string()),
+  suggestions: z.array(z.string()),
+});
+
 export default new Client().$extends({
   query: {
     revision: {

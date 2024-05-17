@@ -1,7 +1,7 @@
 ---
 import api from "@/helpers/api";
 import PrivateLayout from "@/layouts/private.astro";
-import Tasklist from "@/components/private/Tasklist.svelte";
+import Checklist from "@/components/checklist/View.svelte";
 
 const { revision: rid, respondent: respondentId } = Astro.params;
 
@@ -42,7 +42,7 @@ const respondent = respondentId
 {
   revision?.surveys[0] && respondent && (
     <PrivateLayout class="w-full flex-1 flex justify-center p-8">
-      <Tasklist client:load survey={revision.surveys[0]} {respondent} />
+      <Checklist client:load survey={revision.surveys[0]} {respondent} />
     </PrivateLayout>
   )
 }

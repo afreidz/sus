@@ -3,13 +3,13 @@
   import { onMount } from "svelte";
   import confetti from "@/helpers/confetti";
   import type { APIResponses } from "@/helpers/api";
-  import { groupTaskListSection } from "@/helpers/order";
+  import { groupChecklistSection } from "@/helpers/order";
   import CardHeader from "@/components/common/CardHeader.svelte";
   import { orderResponseByNumericalValue } from "@/helpers/order";
 
   let loading = false;
   let complete = false;
-  let sections: ReturnType<typeof groupTaskListSection>;
+  let sections: ReturnType<typeof groupChecklistSection>;
   let respondent: APIResponses["respondentBySurveyId"]["GET"];
   let survey: APIResponses["revisionId"]["GET"]["surveys"][number];
 
@@ -20,7 +20,7 @@
     if (!survey.questions) return;
 
     loading = true;
-    sections = groupTaskListSection(survey.questions);
+    sections = groupChecklistSection(survey.questions);
 
     const existingResponses = await api({
       method: "GET",
@@ -41,7 +41,7 @@
     loading = false;
   });
 
-  async function saveTasklist() {
+  async function saveChecklist() {
     loading = true;
 
     await Promise.all(
@@ -70,7 +70,7 @@
 </script>
 
 <form
-  on:submit|preventDefault={saveTasklist}
+  on:submit|preventDefault={saveChecklist}
   class:skeleton={!sections?.length || loading}
   class="flex-1 card bg-neutral rounded-lg shadow-sm px-4 w-full max-w-screen-lg overflow-clip"
 >
@@ -108,7 +108,7 @@
                 <div class="flex justify-center bg-sus-surface-20">
                   {#if section.imageURL}
                     <img
-                      alt="section tasklist screenshot"
+                      alt="section checklist screenshot"
                       src={section.imageURL}
                     />
                   {/if}

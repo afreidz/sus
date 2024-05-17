@@ -21,6 +21,7 @@ export type sessionId = {
           };
           revision: {
             include: {
+              surveys: true;
               system: { include: { client: true } };
             };
           };
@@ -46,6 +47,7 @@ export type sessionId = {
           };
           revision: {
             include: {
+              surveys: true;
               system: { include: { client: true } };
             };
           };
@@ -75,11 +77,10 @@ export const GET: APIRoute = async ({ params }) => {
       respondent: {
         include: {
           responses: {
-            where: { survey: { scoreTypeId: checklistType.id } },
             include: { question: true, curratedResponse: true },
           },
           revision: {
-            include: { system: { include: { client: true } } },
+            include: { surveys: true, system: { include: { client: true } } },
           },
         },
       },
@@ -108,7 +109,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
       respondent: {
         include: {
           revision: {
-            include: { system: { include: { client: true } } },
+            include: { surveys: true, system: { include: { client: true } } },
           },
         },
       },

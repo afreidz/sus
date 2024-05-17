@@ -1,24 +1,21 @@
 <script lang="ts">
-  import type {
-    AudioDeviceInfo,
-    VideoDeviceInfo,
-  } from "@azure/communication-calling";
+  import session, {
+    init,
+    connect,
+    type Session,
+    startSession,
+    captureParticipantImage,
+  } from "@/stores/session";
 
   import { onMount } from "svelte";
   import copy from "clipboard-copy";
   import { createEventDispatcher } from "svelte";
   import type { APIResponses } from "@/helpers/api";
-  import session, {
-    init,
-    type Session,
-    connect,
-    startSession,
-  } from "@/stores/session";
 
   const dispatch = createEventDispatcher();
 
   let copied = false;
-  let loading = true;
+  let loading = false;
   let connecting = false;
   let localCamera: HTMLElement;
   let remoteCamera: HTMLElement;
@@ -48,7 +45,9 @@
   }
 
   onMount(async () => {
-    await init(role, respondent);
+    if ($session.ended) return;
+    loading = true;
+    if (!$session.isConnected) await init(role, respondent);
     if (role === "host") await connectToCall();
     loading = false;
   });
@@ -61,6 +60,7 @@
 
   async function connectToCall() {
     if (!sessionId) throw new Error("Unable to find session id");
+
     connecting = true;
     await connect(sessionId);
     connecting = false;
@@ -72,10 +72,20 @@
 
 <dialog open class="modal text-neutral-950">
   <div class="modal-box w-3/4 max-w-6xl">
-    <h3 class="font-bold text-lg">Let's connect first...</h3>
+    <h3 class="font-bold text-lg">
+      {$session.ended
+        ? "Thanks for your participation!"
+        : "Let's connect first..."}"
+    </h3>
     <div class="max-w-none flex flex-col items-center justify-center">
       {#if loading}
         <span class="loading loading-spinner loading-lg my-52"></span>
+      {:else if $session.ended}
+        <strong
+          class="uppercase text-neutral-950/30 font-semibold text-xl my-40"
+        >
+          You may now close this window/tab.
+        </strong>
       {:else}
         <header
           class="w-full max-h-max flex items-center justify-center gap-4 h-[19rem] my-8"
@@ -119,9 +129,11 @@
           </div>
           <div class="flex flex-col gap-4 justify-center h-full flex-1">
             {#if role === "host"}
+              {@const participant = remoteCamera?.querySelector("video")}
               <button
                 on:click={async () => {
                   loading = true;
+                  if (participant) await captureParticipantImage(participant);
                   await startSession();
                   dispatch("close");
                   loading = false;

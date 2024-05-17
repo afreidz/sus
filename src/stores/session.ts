@@ -4,7 +4,7 @@ import {
   initLocalCamera,
   combineCameraStreams,
   uploadImageToStorage,
-  captureImageFromStream,
+  captureImageFromVideo,
 } from "@/helpers/media";
 
 import {
@@ -14,12 +14,12 @@ import {
   type CallAgent,
   LocalAudioStream,
   LocalVideoStream,
+  type DeviceManager,
   VideoStreamRenderer,
   type RemoteVideoStream,
   type RemoteParticipant,
   type RecordingCallFeature,
   type VideoStreamRendererView,
-  type DeviceManager,
 } from "@azure/communication-calling";
 
 import { v4 as uuid } from "uuid";
@@ -37,6 +37,7 @@ export type Moment = Pick<
 
 export type Session = {
   id: string;
+  ended: boolean;
   agent?: CallAgent;
   isConnected: boolean;
   respondent?: APIResponses["respondentId"]["GET"];
@@ -80,6 +81,7 @@ const session = deepMap<Session>({
   id: uuid(),
   local: {},
   remote: {},
+  ended: false,
   recording: {},
   isConnected: false,
 });
@@ -430,13 +432,17 @@ export async function startSession() {
     session.setKey("id", dbSession.id);
   }
 
-  const remoteCameraStream =
-    remote.camera?.target.querySelector("video")?.srcObject;
+  await startRecording();
+  local.messenger?.send({ type: "session-start" });
+}
 
-  if (remoteCameraStream && respondent) {
-    const imageBlob = await captureImageFromStream(remoteCameraStream);
+export async function captureParticipantImage(video: HTMLVideoElement) {
+  const { respondent } = session.get();
+
+  if (respondent) {
+    const blob = await captureImageFromVideo(video);
     const imageURL = await uploadImageToStorage(
-      imageBlob,
+      blob,
       "participant-images",
       `image-${respondent.id}.jpeg`
     );
@@ -447,9 +453,6 @@ export async function startSession() {
       substitutions: { respondentId: respondent.id },
     });
   }
-
-  await startRecording();
-  local.messenger?.send({ type: "session-start" });
 }
 
 export async function startRecording() {
@@ -479,6 +482,8 @@ export async function startRecording() {
 
 export async function stopRecording() {
   const { id, local, recording, respondent } = session.get();
+
+  if (local.role !== "host") return;
 
   if (!recording.recorder || !recording.id)
     throw new Error("Unable to locate recorder/call");
@@ -521,6 +526,20 @@ export async function stopRecording() {
     body: JSON.stringify(updateBody),
     substitutions: { sessionId: id },
   });
+}
+
+export async function disconnect() {
+  const { agent } = session.get();
+
+  if (!agent) throw new Error("Unable to find agent to end call");
+
+  await agent.dispose();
+  session.setKey("local", {});
+  session.setKey("remote", {});
+  session.setKey("ended", true);
+  session.setKey("recording", {});
+  session.setKey("agent", undefined);
+  session.setKey("isConnected", false);
 }
 
 export default session;

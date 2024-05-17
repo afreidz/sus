@@ -11,22 +11,33 @@ type SurveyRespondents =
   | APIResponses["revisionId"]["GET"]["respondents"]
   | APIResponses["systemId"]["GET"]["revisions"][number]["respondents"];
 
-export function calculateAverageSUSScore(respondents: SurveyRespondents) {
-  const scores = calculateSUSScoreFromRespondents(respondents);
+export function calculateAverageSUSScore(
+  respondents: SurveyRespondents,
+  surveyId?: string
+) {
+  if (!surveyId) throw new Error("survey id required");
+  const scores = calculateSUSScoreFromRespondents(respondents, surveyId);
   return scores.reduce((a, b) => a + b, 0) / scores.length || 0;
 }
 
 export function calculateSUSScoreFromRespondents(
-  respondents: SurveyRespondents
+  respondents: SurveyRespondents,
+  surveyId?: string
 ) {
-  const scores = respondents.map((r) => calculateSUSScoreFromRespondent(r));
+  if (!surveyId) throw new Error("survey id required");
+  const scores = respondents.map((r) =>
+    calculateSUSScoreFromRespondent(r, surveyId)
+  );
   return scores;
 }
 
 export function calculateSUSScoreFromRespondent(
-  respondent: SurveyRespondents[number]
+  respondent: SurveyRespondents[number],
+  surveyId?: string
 ) {
-  const score = respondent.responses.reduce((score, response) => {
+  if (!surveyId) throw new Error("survey id required");
+  const responses = respondent.responses.filter((r) => r.surveyId === surveyId);
+  const score = responses.reduce((score, response) => {
     if (!response.curratedResponse?.numericalValue) return score;
     return (score += response.question.positive
       ? response.curratedResponse.numericalValue - 1

@@ -17,6 +17,8 @@
     bubbles.at(-1)?.scrollIntoView({ behavior: "smooth" });
   }
 
+  $: console.log(transcript);
+
   export { transcript, enabled, className as class, live };
 </script>
 

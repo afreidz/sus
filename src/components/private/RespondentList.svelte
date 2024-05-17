@@ -9,7 +9,7 @@
   import { MessageHandler } from "@/stores/messages";
 
   let loading = false;
-  let hasTasklist = false;
+  let hasChecklist = false;
   let deleteRespondentDialog: HTMLDialogElement;
   let respondents: APIResponses["revisionId"]["GET"]["respondents"] = [];
   let respondentToDelete: (typeof respondents)[number] | undefined = undefined;
@@ -66,7 +66,7 @@
     });
   }
 
-  export { respondents, hasTasklist };
+  export { respondents, hasChecklist };
 </script>
 
 <h4 class="label sticky top-0 bg-neutral left-0 right-0 z-10">
@@ -115,12 +115,12 @@
               >Go to SUS survey</a
             >
           </li>
-          {#if hasTasklist}
+          {#if hasChecklist}
             <li>
               <a
                 target="_blank"
-                href={`/surveys/task/${respondent.revisionId}/${respondent.id}`}
-                >Go to Tasklist</a
+                href={`/surveys/checklist/${respondent.revisionId}/${respondent.id}`}
+                >Go to Checklist</a
               >
             </li>
           {/if}

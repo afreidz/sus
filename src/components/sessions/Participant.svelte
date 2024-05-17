@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import session from "@/stores/session";
   import { type APIResponses } from "@/helpers/api";
+  import session, { disconnect } from "@/stores/session";
   import Lobby from "@/components/sessions/Lobby.svelte";
   import { type DataMessage } from "@/helpers/messenger";
   import SessionTime from "@/components/sessions/Time.svelte";
@@ -38,9 +38,8 @@
     const {
       local: { messenger },
     } = session.get();
-    console.log(messenger);
 
-    messenger?.on("message", (msg: DataMessage) => {
+    messenger?.on("message", async (msg: DataMessage) => {
       if (msg.type === "push-url" && screen && msg.url) {
         console.log(`Updating stage url to ${msg.url}`);
         url = msg.url;
@@ -58,6 +57,7 @@
       } else if (msg.type === "session-stop") {
         console.log("Ending session");
         lobby = true;
+        await disconnect();
       }
     });
   }

@@ -2,22 +2,21 @@
   import api from "@/helpers/api";
   import { onMount } from "svelte";
   import type { APIResponses } from "@/helpers/api";
-  import SystemSidebar from "./SystemSidebar.svelte";
-  import { susType, taskType } from "@/stores/types";
   import Gauge from "@/components/common/Gauge.svelte";
+  import { susType, checklistType } from "@/stores/types";
   import Invite from "@/components/private/Invite.svelte";
   import { activeRevisionsBySystem } from "@/stores/actives";
   import { calculateAverageSUSScore } from "@/helpers/score";
   import CardHeader from "@/components/common/CardHeader.svelte";
   import ResponseList from "@/components/private/ResponseList.svelte";
+  import SystemSidebar from "@/components/private/SystemSidebar.svelte";
   import SurveyQuestionTable from "@/components/private/SurveyQuestionTable.svelte";
 
   let loading: boolean = false;
   let active: string | undefined;
-  let hasTasklist: boolean = false;
+  let hasChecklist: boolean = false;
   let system: APIResponses["systemId"]["GET"];
   let sus: APIResponses["types"]["GET"][number];
-  let task: APIResponses["types"]["GET"][number];
 
   $: if (active) {
     const revision = system.revisions.find((r) => r.id === active);
@@ -28,16 +27,14 @@
     susType.set(sus);
   }
 
-  $: if (task) {
-    taskType.set(task);
-  }
-
-  $: if (task && $activeRevisionsBySystem[system.id]) {
+  $: if ($checklistType && $activeRevisionsBySystem[system.id]) {
     const revision = system.revisions.find(
       (r) => r.id === $activeRevisionsBySystem[system.id]
     );
     if (revision) {
-      hasTasklist = !!revision.surveys.find((s) => s.scoreTypeId === task.id);
+      hasChecklist = !!revision.surveys.find(
+        (s) => s.scoreTypeId === $checklistType.id
+      );
     }
   }
 
@@ -67,10 +64,11 @@
     if (revToActivate) activeRevisionsBySystem.setKey(system.id, revToActivate);
   }
 
-  export { active, system, sus, task };
+  export { active, system, sus };
 </script>
 
-<SystemSidebar bind:system on:update={refreshSystem} bind:hasTasklist />
+<SystemSidebar bind:system on:update={refreshSystem} />
+
 {#each system.revisions as revision}
   {@const susSurvey = revision.surveys.find(
     (s) => s.scoreTypeId === $susType?.id
@@ -94,9 +92,13 @@
             >
           </CardHeader>
           <div class="flex-1 flex items-center justify-center">
-            {#if revision.respondents.filter((r) => r.complete).length}
+            {#if revision.respondents.filter((r) => r.complete).length && $susType?.id}
+              {@const survey = revision.surveys.find(
+                (s) => s.scoreTypeId === $susType.id
+              )}
               {@const average = calculateAverageSUSScore(
-                revision.respondents.filter((r) => r.complete)
+                revision.respondents.filter((r) => r.complete),
+                survey?.id
               )}
               <Gauge
                 class="flex-1"
@@ -115,9 +117,9 @@
         </div>
         <Invite
           {revision}
-          bind:hasTasklist
           survey={susSurvey.id}
           on:update={refreshSystem}
+          bind:hasChecklist
         />
       </div>
       <div class="w-full flex flex-col gap-8">

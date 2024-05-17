@@ -107,13 +107,15 @@ export const PUT: APIRoute = async ({ params, request }) => {
 };
 
 export const DELETE: APIRoute = async ({ params }) => {
-  const taskType = await orm.scoreType.findFirst({ where: { type: "tasks" } });
+  const checklistType = await orm.scoreType.findFirst({
+    where: { type: "tasks" },
+  });
   const survey = await orm.survey.findFirst({
     where: { id: params.id },
     include: { questions: true },
   });
 
-  if (survey && taskType && survey.scoreTypeId === taskType.id) {
+  if (survey && checklistType && survey.scoreTypeId === checklistType.id) {
     await orm.question.deleteMany({
       where: { id: { in: survey.questions.map((q) => q.id) } },
     });

@@ -121,47 +121,54 @@ export async function combineCameraStreams(
 }
 
 export async function captureImageFromStream(
-  stream: MediaStream | MediaProvider
-) {
-  // Create a video element to capture a frame
-  const video = document.createElement("video");
-  video.autoplay = true;
-  video.srcObject = stream;
+  mediaStream: MediaStream | MediaProvider
+): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    // Create a video element to play the MediaStream
+    const video: HTMLVideoElement = document.createElement("video");
+    video.srcObject = mediaStream;
+    video.play(); // Start playing the video
 
-  await new Promise((r) => (video.onloadedmetadata = r));
+    // When the video metadata is loaded, draw a frame to the canvas
+    video.onloadedmetadata = () => {
+      // Use the native video width and height for the canvas
+      const width = video.videoWidth;
+      const height = video.videoHeight;
 
-  video.width = video.videoWidth;
-  video.height = video.videoHeight;
+      // Create a canvas element with the video dimensions
+      const canvas: HTMLCanvasElement = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
 
-  // Use a canvas to capture a frame from the video stream
-  const canvas = document.createElement("canvas");
-  canvas.width = 300; // set size to 300x300
-  canvas.height = 300;
-  const ctx = canvas.getContext("2d");
+      const context = canvas.getContext("2d");
+      if (context) {
+        // Draw the entire video frame to the canvas
+        context.drawImage(video, 0, 0, width, height);
 
-  // Wait to make sure video is streaming
-  await new Promise((r) => setTimeout(r, 2000));
+        // Convert the canvas to a JPEG blob
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error("Canvas to Blob conversion failed"));
+          }
+        }, "image/jpeg");
+      } else {
+        reject(new Error("Failed to get 2D context"));
+      }
 
-  // Draw the video frame to the canvas, scaling it down
-  ctx?.drawImage(
-    video,
-    0,
-    0,
-    video.videoWidth,
-    video.videoHeight,
-    0,
-    0,
-    300,
-    300
-  );
+      // Pause and reset the video element to clean up
+      video.pause();
+      video.currentTime = 0;
+      video.srcObject = null;
+    };
 
-  const blob = await new Promise<Blob | null>((r) =>
-    canvas.toBlob((blob) => r(blob), "image/jpeg")
-  );
-
-  if (!blob) throw new Error("Unable to extract image from media stream");
-
-  return blob;
+    // Handle video errors
+    video.onerror = (event: Event | string) => {
+      console.error("Video error:", event);
+      reject(new Error(`An error occurred while playing the video: ${event}`));
+    };
+  });
 }
 
 export async function uploadImageToStorage(
@@ -189,6 +196,116 @@ export async function uploadImageToStorage(
   });
 
   return block.url.split("?")[0];
+}
+
+async function cropToSquare(blob: Blob): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    // Create an image to load the blob
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+
+    img.onload = () => {
+      // Get the smallest dimension to make a square
+      const size = Math.min(img.width, img.height);
+
+      // Create a canvas element
+      const canvas: HTMLCanvasElement = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+
+      const context = canvas.getContext("2d");
+      if (context) {
+        // Calculate the center position to crop the image into a square
+        const startX = (img.width - size) / 2;
+        const startY = (img.height - size) / 2;
+
+        // Draw the cropped image from the center
+        context.drawImage(img, startX, startY, size, size, 0, 0, size, size);
+
+        // Convert the canvas to a JPEG blob
+        canvas.toBlob((croppedBlob) => {
+          if (croppedBlob) {
+            resolve(croppedBlob);
+          } else {
+            reject(new Error("Canvas to Blob conversion failed"));
+          }
+        }, "image/jpeg");
+      } else {
+        reject(new Error("Failed to get 2D context"));
+      }
+
+      // Clean up the object URL
+      URL.revokeObjectURL(url);
+    };
+
+    img.onerror = () => {
+      reject(new Error("Image loading failed"));
+      // Clean up the object URL even on error
+      URL.revokeObjectURL(url);
+    };
+
+    // Start loading the image
+    img.src = url;
+  });
+}
+
+export function generateBase64FromSVG(svgElement: SVGSVGElement): {
+  aspect: number;
+  data: string;
+} {
+  const box = svgElement.getBoundingClientRect();
+  const serializer = new XMLSerializer();
+  const svgString = serializer.serializeToString(svgElement);
+  const base64 = window.btoa(unescape(encodeURIComponent(svgString)));
+
+  return {
+    aspect: box.height / box.width,
+    data: `data:image/svg+xml;base64,${base64}`,
+  };
+}
+
+export async function captureImageFromVideo(
+  videoElem: HTMLVideoElement
+): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    // Ensure that the video element is not null and has valid video dimensions
+    if (
+      !videoElem ||
+      videoElem.videoWidth === 0 ||
+      videoElem.videoHeight === 0
+    ) {
+      reject(new Error("Invalid video element or video dimensions."));
+      return;
+    }
+
+    // Create a canvas element
+    const canvas: HTMLCanvasElement = document.createElement("canvas");
+    canvas.width = videoElem.videoWidth;
+    canvas.height = videoElem.videoHeight;
+
+    const context = canvas.getContext("2d");
+    if (context) {
+      // Draw the video frame to the canvas
+      context.drawImage(
+        videoElem,
+        0,
+        0,
+        videoElem.videoWidth,
+        videoElem.videoHeight
+      );
+
+      // Convert the canvas to a JPEG blob
+      canvas.toBlob(async (blob) => {
+        if (blob) {
+          resolve(await cropToSquare(blob));
+        } else {
+          reject(new Error("Canvas to Blob conversion failed."));
+        }
+      }, "image/jpeg");
+    } else {
+      reject(new Error("Failed to get 2D context."));
+    }
+  });
 }
 
 export function convertImageToResizedBlob(file: File): Promise<Blob> {
@@ -236,19 +353,4 @@ export function convertImageToResizedBlob(file: File): Promise<Blob> {
     reader.onerror = (error) => reject(error);
     img.onerror = () => reject(new Error("Image loading failed"));
   });
-}
-
-export function generateBase64FromSVG(svgElement: SVGSVGElement): {
-  aspect: number;
-  data: string;
-} {
-  const box = svgElement.getBoundingClientRect();
-  const serializer = new XMLSerializer();
-  const svgString = serializer.serializeToString(svgElement);
-  const base64 = window.btoa(unescape(encodeURIComponent(svgString)));
-
-  return {
-    aspect: box.height / box.width,
-    data: `data:image/svg+xml;base64,${base64}`,
-  };
 }

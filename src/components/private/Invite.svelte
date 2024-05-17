@@ -9,7 +9,7 @@
   let loading = false;
   let surveyId: string;
   let newInviteList = "";
-  let hasTasklist: boolean;
+  let hasChecklist: boolean;
   let revision: APIResponses["systemId"]["GET"]["revisions"][number];
 
   const dispatch = createEventDispatcher();
@@ -57,7 +57,7 @@
       });
   }
 
-  export { revision, surveyId as survey, hasTasklist };
+  export { revision, surveyId as survey, hasChecklist };
 </script>
 
 <div
@@ -94,7 +94,7 @@
     class="mb-4 overflow-auto flex flex-col"
   >
     {#if revision.respondents.length}
-      <RespondentList {hasTasklist} respondents={revision.respondents} />
+      <RespondentList {hasChecklist} respondents={revision.respondents} />
     {:else}
       <strong
         class="uppercase flex-1 flex items-center text-center font-semibold opacity-30 text-balance px-4"

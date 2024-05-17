@@ -1,5 +1,5 @@
 <script lang="ts" context="module">
-  export type TasklistSection = {
+  export type ChecklistSection = {
     imageURL?: string;
     group?: string;
     tasks: {
@@ -17,15 +17,18 @@
 
   import api from "@/helpers/api";
   import { onMount } from "svelte";
-  import { taskType } from "@/stores/types";
   import me, { refreshMe } from "@/stores/me";
+  import { createEventDispatcher } from "svelte";
   import type { APIResponses } from "@/helpers/api";
   import { safeTextRegEx } from "@/helpers/strings";
   import { MessageHandler } from "@/stores/messages";
-  import { groupTaskListSection } from "@/helpers/order";
+  import { refreshTypes, checklistType } from "@/stores/types";
+  import { groupChecklistSection } from "@/helpers/order";
   import CardHeader from "@/components/common/CardHeader.svelte";
   import { orderResponseByNumericalValue } from "@/helpers/order";
   import ConfirmDialog from "@/components/common/ConfirmDialog.svelte";
+
+  const dispatch = createEventDispatcher();
 
   let loading = false;
   let existing = false;
@@ -33,35 +36,35 @@
   let deleteDialog: HTMLDialogElement;
   let removedQuestions: string[] = [];
   let placeholder = "Do something...";
-  let task: APIResponses["types"]["GET"][number];
-  let revision: APIResponses["revisionId"]["GET"];
   let survey: (typeof revision)["surveys"][number] | undefined;
   let responses: APIResponses["curratedResponsesByType"]["GET"] = [];
-  let sections: TasklistSection[] = [
+  let sections: ChecklistSection[] = [
     { tasks: [{ text: "" }], group: `section_${+new Date()}` },
   ];
+  let revision:
+    | APIResponses["systemId"]["GET"]["revisions"][number]
+    | APIResponses["revisionId"]["GET"];
 
   onMount(async () => {
-    survey = revision.surveys.find((s) => s.scoreTypeId === task.id);
+    await refreshTypes();
+
+    const id = checklistType.get()?.id as string;
+
+    survey = revision.surveys.find((s) => s.scoreTypeId === id);
     if (survey && survey.questions) {
       existing = true;
-      sections = groupTaskListSection(survey.questions);
+      sections = groupChecklistSection(survey.questions);
     }
-  });
 
-  $: if (task) {
-    taskType.set(task);
-  }
-
-  $: if ($taskType?.id) {
-    api({
+    const allResponses = await api({
       method: "GET",
       endpoint: "curratedResponsesByType",
-      substitutions: { scoreType: task.id },
-    }).then((r) => {
-      responses = orderResponseByNumericalValue<(typeof responses)[number]>(r);
+      substitutions: { scoreType: id },
     });
-  }
+
+    responses =
+      orderResponseByNumericalValue<(typeof responses)[number]>(allResponses);
+  });
 
   type ImageSelectEvent = Event & {
     currentTarget: EventTarget & HTMLInputElement;
@@ -69,7 +72,7 @@
 
   async function handleImage(
     e: ImageSelectEvent | null,
-    section: TasklistSection
+    section: ChecklistSection
   ) {
     const imageFile = e?.currentTarget?.files?.[0];
 
@@ -99,27 +102,29 @@
     sections = updated;
   }
 
-  function addTask(s: TasklistSection) {
+  function addTask(s: ChecklistSection) {
     s.tasks.push({ text: "" });
     sections = [...sections];
   }
 
-  function removeSection(s: TasklistSection) {
+  function removeSection(s: ChecklistSection) {
     if (s.tasks.some((t) => t.id))
       s.tasks.forEach((t) => t.id && removedQuestions.push(t.id));
     const updated = [...sections.filter((section) => section !== s)];
     sections = [...updated];
   }
 
-  function removeTask(s: TasklistSection, i: number) {
+  function removeTask(s: ChecklistSection, i: number) {
     const task = s.tasks[i];
     if (task.id) removedQuestions.push(task.id);
     s.tasks.splice(i, 1);
     sections = [...sections];
   }
 
-  async function createTasklist() {
-    if (!revision?.id) return;
+  async function createChecklist() {
+    if (!revision?.id || !$checklistType?.id) return;
+
+    const taskId = checklistType.get()?.id as string;
 
     await refreshMe();
     const questions = sections
@@ -156,19 +161,19 @@
         method: "POST",
         body: JSON.stringify({
           questions,
-          scoreTypeId: task.id,
+          scoreTypeId: taskId,
           revisionId: revision.id,
-          label: `tasklist_${revision.id}`,
+          label: `checklist_${revision.id}`,
         }),
       });
     }
 
-    window.history.back();
-    MessageHandler({ type: "success", message: "Tasklist has been updated" });
+    dispatch("update");
+    MessageHandler({ type: "success", message: "Checklist has been updated" });
   }
 
-  async function deleteTasklist() {
-    if (deleteDialog.returnValue !== "Delete Tasklist" || !survey) {
+  async function deleteChecklist() {
+    if (deleteDialog.returnValue !== "Delete Checklist" || !survey) {
       return;
     }
 
@@ -178,73 +183,26 @@
       substitutions: { surveyId: survey.id },
     });
 
-    window.history.back();
-    MessageHandler({ type: "success", message: "Tasklist has been deleted" });
+    dispatch("update");
+    MessageHandler({ type: "success", message: "Checklist has been deleted" });
   }
 
-  export { revision, task };
+  export { revision };
 </script>
 
 <form
-  on:submit|preventDefault={createTasklist}
-  class="flex gap-4 w-full max-w-screen-2xl items-start"
+  on:submit|preventDefault={createChecklist}
+  class="flex flex-1 gap-4 w-full max-w-screen-lg items-start"
 >
-  <aside
-    class="card bg-neutral rounded-lg shadow-sm flex-none w-80 sticky top-32"
-  >
-    {#if revision}
-      <div class="card-body">
-        <header class="prose">
-          <h2
-            class="border-b mb-2 pb-2 border-sus-surface-30 text-sus-primary-60"
-          >
-            {revision.system.client.name}
-          </h2>
-        </header>
-        <div class="flex flex-col gap-1 mb-4">
-          <p class="flex justify-between m-0">
-            <strong class="flex-1">System:</strong>
-            <span class="text-sm text-sus-surface-0-fg/50"
-              >{revision.system.title}</span
-            >
-          </p>
-          <p class="flex justify-between m-0">
-            <strong class="flex-1">Revision:</strong>
-            <span class="text-sm text-sus-surface-0-fg/50"
-              >{revision.title}</span
-            >
-          </p>
-        </div>
-        <button type="submit" class="btn btn-primary text-neutral">Save</button>
-        <button
-          type="button"
-          on:click={() => window.history.back()}
-          class="btn btn-outline">Cancel</button
-        >
-        {#if existing}
-          <div class="divider">
-            <span>Danger Zone</span>
-          </div>
-
-          <button
-            type="button"
-            on:click={() => (showConfirmDelete = true)}
-            class="btn btn-error btn-outline hover:!text-neutral"
-            >Delete Tasklist</button
-          >
-        {/if}
-      </div>
-    {/if}
-  </aside>
-  <div class="flex-1 card bg-neutral rounded-lg shadow-sm p-4 w-full">
+  <div class="flex-1 p-4 w-full">
     <CardHeader icon="mdi:list-status" class="mb-4 flex-none">
       <span
-        >{existing ? "Update user" : "Create a new user"} test task list</span
+        >{existing ? "Update user" : "Create a new user"} test checklist</span
       >
 
       <span slot="sub"
-        >Task lists provide the ability to proctor and track the completion of
-        certain tasks during a prototype user test.</span
+        >Checklists provide the ability to proctor and track the completion of
+        certain tasks during a moderated system user test.</span
       >
     </CardHeader>
     {#each sections as section, s}
@@ -254,7 +212,7 @@
       >
         <thead>
           <tr>
-            <th colspan="5">
+            <th>
               <label class="flex items-center gap-4">
                 <span class="text-lg">Section Title:</span>
                 <input
@@ -266,6 +224,14 @@
                   pattern={safeTextRegEx.source}
                   class="input w-full font-normal"
                 />
+                <button
+                  type="button"
+                  on:click={() => removeSection(section)}
+                  class="btn btn-error btn-outline"
+                >
+                  <span class="sr-only">remove section</span>
+                  <iconify-icon icon="mdi:close"></iconify-icon>
+                </button>
               </label>
             </th>
           </tr>
@@ -285,7 +251,7 @@
                     <img
                       src={section.imageURL}
                       class="w-full max-w-80"
-                      alt="section tasklist screenshot"
+                      alt="section checklist screenshot"
                     />
                   {:else}
                     <label class="px-4 py-16">
@@ -307,15 +273,6 @@
                 >Tasks</span
               >
             </th>
-            {#each responses as response, i}
-              <th
-                class="w-[15%] overflow-clip align-bottom text-center border-r border-base-200 last-of-type:border-r-0 text-base bg-sus-surface-10 p-0"
-              >
-                <span class="block p-4 border-t border-base-200 bg-neutral"
-                  >{response.label}</span
-                >
-              </th>
-            {/each}
           </tr>
         </thead>
         <tbody>
@@ -342,15 +299,6 @@
                   bind:value={sections[s].tasks[t].text}
                 />
               </td>
-              {#each responses as _}
-                <th
-                  class="border-r border-base-200 last-of-type:border-r-0 !p-0"
-                >
-                  <label class="p-4 w-full h-full flex justify-center">
-                    <input type="radio" class="radio radio-primary" disabled />
-                  </label>
-                </th>
-              {/each}
             </tr>
           {/each}
           <tr>
@@ -360,36 +308,34 @@
                 on:click={() => addTask(section)}
                 class="btn btn-outline">Add Task</button
               >
-            </td>
-            <td colspan="3"></td>
-            <td>
               <button
                 type="button"
-                on:click={() => removeSection(section)}
-                class="btn btn-error btn-outline">Remove Section</button
+                on:click={addSection}
+                class="btn btn-primary btn-outline">Add Section</button
               >
             </td>
           </tr>
         </tbody>
       </table>
     {/each}
-    <div class="flex justify-center">
+    <footer class="flex justify-between">
       <button
+        on:click={() => dispatch("cancel")}
         type="button"
-        on:click={addSection}
-        class="btn btn-secondary text-neutral">Add Section</button
+        class="btn btn-ghost btn-lg">Cancel</button
       >
-    </div>
+      <button type="submit" class="btn btn-primary btn-lg">Save</button>
+    </footer>
   </div>
 </form>
 {#if showConfirmDelete}
   <ConfirmDialog
     open
     bind:elm={deleteDialog}
-    on:close={deleteTasklist}
-    confirmText="Delete Tasklist"
+    on:close={deleteChecklist}
+    confirmText="Delete Checklist"
   >
-    Deleting the tasklist will also delete any responses recorded on this
-    tasklist.
+    Deleting the checklist will also delete any responses recorded on this
+    checklist.
   </ConfirmDialog>
 {/if}

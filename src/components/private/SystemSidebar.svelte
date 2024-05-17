@@ -7,12 +7,11 @@
   import SystemRevisionNav from "@/components/private/SystemRevisionNav.svelte";
 
   let loading: boolean = false;
-  let hasTasklist: boolean = false;
   let system: APIResponses["systemId"]["GET"];
 
   const dispatch = createEventDispatcher();
 
-  export { system, hasTasklist };
+  export { system };
 </script>
 
 <div class="flex-none w-80">
@@ -33,11 +32,7 @@
         (r) => r.id === $activeRevisionsBySystem[system.id]
       )}
       {#if revision}
-        <RevisionMeta
-          {revision}
-          {hasTasklist}
-          on:update={() => dispatch("update")}
-        />
+        <RevisionMeta {revision} on:update={() => dispatch("update")} />
       {/if}
     {/if}
   {/if}

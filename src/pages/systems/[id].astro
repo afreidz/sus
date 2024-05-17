@@ -19,13 +19,6 @@ const sus = await api({
   headers: Astro.request.headers,
   substitutions: { typesType: "sus" },
 });
-
-const task = await api({
-  endpoint: "typesType",
-  base: Astro.url.origin,
-  headers: Astro.request.headers,
-  substitutions: { typesType: "tasks" },
-});
 ---
 
 <PrivateLayout class="flex-1 flex flex-col items-center">
@@ -46,11 +39,10 @@ const task = await api({
 
   <div class="p-4 flex w-full">
     <SystemRevisionContent
-      active={system.revisions[0].id}
-      {system}
       {sus}
-      {task}
-      client:load
+      {system}
+      client:only="svelte"
+      active={system.revisions[0].id}
     />
   </div>
 </PrivateLayout>

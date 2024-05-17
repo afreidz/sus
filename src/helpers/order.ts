@@ -1,5 +1,5 @@
 import type { APIResponses } from "./api";
-import type { TasklistSection } from "@/components/private/TasklistCreate.svelte";
+import type { ChecklistSection } from "@/components/checklist/Create.svelte";
 
 export function orderByKey<
   K extends string,
@@ -23,9 +23,9 @@ export function orderResponseByNumericalValue<
       });
 }
 
-export function groupTaskListSection(
+export function groupChecklistSection(
   arr: APIResponses["revisionId"]["GET"]["surveys"][number]["questions"]
-): TasklistSection[] {
+): ChecklistSection[] {
   return arr.reduce((current, question) => {
     const group = question.group || undefined;
     const imageURL = question.imageURL ?? undefined;
@@ -41,7 +41,7 @@ export function groupTaskListSection(
     current.find((i) => i.group === group)?.tasks.push({ ...question });
 
     return current;
-  }, [] as TasklistSection[]);
+  }, [] as ChecklistSection[]);
 }
 
 export function removeDuplicatesById<

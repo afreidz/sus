@@ -1,11 +1,11 @@
 <script lang="ts">
   import type { APIResponses } from "@/helpers/api";
   import Lobby from "@/components/sessions/Lobby.svelte";
-  import session, { stopRecording } from "@/stores/session";
   import SessionTime from "@/components/sessions/Time.svelte";
   import CardHeader from "@/components/common/CardHeader.svelte";
   import HostTools from "@/components/sessions/HostTools.svelte";
   import { VideoStreamRenderer } from "@azure/communication-calling";
+  import session, { disconnect, stopRecording } from "@/stores/session";
 
   let lobby = true;
   let sidebar = 600;
@@ -84,6 +84,7 @@
     await stopRecording();
     lobby = true;
     messenger?.send({ type: "session-stop" });
+    await disconnect();
   }
 
   export { revision, respondent };

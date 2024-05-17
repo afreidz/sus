@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import Gauge from "@/components/common/Gauge.svelte";
+  import { susType, refreshTypes } from "@/stores/types";
   import api, { type APIResponses } from "@/helpers/api";
   import { generateRespondentSlide } from "@/helpers/ppt";
   import Moments from "@/components/sessions/Moments.svelte";
@@ -23,23 +25,17 @@
 
   $: if (session) transcripts = session.transcripts as TranscriptionType[];
 
-  $: if (transcripts[0].time) {
+  $: if (transcripts[0]?.time) {
     dateTime = new Date(transcripts[0].time);
   }
 
-  $: if (session.respondent) {
-    susScore = calculateSUSScoreFromRespondent(session.respondent);
-  }
-
-  async function summarize() {
-    loading = true;
-    session = await api({
-      method: "GET",
-      endpoint: "summarizeSession",
-      substitutions: { sessionId: session.id },
-    });
-    loading = false;
-  }
+  onMount(async () => {
+    await refreshTypes();
+    const survey = session.respondent.revision.surveys.find(
+      (s) => s.scoreTypeId === $susType?.id
+    );
+    susScore = calculateSUSScoreFromRespondent(session.respondent, survey?.id);
+  });
 
   function resultsForDisplay() {
     const passed = session.respondent.responses.reduce((num, resp) => {
@@ -62,8 +58,19 @@
     return `${passed} Passed / ${delayed} Delayed / ${prompted} Prompted / ${failed} Failed`;
   }
 
+  async function summarize() {
+    loading = true;
+    session = await api({
+      method: "GET",
+      endpoint: "summarizeSession",
+      substitutions: { sessionId: session.id },
+    });
+    loading = false;
+  }
+
   async function generatePowerPoint() {
-    await generateRespondentSlide(session, gauge);
+    if (!session.summarized) await summarize();
+    await generateRespondentSlide(session, undefined, gauge);
   }
 
   export { session };
@@ -72,11 +79,11 @@
 <div class="p-4 h-full grid grid-cols-[auto_600px] grid-rows-2 gap-4">
   <div class="row-span-2 flex flex-col justify-start items-center gap-4">
     {#if session.summarized}
-      <header class="flex gap-4">
-        <div class="card card-side bg-neutral shadow-xl flex-2">
+      <header class="w-full flex gap-4">
+        <div class="card card-side bg-neutral shadow-xl flex-1">
           <figure>
             <img
-              class="h-60"
+              class="h-60 w-60"
               src={session.respondent.imageURL}
               alt={`Picture of ${session.respondent.name ?? session.respondent.email}`}
             />
@@ -97,7 +104,7 @@
                 {session.respondent.revision.system.title}: {session.respondent
                   .revision.title}
               </li>
-              <li><strong>Task Results:</strong> {resultsForDisplay()}</li>
+              <li><strong>User Test Results:</strong> {resultsForDisplay()}</li>
             </ul>
             <!-- <strong>Details</strong>
           <ul>
@@ -137,32 +144,17 @@
       moments={session.moments}
       start={new Date(transcripts?.[0]?.time)}
     />
-    {#if session.summarized}
-      <button
-        disabled={loading}
-        on:click={generatePowerPoint}
-        class="btn btn-lg btn-primary w-full"
-      >
-        {#if loading}
-          <span class="loading loading-spinner loading-sm"></span>
-        {:else}
-          <iconify-icon icon="mdi:file-powerpoint-outline"></iconify-icon>
-        {/if}
-        Generate PowerPoint
-      </button>
-    {:else}
-      <button
-        disabled={loading}
-        on:click={summarize}
-        class="btn btn-lg btn-primary w-full"
-      >
-        {#if loading}
-          <span class="loading loading-spinner loading-sm"></span>
-        {:else}
-          <iconify-icon icon="simple-icons:openai"></iconify-icon>
-        {/if}
-        Summarize
-      </button>
-    {/if}
+    <button
+      disabled={loading}
+      on:click={generatePowerPoint}
+      class="btn btn-lg btn-primary w-full"
+    >
+      {#if loading}
+        <span class="loading loading-spinner loading-sm"></span>
+      {:else}
+        <iconify-icon icon="simple-icons:openai"></iconify-icon>
+      {/if}
+      Generate Readout
+    </button>
   </div>
 </div>
