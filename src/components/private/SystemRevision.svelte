@@ -93,12 +93,8 @@
           </CardHeader>
           <div class="flex-1 flex items-center justify-center">
             {#if revision.respondents.filter((r) => r.complete).length && $susType?.id}
-              {@const survey = revision.surveys.find(
-                (s) => s.scoreTypeId === $susType.id
-              )}
               {@const average = calculateAverageSUSScore(
-                revision.respondents.filter((r) => r.complete),
-                survey?.id
+                revision.respondents.filter((r) => r.complete)
               )}
               <Gauge
                 class="flex-1"

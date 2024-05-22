@@ -2,7 +2,6 @@ import powerpoint from "pptxgenjs";
 import type { APIResponses } from "@/helpers/api";
 import { generateBase64FromSVG } from "@/helpers/media";
 import { calculateSUSScoreFromRespondent } from "./score";
-import { refreshTypes, susType } from "@/stores/types";
 
 type Revision = APIResponses["summarizeRevision"]["GET"];
 
@@ -326,14 +325,10 @@ export async function generateRespondentSlide(
   addSuggestionsSummary(session, slide);
 
   if (chart && resp) {
-    await refreshTypes();
-    const survey = session.respondent.revision.surveys.find(
-      (s) => s.scoreTypeId === susType.get()?.id
-    );
     addSUSResults(
       chart,
       slide,
-      [calculateSUSScoreFromRespondent(resp, survey?.id), 50],
+      [calculateSUSScoreFromRespondent(resp), 50],
       "Differential to Benchmark"
     );
   }

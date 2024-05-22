@@ -199,10 +199,8 @@
 {/if}
 
 {#each hiddenChartsForPPT as respondentChart}
-  {@const survey = revision.surveys.find((s) => s.scoreTypeId === $susType?.id)}
   {@const susScore = calculateSUSScoreFromRespondent(
-    respondentChart.respondent,
-    survey?.id
+    respondentChart.respondent
   )}
   <div class="invisible h-20 pointer-events-none">
     <Gauge

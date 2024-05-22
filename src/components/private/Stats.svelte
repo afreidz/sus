@@ -13,8 +13,7 @@
 
   $: if (!$susType?.id) refreshTypes();
 
-  $: if ($susType?.id)
-    average = calculateAverageSUSScore(respondents, $susType.id);
+  $: if (respondents) average = calculateAverageSUSScore(respondents);
 
   $: if (clients.length) {
     clientCount = clients.length;

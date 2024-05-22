@@ -1,7 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import Gauge from "@/components/common/Gauge.svelte";
-  import { susType, refreshTypes } from "@/stores/types";
   import api, { type APIResponses } from "@/helpers/api";
   import { generateRespondentSlide } from "@/helpers/ppt";
   import Moments from "@/components/sessions/Moments.svelte";
@@ -29,13 +27,8 @@
     dateTime = new Date(transcripts[0].time);
   }
 
-  onMount(async () => {
-    await refreshTypes();
-    const survey = session.respondent.revision.surveys.find(
-      (s) => s.scoreTypeId === $susType?.id
-    );
-    susScore = calculateSUSScoreFromRespondent(session.respondent, survey?.id);
-  });
+  $: if (session.respondent)
+    susScore = calculateSUSScoreFromRespondent(session.respondent);
 
   function resultsForDisplay() {
     const passed = session.respondent.responses.reduce((num, resp) => {

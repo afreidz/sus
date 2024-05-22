@@ -50,10 +50,7 @@
       </span>
     </CardHeader>
     {#each revision.respondents.filter((r) => r.complete) as respondent, i}
-      {@const survey = revision.surveys.find(
-        (s) => s.scoreTypeId === $susType.id
-      )}
-      {@const score = calculateSUSScoreFromRespondent(respondent, survey?.id)}
+      {@const score = calculateSUSScoreFromRespondent(respondent)}
       <div class="collapse collapse-arrow bg-neutral-50 mb-1">
         <input type="checkbox" checked={i === 0} />
         <div class="collapse-title text-xl font-medium">
