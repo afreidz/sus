@@ -25,9 +25,11 @@ export function calculateSUSScoreFromRespondents(
   surveyId?: string
 ) {
   if (!surveyId) throw new Error("survey id required");
+  console.log("RESPONDENTS", respondents);
   const scores = respondents.map((r) =>
     calculateSUSScoreFromRespondent(r, surveyId)
   );
+  console.log("SCORES", scores);
   return scores;
 }
 
@@ -37,6 +39,7 @@ export function calculateSUSScoreFromRespondent(
 ) {
   if (!surveyId) throw new Error("survey id required");
   const responses = respondent.responses.filter((r) => r.surveyId === surveyId);
+  console.log("RESPONSES", responses);
   const score = responses.reduce((score, response) => {
     if (!response.curratedResponse?.numericalValue) return score;
     return (score += response.question.positive
