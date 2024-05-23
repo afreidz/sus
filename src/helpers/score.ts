@@ -26,11 +26,9 @@ export function calculateSUSScoreFromRespondents(
 export function calculateSUSScoreFromRespondent(
   respondent: SurveyRespondents[number]
 ) {
-  console.log("RESPONDENT", respondent, "SURVEY", respondent.surveyId);
   const responses = respondent.responses.filter(
     (r) => respondent.surveyId === r.surveyId
   );
-  console.log("RESPONSES", responses);
   const score = responses.reduce((score, response) => {
     if (!response.curratedResponse?.numericalValue) return score;
     return (score += response.question.positive
