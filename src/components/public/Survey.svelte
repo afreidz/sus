@@ -57,6 +57,7 @@
       method: "POST",
       body: JSON.stringify({
         questionId: q.id,
+        email: respondent.email,
         revisionId: revision.id,
         respondentId: respondent.id,
         surveyId: respondent.surveyId,
@@ -99,24 +100,27 @@
 
 <div class="flex snap-mandatory snap-x overflow-auto w-full">
   {#if completed}
-    <section class={containerClass}>
-      <h2 class={questionTextClass}>
+    <section class="{containerClass}">
+      <h2 class="{questionTextClass}">
         Thank you for your responses! They have been submitted and recorded.
       </h2>
     </section>
   {:else if revision.surveys[0].questions.length}
     {@const surveyQuestions = revision.surveys[0].questions}
-    <form on:submit|preventDefault={() => focusIndex(0)} class={containerClass}>
+    <form
+      on:submit|preventDefault="{() => focusIndex(0)}"
+      class="{containerClass}"
+    >
       <label class="flex-1 flex flex-col gap-10 justify-center items-center">
-        <h2 class={questionTextClass}>
+        <h2 class="{questionTextClass}">
           Plese verify your email address to begin.
         </h2>
         <input
           required
           disabled
           type="email"
-          bind:this={emailField}
-          value={respondent?.email ?? "This survey link is just for testing"}
+          bind:this="{emailField}"
+          value="{respondent?.email ?? 'This survey link is just for testing'}"
           class="input input-bordered input-sm xl:input-lg w-full max-w-xs bg-neutral"
         />
       </label>
@@ -131,13 +135,13 @@
         (r) => r.questionId === question.id
       )}
       <form
-        on:submit|preventDefault={(e) =>
-          updateResponse(e.target, question, i + 1)}
-        bind:this={questions[i]}
-        class={containerClass}
+        on:submit|preventDefault="{(e) =>
+          updateResponse(e.target, question, i + 1)}"
+        bind:this="{questions[i]}"
+        class="{containerClass}"
       >
         <div class="flex-1 flex flex-col gap-10 justify-center items-center">
-          <h2 class={questionTextClass}>
+          <h2 class="{questionTextClass}">
             {question.text}
           </h2>
           <ul class="join join-vertical xl:join-horizontal">
@@ -149,10 +153,10 @@
                   <input
                     required
                     type="radio"
-                    name={question.id}
-                    value={response.value}
-                    checked={existingResponse?.curratedResponse?.value ===
-                      response.value}
+                    name="{question.id}"
+                    value="{response.value}"
+                    checked="{existingResponse?.curratedResponse?.value ===
+                      response.value}"
                     class="radio flex-none radio-sm radio-primary"
                   />
                   <strong
@@ -167,7 +171,7 @@
         <div class="join flex-none justify-self-end my-10">
           <button
             type="button"
-            on:click={() => focusIndex(i - 1)}
+            on:click="{() => focusIndex(i - 1)}"
             class="join-item btn btn-outline btn-primary">« Prev</button
           >
           <span class="join-item btn btn-outline btn-info"

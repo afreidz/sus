@@ -165,6 +165,7 @@ export default {
         "Segoe UI Symbol",
         "Noto Color Emoji",
       ],
+      logo: ["Galano Grotesque"],
       mono: ["IBM Plex Mono", ...defaultTheme.fontFamily.mono],
     },
     colors: {

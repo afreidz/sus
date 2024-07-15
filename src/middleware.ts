@@ -7,6 +7,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (
     url.pathname.startsWith("/404") ||
     url.pathname.startsWith("/error") ||
+    url.pathname.startsWith("/api/me") ||
     url.pathname.startsWith("/api/auth") ||
     url.pathname.startsWith("/api/public") ||
     url.pathname.startsWith("/auth/login") ||
